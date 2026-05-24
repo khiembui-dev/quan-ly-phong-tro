@@ -1,8 +1,10 @@
 # Huong Dan Chia Backend Theo Nhom
 
-Branch `frontend-base` la branch nen de upload len GitHub truoc.
+Branch `frontend-base` la branch frontend nen da upload len GitHub truoc.
 
 Branch nay giu frontend, template, static asset va cau hinh du an, nhung khong chua backend Java va database migration that.
+
+Branch `feature/backend-core` la branch backend dung chung. Moi branch lam backend theo trang nen lay code tu branch nay truoc khi code tiep.
 
 ## Cau Truc Frontend Dang Co
 
@@ -14,7 +16,7 @@ Branch nay giu frontend, template, static asset va cau hinh du an, nhung khong c
 
 ## Branch Chia Viec
 
-Moi nguoi nen tao backend tren branch rieng, xuat phat tu `frontend-base`.
+Moi nguoi nen code backend tren branch rieng, xuat phat tu `feature/backend-core`.
 
 | Nguoi | Branch | Trang phu trach |
 |---|---|---|
@@ -22,6 +24,20 @@ Moi nguoi nen tao backend tren branch rieng, xuat phat tu `frontend-base`.
 | Thanh vien 2 | `feature/admin-invoices-contracts` | `/admin/invoices`, `/admin/contracts` |
 | Thanh vien 3 | `feature/admin-tickets-utilities` | `/admin/tickets`, `/admin/utilities` |
 | Thanh vien 4 | `feature/admin-reports-tenants` | `/admin/reports`, `/admin/tenants` |
+
+## Backend Dung Chung Da Dua Len `feature/backend-core`
+
+- `src/main/java/vn/glassliving/GlassLivingApplication.java`
+- `src/main/java/vn/glassliving/common/`
+- `src/main/java/vn/glassliving/auth/`
+- `src/main/java/vn/glassliving/config/SecurityConfig.java`
+- `src/main/java/vn/glassliving/config/WebMvcConfig.java`
+- `src/main/java/vn/glassliving/notification/`
+- `src/main/java/vn/glassliving/maintenance/entity/MaintenanceTicket.java`
+- `src/main/java/vn/glassliving/maintenance/repository/MaintenanceTicketRepository.java`
+- `src/main/resources/db/`
+
+Chua dua `DevDataInitializer.java` vao core vi file nay phu thuoc vao hau het entity cua cac trang khac.
 
 ## Quy Tac Code Backend
 
@@ -46,16 +62,18 @@ Khong nen dua tat ca entity/service/repository vao chung mot thu muc theo ten tr
 
 ## Lenh Git Goi Y
 
-Lay branch nen:
+Lay branch backend dung chung:
 
 ```bash
-git checkout frontend-base
+git checkout feature/backend-core
+git pull
 ```
 
 Tao branch cua anh:
 
 ```bash
-git checkout -b feature/admin-properties-rooms
+git checkout feature/admin-properties-rooms
+git merge feature/backend-core
 ```
 
 Sau khi code xong:
