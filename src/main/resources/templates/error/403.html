@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/head :: head('Không có quyền — SmartRent')}"></head>
+<body class="min-h-screen grid place-items-center px-6">
+    <div class="text-center max-w-[520px]">
+        <i data-lucide="shield-x" class="w-14 h-14 mx-auto text-[color:var(--warn)]"></i>
+        <h1 class="text-[24px] font-bold tracking-tight mt-4">Bạn không có quyền truy cập</h1>
+        <p class="text-[14px] text-[color:var(--text-mute)] mt-2">Vui lòng đăng nhập với tài khoản phù hợp.</p>
+        <a href="/login" class="btn btn-primary mt-6">Đăng nhập</a>
+    </div>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

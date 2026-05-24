@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<header th:fragment="navbar"
+        class="customer-navbar sticky top-0 z-30"
+        x-data="{ nav: null, mobileOpen: false, openNotif: false, openMenu: false }"
+        @keydown.escape.window="nav=null; mobileOpen=false; openNotif=false; openMenu=false"
+        style="background: rgba(255,255,255,0.76); -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); border-bottom: 1px solid var(--glass-border);">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+
+        <div class="flex items-center gap-2 lg:gap-6 min-w-0">
+            <div th:replace="~{fragments/brand :: brand('/')}"></div>
+
+            <nav class="hidden lg:flex items-center gap-1">
+                <div class="relative" @click.outside="if (nav === 'booking') nav = null">
+                    <button type="button"
+                            @click="nav = nav === 'booking' ? null : 'booking'; openNotif=false; openMenu=false"
+                            class="nav-item h-10 px-3.5"
+                            :class="nav === 'booking' ? 'active' : ''">
+                        <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                        <span th:text="#{customer.booking}">Đặt phòng</span>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition" :class="nav === 'booking' ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div x-show="nav === 'booking'" x-cloak x-transition.opacity
+                         class="absolute left-0 top-full mt-2 w-[420px] glass-strong rounded-3xl p-3 z-40">
+                        <div class="grid grid-cols-[1fr_.85fr] gap-3">
+                            <a href="/" class="menu-card">
+                                <span class="menu-card-icon"><i data-lucide="search" class="w-4 h-4"></i></span>
+                                <span class="min-w-0">
+                                    <span class="menu-card-title" th:text="#{customer.findRoom}">Tìm phòng</span>
+                                    <span class="menu-card-desc" th:text="#{customer.findRoomDesc}">Xem phòng trống và đặt lịch nhanh</span>
+                                </span>
+                            </a>
+                            <a href="/me/favorites" class="menu-card">
+                                <span class="menu-card-icon"><i data-lucide="heart" class="w-4 h-4"></i></span>
+                                <span class="min-w-0">
+                                    <span class="menu-card-title" th:text="#{customer.favorites}">Yêu thích</span>
+                                    <span class="menu-card-desc" th:text="#{customer.favoritesDesc}">Danh sách phòng đã lưu</span>
+                                </span>
+                            </a>
+                        </div>
+                        <div class="divider my-3"></div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <a href="/?type=STUDIO" class="menu-chip"><i data-lucide="building" class="w-3.5 h-3.5"></i>Studio</a>
+                            <a href="/?type=ONE_BEDROOM" class="menu-chip"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i><span th:text="#{customer.oneBedroom}">1 phòng ngủ</span></a>
+                            <a href="/?type=PENTHOUSE" class="menu-chip"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i>Penthouse</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div sec:authorize="isAuthenticated()" class="relative" @click.outside="if (nav === 'rooms') nav = null">
+                    <button type="button"
+                            @click="nav = nav === 'rooms' ? null : 'rooms'; openNotif=false; openMenu=false"
+                            class="nav-item h-10 px-3.5"
+                            :class="nav === 'rooms' ? 'active' : ''">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        <span th:text="#{customer.roomManagement}">Quản lý phòng</span>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition" :class="nav === 'rooms' ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div x-show="nav === 'rooms'" x-cloak x-transition.opacity
+                         class="absolute left-0 top-full mt-2 w-[460px] glass-strong rounded-3xl p-3 z-40">
+                        <div class="grid grid-cols-2 gap-2">
+                            <a href="/me" class="menu-card">
+                                <span class="menu-card-icon"><i data-lucide="layout-dashboard" class="w-4 h-4"></i></span>
+                                <span class="min-w-0">
+                                    <span class="menu-card-title" th:text="#{nav.overview}">Tổng quan</span>
+                                    <span class="menu-card-desc" th:text="#{customer.overviewDesc}">Tình trạng thuê, hóa đơn, liên hệ</span>
+                                </span>
+                            </a>
+                            <a href="/me#rooms" class="menu-card">
+                                <span class="menu-card-icon"><i data-lucide="door-open" class="w-4 h-4"></i></span>
+                                <span class="min-w-0">
+                                    <span class="menu-card-title" th:text="#{customer.currentRoom}">Phòng đang ở</span>
+                                    <span class="menu-card-desc" th:text="#{customer.currentRoomDesc}">Thông tin phòng và kỳ thuê</span>
+                                </span>
+                            </a>
+                            <a href="/me#tickets" class="menu-card">
+                                <span class="menu-card-icon"><i data-lucide="ticket-check" class="w-4 h-4"></i></span>
+                                <span class="min-w-0">
+                                    <span class="menu-card-title" th:text="#{customer.supportTicket}">Ticket hỗ trợ</span>
+                                    <span class="menu-card-desc" th:text="#{customer.supportTicketDesc}">Mở và theo dõi yêu cầu sửa chữa</span>
+                                </span>
+                            </a>
+                            <a href="/me/invoices" class="menu-card">
+                                <span class="menu-card-icon"><i data-lucide="receipt" class="w-4 h-4"></i></span>
+                                <span class="min-w-0">
+                                    <span class="menu-card-title" th:text="#{nav.invoices}">Hóa đơn</span>
+                                    <span class="menu-card-desc" th:text="#{customer.invoiceDesc}">Thanh toán và lịch sử phí</span>
+                                </span>
+                            </a>
+                        </div>
+                        <a href="/me#contact" class="mt-2 menu-strip">
+                            <i data-lucide="headphones" class="w-4 h-4"></i>
+                            <span th:text="#{customer.contactOwner}">Liên hệ chủ trọ qua Zalo/Gmail</span>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5 ml-auto"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div sec:authorize="isAuthenticated()" class="relative" @click.outside="if (nav === 'account') nav = null">
+                    <button type="button"
+                            @click="nav = nav === 'account' ? null : 'account'; openNotif=false; openMenu=false"
+                            class="nav-item h-10 px-3.5"
+                            :class="nav === 'account' ? 'active' : ''">
+                        <i data-lucide="user-cog" class="w-4 h-4"></i>
+                        <span th:text="#{customer.account}">Tài khoản</span>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition" :class="nav === 'account' ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div x-show="nav === 'account'" x-cloak x-transition.opacity
+                         class="absolute left-0 top-full mt-2 w-[360px] glass-strong rounded-3xl p-3 z-40">
+                        <a href="/me/profile" class="menu-card">
+                            <span class="menu-card-icon"><i data-lucide="user-round" class="w-4 h-4"></i></span>
+                            <span class="min-w-0">
+                                <span class="menu-card-title" th:text="#{customer.profile}">Hồ sơ cá nhân</span>
+                                <span class="menu-card-desc" th:text="#{customer.profileDesc}">Tên, số điện thoại, địa chỉ</span>
+                            </span>
+                        </a>
+                        <a href="/me/profile?tab=docs" class="menu-card mt-2">
+                            <span class="menu-card-icon"><i data-lucide="id-card" class="w-4 h-4"></i></span>
+                            <span class="min-w-0">
+                                <span class="menu-card-title" th:text="#{customer.tenantDocs}">Giấy tờ thuê phòng</span>
+                                <span class="menu-card-desc" th:text="#{customer.tenantDocsDesc}">CCCD/CMND và xác minh hồ sơ</span>
+                            </span>
+                        </a>
+                        <a href="/me/profile?tab=security" class="menu-card mt-2">
+                            <span class="menu-card-icon"><i data-lucide="shield-check" class="w-4 h-4"></i></span>
+                            <span class="min-w-0">
+                                <span class="menu-card-title" th:text="#{customer.security}">Bảo mật</span>
+                                <span class="menu-card-desc" th:text="#{customer.securityDesc}">Email đăng nhập và phiên tài khoản</span>
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+            <div th:replace="~{fragments/language-switcher :: switcher}"></div>
+
+            <button type="button"
+                    class="topbar-icon-btn lg:hidden"
+                    @click="mobileOpen = !mobileOpen; nav=null; openNotif=false; openMenu=false"
+                    th:attr="aria-label=#{customer.openMenu}">
+                <i data-lucide="menu" class="w-5 h-5" x-show="!mobileOpen"></i>
+                <i data-lucide="x" class="w-5 h-5" x-show="mobileOpen" x-cloak></i>
+            </button>
+
+            <div sec:authorize="!isAuthenticated()" class="hidden sm:flex items-center gap-2">
+                <a href="/login" class="btn btn-ghost btn-sm" th:text="#{action.login}">Đăng nhập</a>
+                <a href="/register" class="btn btn-primary btn-sm" th:text="#{action.register}">Đăng ký</a>
+            </div>
+
+            <div sec:authorize="isAuthenticated()" class="flex items-center gap-2">
+                <div class="relative">
+                    <button @click="openNotif = !openNotif; openMenu = false; nav=null; mobileOpen=false"
+                            class="topbar-icon-btn"
+                            th:attr="aria-label=#{customer.notifications}">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <span th:if="${unreadNotifications != null and unreadNotifications > 0}"
+                              class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-[color:var(--err)] text-white text-[10px] font-bold ring-2 ring-white"
+                              th:text="${unreadNotifications > 9 ? '9+' : unreadNotifications}">3</span>
+                    </button>
+                    <div x-show="openNotif" x-cloak x-transition.opacity
+                         @click.outside="openNotif=false"
+                         class="absolute top-full right-0 mt-2 w-[min(360px,calc(100vw-2rem))] max-h-[480px] glass-strong rounded-2xl p-3 z-40 overflow-hidden flex flex-col">
+                        <div class="px-3 py-2 flex items-center justify-between">
+                            <h3 class="font-semibold text-[15px]" th:text="#{customer.notifications}">Thông báo</h3>
+                            <button hx-put="/api/v1/me/notifications/read-all"
+                                    hx-swap="none"
+                                    class="text-[12px] text-[color:var(--accent)] hover:underline"
+                                    th:text="#{action.markRead}">Đánh dấu đã đọc</button>
+                        </div>
+                        <div class="overflow-y-auto flex-1"
+                             hx-get="/notifications/dropdown" hx-trigger="load"
+                             hx-swap="innerHTML">
+                            <div class="p-3 text-[13px] text-[color:var(--text-mute)]" th:text="#{action.loading}">Đang tải...</div>
+                        </div>
+                        <a href="/notifications"
+                           class="text-center py-2 text-[13px] text-[color:var(--accent)] hover:underline border-t border-[color:var(--line-soft)]"
+                           th:text="#{action.viewAll}">Xem tất cả</a>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <button @click="openMenu = !openMenu; openNotif=false; nav=null; mobileOpen=false"
+                            class="flex items-center gap-2 pl-1 pr-1 sm:pr-3 h-10 rounded-full glass-thin hover:bg-white/85 transition">
+                        <span class="avatar avatar-sm" sec:authentication="principal.initial">U</span>
+                        <span class="text-[13px] font-medium hidden md:inline max-w-[140px] truncate" sec:authentication="principal.fullName">User</span>
+                        <i data-lucide="chevron-down" class="hidden sm:block w-4 h-4 text-[color:var(--text-mute)] transition"
+                           :class="openMenu ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div x-show="openMenu" x-cloak x-transition.opacity
+                         @click.outside="openMenu=false"
+                         class="absolute top-full right-0 mt-2 w-72 glass-strong rounded-2xl p-2 z-40">
+                        <div class="px-3 py-2.5 mb-1">
+                            <div class="text-[13px] font-semibold truncate" sec:authentication="principal.fullName">Tên người dùng</div>
+                            <div class="text-[11px] text-[color:var(--text-mute)] truncate" sec:authentication="principal.email">email@…</div>
+                        </div>
+                        <div class="divider mb-1"></div>
+                        <a href="/me" class="nav-item h-10"><i data-lucide="layout-grid" class="w-4 h-4"></i><span th:text="#{nav.dashboard}">Bảng điều khiển</span></a>
+                        <a href="/me#rooms" class="nav-item h-10"><i data-lucide="home" class="w-4 h-4"></i><span th:text="#{customer.currentRoom}">Phòng đang ở</span></a>
+                        <a href="/me#tickets" class="nav-item h-10"><i data-lucide="ticket-check" class="w-4 h-4"></i><span th:text="#{customer.supportTicket}">Ticket hỗ trợ</span></a>
+                        <a href="/me/invoices" class="nav-item h-10"><i data-lucide="receipt" class="w-4 h-4"></i><span th:text="#{nav.invoices}">Hóa đơn</span></a>
+                        <a href="/me/profile" class="nav-item h-10"><i data-lucide="user-round" class="w-4 h-4"></i><span th:text="#{customer.accountManage}">Quản lý tài khoản</span></a>
+                        <div sec:authorize="hasAnyRole('OWNER','ADMIN','STAFF')">
+                            <div class="divider my-1.5"></div>
+                            <a href="/admin" class="nav-item h-10">
+                                <i data-lucide="shield-half" class="w-4 h-4"></i>
+                                <span th:text="#{customer.adminArea}">Khu vực Admin</span>
+                            </a>
+                        </div>
+                        <div class="divider my-1.5"></div>
+                        <form action="/logout" method="post">
+                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                            <button type="submit" class="nav-item h-10 w-full text-left text-[color:var(--err)]">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                <span th:text="#{action.logout}">Đăng xuất</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="mobileOpen" x-cloak x-transition.opacity
+         @click.outside="mobileOpen=false"
+         class="lg:hidden border-t border-[color:var(--line-soft)] bg-white/86 backdrop-blur-md">
+        <div class="max-w-[1440px] mx-auto px-4 py-3 space-y-3">
+            <section class="mobile-menu-section">
+                <div class="mobile-menu-title"><i data-lucide="calendar-plus" class="w-4 h-4"></i><span th:text="#{customer.booking}">Đặt phòng</span></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="/" class="mobile-menu-link" th:text="#{customer.findRoom}">Tìm phòng</a>
+                    <a href="/me/favorites" sec:authorize="isAuthenticated()" class="mobile-menu-link" th:text="#{customer.favorites}">Yêu thích</a>
+                    <a href="/?type=STUDIO" class="mobile-menu-link">Studio</a>
+                    <a href="/?type=PENTHOUSE" class="mobile-menu-link">Penthouse</a>
+                </div>
+            </section>
+
+            <section sec:authorize="isAuthenticated()" class="mobile-menu-section">
+                <div class="mobile-menu-title"><i data-lucide="home" class="w-4 h-4"></i><span th:text="#{customer.roomManagement}">Quản lý phòng</span></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="/me" class="mobile-menu-link" th:text="#{nav.overview}">Tổng quan</a>
+                    <a href="/me#rooms" class="mobile-menu-link" th:text="#{customer.currentRoom}">Phòng đang ở</a>
+                    <a href="/me#tickets" class="mobile-menu-link">Ticket</a>
+                    <a href="/me/invoices" class="mobile-menu-link" th:text="#{nav.invoices}">Hóa đơn</a>
+                </div>
+            </section>
+
+            <section sec:authorize="isAuthenticated()" class="mobile-menu-section">
+                <div class="mobile-menu-title"><i data-lucide="user-cog" class="w-4 h-4"></i><span th:text="#{customer.account}">Tài khoản</span></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="/me/profile" class="mobile-menu-link" th:text="#{customer.profileShort}">Hồ sơ</a>
+                    <a href="/me/profile?tab=docs" class="mobile-menu-link" th:text="#{customer.tenantDocsShort}">Giấy tờ</a>
+                    <a href="/me/profile?tab=security" class="mobile-menu-link" th:text="#{customer.security}">Bảo mật</a>
+                    <a href="/notifications" class="mobile-menu-link" th:text="#{customer.notifications}">Thông báo</a>
+                </div>
+            </section>
+
+            <div sec:authorize="!isAuthenticated()" class="grid grid-cols-2 gap-2">
+                <a href="/login" class="btn btn-glass btn-sm w-full" th:text="#{action.login}">Đăng nhập</a>
+                <a href="/register" class="btn btn-primary btn-sm w-full" th:text="#{action.register}">Đăng ký</a>
+            </div>
+        </div>
+    </div>
+</header>
+</body>
+</html>

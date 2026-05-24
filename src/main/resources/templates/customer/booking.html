@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/customer-layout}"
+      lang="vi">
+<head><title>Đặt phòng — SmartRent</title></head>
+<body>
+<div layout:fragment="content" class="max-w-[1200px] mx-auto px-4 sm:px-6 pt-8 pb-16"
+     x-data="bookingWizard()" x-init="init()">
+
+    <!-- Heading -->
+    <div class="text-center mb-8">
+        <span class="eyebrow">Đặt phòng nhanh chóng</span>
+        <h1 class="text-[28px] sm:text-[34px] font-extrabold tracking-tight mt-2">Hoàn tất đặt phòng của bạn</h1>
+        <p class="text-[14px] text-[color:var(--text-mute)] mt-2">Chỉ 3 bước đơn giản — an toàn, minh bạch, có thể hủy.</p>
+    </div>
+
+    <!-- Stepper -->
+    <div class="max-w-[640px] mx-auto mb-10">
+        <div class="stepper">
+            <div class="flex flex-col items-center flex-shrink-0">
+                <div class="step" :class="{ active: step===1, done: step>1 }">
+                    <span x-show="step<=1">1</span>
+                    <i x-show="step>1" data-lucide="check" class="w-4 h-4"></i>
+                </div>
+                <span class="step-label hidden sm:block" :class="{ active: step===1, done: step>1 }">Thông tin</span>
+            </div>
+            <div class="step-line" :class="{ done: step>1 }"></div>
+            <div class="flex flex-col items-center flex-shrink-0">
+                <div class="step" :class="{ active: step===2, done: step>2 }">
+                    <span x-show="step<=2">2</span>
+                    <i x-show="step>2" data-lucide="check" class="w-4 h-4"></i>
+                </div>
+                <span class="step-label hidden sm:block" :class="{ active: step===2, done: step>2 }">Xác nhận</span>
+            </div>
+            <div class="step-line" :class="{ done: step>2 }"></div>
+            <div class="flex flex-col items-center flex-shrink-0">
+                <div class="step" :class="{ active: step===3 }">3</div>
+                <span class="step-label hidden sm:block" :class="{ active: step===3 }">Thanh toán</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-[3fr_2fr] gap-8">
+
+        <!-- Form -->
+        <div class="glass-strong p-6 sm:p-8">
+            <!-- Step 1 -->
+            <div x-show="step===1">
+                <span class="eyebrow">Bước 1 / 3</span>
+                <h2 class="text-[22px] sm:text-[26px] font-bold tracking-tight mt-1.5 mb-6">Thông tin cá nhân</h2>
+
+                <div class="space-y-4">
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Họ và tên</label>
+                            <div class="input-glass">
+                                <i data-lucide="user" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <input type="text" x-model="form.fullName" placeholder="Nguyễn Văn A" required />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Số CCCD</label>
+                            <div class="input-glass">
+                                <i data-lucide="id-card" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <input type="text" x-model="form.cccd" maxlength="12" placeholder="079xxxxxxxxx" required />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Số điện thoại</label>
+                            <div class="input-glass">
+                                <i data-lucide="phone" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <input type="tel" x-model="form.phone" placeholder="0901xxxxxx" required />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Email</label>
+                            <div class="input-glass">
+                                <i data-lucide="mail" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <input type="email" x-model="form.email" placeholder="ban@email.com" required />
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Địa chỉ thường trú</label>
+                        <div class="input-glass">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="text" x-model="form.address" placeholder="Theo CCCD" />
+                        </div>
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Nghề nghiệp</label>
+                            <div class="input-glass">
+                                <i data-lucide="briefcase" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <input type="text" x-model="form.occupation" placeholder="Lập trình viên, sinh viên,…" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Nơi làm việc</label>
+                            <div class="input-glass">
+                                <i data-lucide="building" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <input type="text" x-model="form.workplace" placeholder="Tên công ty / trường" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid sm:grid-cols-2 gap-4 pt-2">
+                        <div>
+                            <label class="form-label">Ảnh CCCD mặt trước</label>
+                            <label class="block glass-thin rounded-xl p-6 text-center cursor-pointer hover:bg-white/85 transition border-2 border-dashed border-[color:var(--line)]">
+                                <i data-lucide="upload-cloud" class="w-6 h-6 mx-auto text-[color:var(--accent)]"></i>
+                                <p class="text-[13px] mt-2 font-medium">Tải lên</p>
+                                <p class="text-[11px] mt-0.5 text-[color:var(--text-mute)]">JPG/PNG, &lt; 5MB</p>
+                                <input type="file" accept="image/*" class="hidden" />
+                            </label>
+                        </div>
+                        <div>
+                            <label class="form-label">Ảnh CCCD mặt sau</label>
+                            <label class="block glass-thin rounded-xl p-6 text-center cursor-pointer hover:bg-white/85 transition border-2 border-dashed border-[color:var(--line)]">
+                                <i data-lucide="upload-cloud" class="w-6 h-6 mx-auto text-[color:var(--accent)]"></i>
+                                <p class="text-[13px] mt-2 font-medium">Tải lên</p>
+                                <p class="text-[11px] mt-0.5 text-[color:var(--text-mute)]">JPG/PNG, &lt; 5MB</p>
+                                <input type="file" accept="image/*" class="hidden" />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div x-show="step===2" x-cloak>
+                <span class="eyebrow">Bước 2 / 3</span>
+                <h2 class="text-[22px] sm:text-[26px] font-bold tracking-tight mt-1.5 mb-6">Điều khoản thuê phòng</h2>
+
+                <div class="space-y-4">
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Ngày bắt đầu</label>
+                            <div class="input-glass">
+                                <i data-lucide="calendar" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <input type="date" x-model="form.moveInDate" required />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Thời hạn</label>
+                            <div class="input-glass">
+                                <i data-lucide="clock" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <select x-model="form.duration">
+                                    <option value="6">6 tháng</option>
+                                    <option value="12">12 tháng</option>
+                                    <option value="24">24 tháng</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Số người ở</label>
+                            <div class="input-glass">
+                                <i data-lucide="users" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <input type="number" min="1" max="6" x-model="form.occupants" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Tùy chọn thêm</label>
+                            <label class="input-glass cursor-pointer h-12">
+                                <input type="checkbox" x-model="form.hasPet" class="rounded text-[color:var(--accent)]" />
+                                <i data-lucide="paw-print" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <span class="text-[14px]">Có thú cưng</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Ghi chú thêm</label>
+                        <div class="input-glass !h-auto !py-3">
+                            <textarea x-model="form.note" rows="3" placeholder="Thông tin thêm bạn muốn chủ trọ biết…"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl p-5 mt-2"
+                         style="background: linear-gradient(135deg, rgba(238,240,255,0.6), rgba(245,243,255,0.6)); border: 1px solid var(--glass-border);">
+                        <p class="font-semibold mb-3 inline-flex items-center gap-2 text-[14px]">
+                            <i data-lucide="file-text" class="w-4 h-4 text-[color:var(--accent)]"></i> Bản tóm tắt đặt phòng
+                        </p>
+                        <ul class="space-y-2 text-[13px] text-[color:var(--text-soft)]">
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-[color:var(--ok)] mt-0.5 shrink-0"></i>
+                                <span>Tiền thuê: <span class="font-semibold tnum" th:text="${h.vnd(room.priceMonthly)}">8.500.000₫</span> / tháng</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-[color:var(--ok)] mt-0.5 shrink-0"></i>
+                                <span>Đặt cọc 1 tháng tiền thuê.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-[color:var(--ok)] mt-0.5 shrink-0"></i>
+                                <span>Thông tin đặt phòng được lưu trong hồ sơ và có thể xem lại sau khi xác nhận.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-[color:var(--warn)] mt-0.5 shrink-0"></i>
+                                <span>Phạt chấm dứt sớm: mất cọc + 1 tháng tiền thuê.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div x-show="step===3" x-cloak>
+                <span class="eyebrow">Bước 3 / 3</span>
+                <h2 class="text-[22px] sm:text-[26px] font-bold tracking-tight mt-1.5 mb-6">Thanh toán cọc &amp; tháng đầu</h2>
+
+                <div class="space-y-3">
+                    <label class="block glass p-4 cursor-pointer hover:bg-white/85 transition"
+                           :class="form.paymentMethod==='VNPAY' ? 'ring-2 ring-[color:var(--accent)] !bg-[color:var(--accent-soft)]' : ''">
+                        <div class="flex items-center gap-3">
+                            <input type="radio" value="VNPAY" x-model="form.paymentMethod" class="text-[color:var(--accent)]" />
+                            <div class="w-11 h-11 rounded-xl bg-white grid place-items-center shrink-0 shadow-sm">
+                                <i data-lucide="credit-card" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold text-[15px]">VNPay <span class="text-[12px] font-normal text-[color:var(--text-mute)]">(ATM/Visa/QR)</span></div>
+                                <div class="text-[12px] text-[color:var(--text-mute)] mt-0.5">Thanh toán an toàn, có biên lai điện tử.</div>
+                            </div>
+                            <span class="badge badge-emerald shrink-0">Khuyến nghị</span>
+                        </div>
+                    </label>
+                    <label class="block glass p-4 cursor-pointer hover:bg-white/85 transition"
+                           :class="form.paymentMethod==='MOMO' ? 'ring-2 ring-[color:var(--accent)] !bg-[color:var(--accent-soft)]' : ''">
+                        <div class="flex items-center gap-3">
+                            <input type="radio" value="MOMO" x-model="form.paymentMethod" class="text-[color:var(--accent)]" />
+                            <div class="w-11 h-11 rounded-xl bg-pink-50 grid place-items-center shrink-0 shadow-sm">
+                                <i data-lucide="smartphone" class="w-5 h-5 text-pink-500"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold text-[15px]">Ví MoMo</div>
+                                <div class="text-[12px] text-[color:var(--text-mute)] mt-0.5">Quét QR thanh toán nhanh.</div>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="block glass p-4 cursor-pointer hover:bg-white/85 transition"
+                           :class="form.paymentMethod==='BANK_TRANSFER' ? 'ring-2 ring-[color:var(--accent)] !bg-[color:var(--accent-soft)]' : ''">
+                        <div class="flex items-center gap-3">
+                            <input type="radio" value="BANK_TRANSFER" x-model="form.paymentMethod" class="text-[color:var(--accent)]" />
+                            <div class="w-11 h-11 rounded-xl bg-emerald-50 grid place-items-center shrink-0 shadow-sm">
+                                <i data-lucide="building-2" class="w-5 h-5 text-emerald-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold text-[15px]">Chuyển khoản ngân hàng</div>
+                                <div class="text-[12px] text-[color:var(--text-mute)] mt-0.5">Chuyển trực tiếp, gửi biên lai cho chủ trọ duyệt.</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="mt-5 rounded-xl p-4 bg-[color:var(--ok-soft)] text-[12px] text-[color:var(--ok)] flex items-start gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                    <span><span class="font-semibold">Thanh toán bảo vệ:</span> tiền cọc được giữ trong tài khoản đảm bảo và chỉ chuyển cho chủ trọ sau khi bạn xác nhận đã nhận phòng.</span>
+                </div>
+            </div>
+
+            <!-- Nav buttons -->
+            <div class="flex items-center justify-between mt-8 pt-6 border-t border-[color:var(--line-soft)] gap-3">
+                <button type="button" class="btn btn-ghost" @click="prev()" x-show="step>1">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Quay lại
+                </button>
+                <span x-show="step===1"></span>
+                <button type="button" class="btn btn-primary" @click="next()" x-show="step<3">
+                    Tiếp tục <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+                <button type="button" class="btn btn-primary" @click="submit()" x-show="step===3">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Xác nhận &amp; thanh toán
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary sidebar -->
+        <aside class="lg:sticky lg:top-24 self-start">
+            <div class="glass-strong p-6 space-y-4">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="eyebrow no-line">Phòng đã chọn</span>
+                </div>
+                <div class="flex gap-3">
+                    <div class="w-20 h-20 rounded-xl shrink-0 overflow-hidden"
+                         th:style="${room.coverUrl != null} ? 'background-image: url(' + ${room.coverUrl} + '); background-size: cover; background-position: center;' : 'background: linear-gradient(135deg,#a5b4fc,#67e8f9);'">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold text-[14px] line-clamp-2 leading-snug" th:text="${room.title}">Tên phòng</div>
+                        <div class="text-[12px] text-[color:var(--text-mute)] mt-1" th:text="${room.district + ' · ' + room.areaSqm + 'm²'}">Q1 · 28m²</div>
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <div class="space-y-1.5 text-[13px]">
+                    <div class="flex justify-between">
+                        <span class="text-[color:var(--text-mute)]">Tiền thuê tháng đầu</span>
+                        <span class="font-medium tnum" th:text="${h.vnd(room.priceMonthly)}">8.500.000₫</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[color:var(--text-mute)]">Cọc</span>
+                        <span class="font-medium tnum" th:text="${h.vnd(room.depositAmount)}">8.500.000₫</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[color:var(--text-mute)]">Phí dịch vụ</span>
+                        <span class="font-medium tnum" th:text="${h.vnd(room.serviceFee)}">500.000₫</span>
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[15px] font-semibold">Tổng thanh toán</span>
+                    <span class="text-[20px] font-extrabold text-[color:var(--accent)] tnum"
+                          th:text="${h.vnd(room.priceMonthly.add(room.depositAmount).add(room.serviceFee))}">17.500.000₫</span>
+                </div>
+                <div class="rounded-xl bg-[color:var(--ok-soft)] p-3 text-[12px] text-[color:var(--ok)] flex items-start gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                    <span>Tiền cọc hoàn 100% nếu chủ trọ huỷ.</span>
+                </div>
+                <p class="text-[11px] text-[color:var(--text-mute)] leading-relaxed">
+                    Bằng cách đặt phòng, bạn đồng ý với điều khoản dịch vụ và chính sách bảo mật của SmartRent.
+                </p>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+    <script th:inline="javascript">
+        const ROOM_ID = /*[[${room.id}]]*/ '';
+        function bookingWizard() {
+            return {
+                step: 1,
+                form: {
+                    fullName: '', cccd: '', phone: '', email: '',
+                    address: '', occupation: '', workplace: '',
+                    moveInDate: '', duration: '12', occupants: 1, hasPet: false, note: '',
+                    paymentMethod: 'VNPAY'
+                },
+                init() {
+                    const saved = sessionStorage.getItem('booking_' + ROOM_ID);
+                    if (saved) try { this.form = { ...this.form, ...JSON.parse(saved) }; } catch (e) {}
+                },
+                save() { sessionStorage.setItem('booking_' + ROOM_ID, JSON.stringify(this.form)); },
+                next() {
+                    if (this.step === 1 && (!this.form.fullName || !this.form.cccd || !this.form.phone || !this.form.email)) {
+                        window.toast && window.toast('Vui lòng điền đầy đủ thông tin cá nhân.', 'err'); return;
+                    }
+                    if (this.step === 2 && !this.form.moveInDate) {
+                        window.toast && window.toast('Vui lòng chọn ngày bắt đầu.', 'err'); return;
+                    }
+                    this.save(); this.step++;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+                prev() { this.save(); if (this.step > 1) this.step--; window.scrollTo({ top: 0, behavior: 'smooth' }); },
+                async submit() {
+                    this.save();
+                    try {
+                        const res = await fetch('/api/v1/bookings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ roomId: ROOM_ID, ...this.form })
+                        });
+                        if (!res.ok) throw new Error('http_' + res.status);
+                        const data = await res.json();
+                        sessionStorage.removeItem('booking_' + ROOM_ID);
+                        window.location = '/me/bookings/' + (data.data && data.data.bookingId) + '/success';
+                    } catch (e) {
+                        window.toast && window.toast('Đặt phòng không thành công. Vui lòng thử lại.', 'err');
+                    }
+                }
+            };
+        }
+    </script>
+</th:block>
+</body>
+</html>

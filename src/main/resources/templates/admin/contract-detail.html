@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Chi tiết hợp đồng - SmartRent</title></head>
+<body>
+<div layout:fragment="content">
+
+    <div class="mb-5">
+        <a href="/admin/contracts" class="text-[13px] text-[color:var(--text-mute)] inline-flex items-center gap-1.5 hover:text-[color:var(--accent)]">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Hợp đồng
+        </a>
+    </div>
+
+    <div class="glass p-6 mb-6">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div class="flex items-start gap-4 min-w-0">
+                <div class="avatar avatar-xl avatar-violet"
+                     th:text="${tenant.fullName != null and !tenant.fullName.isEmpty() ? #strings.substring(tenant.fullName, 0, 1) : '?'}">N</div>
+                <div class="min-w-0">
+                    <span class="eyebrow">Chi tiết hợp đồng</span>
+                    <h1 class="text-[26px] sm:text-[32px] font-bold tracking-tight mt-1 truncate" th:text="${tenant.fullName}">Nguyễn Văn A</h1>
+                    <div class="flex flex-wrap gap-x-5 gap-y-1.5 mt-2 text-[13px] text-[color:var(--text-soft)]">
+                        <span class="inline-flex items-center gap-1.5">
+                            <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                            <span th:text="${tenant.email}">email</span>
+                        </span>
+                        <span th:if="${tenant.phone != null}" class="inline-flex items-center gap-1.5 tnum">
+                            <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                            <span th:text="${tenant.phone}">090...</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <span class="badge"
+                  th:if="${contract != null}"
+                  th:classappend="${contract.status.name() == 'ACTIVE' ? 'badge-emerald' : (contract.status.name() == 'EXPIRING_SOON' ? 'badge-amber' : (contract.status.name() == 'EXPIRED' ? 'badge-rose' : 'badge-mute'))}"
+                  th:text="${contract.status.name() == 'ACTIVE' ? 'Đang hiệu lực' : (contract.status.name() == 'EXPIRING_SOON' ? 'Sắp hết hạn' : (contract.status.name() == 'EXPIRED' ? 'Hết hạn' : contract.status.name()))}">
+                Đang hiệu lực
+            </span>
+            <span class="badge badge-mute" th:unless="${contract != null}">Chưa có hợp đồng</span>
+        </div>
+    </div>
+
+    <form th:action="@{'/admin/contracts/' + ${tenant.id}}" method="post"
+          class="grid xl:grid-cols-[1.1fr_.9fr] gap-5">
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+        <section class="glass p-6 space-y-5">
+            <div>
+                <span class="eyebrow">Thiết lập</span>
+                <h2 class="text-[20px] font-bold tracking-tight mt-1">Thời hạn hợp đồng</h2>
+                <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                    Chọn nhanh 3/6/12/24 tháng hoặc chỉnh trực tiếp ngày kết thúc.
+                </p>
+            </div>
+
+            <div>
+                <label class="form-label">Phòng áp dụng</label>
+                <div class="input-glass">
+                    <i data-lucide="bed-double" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <select name="roomId" required>
+                        <option value="">-- Chọn phòng --</option>
+                        <option th:each="r : ${rooms}"
+                                th:value="${r.id}"
+                                th:selected="${selectedRoom != null and selectedRoom.id.equals(r.id)}"
+                                th:disabled="${r.currentTenantId != null and !r.currentTenantId.equals(tenant.id)}"
+                                th:text="${r.code + ' · ' + r.title + (r.currentTenantId != null and !r.currentTenantId.equals(tenant.id) ? ' · đã có khách' : '')}">
+                            P101 · Studio
+                        </option>
+                    </select>
+                </div>
+                <p class="form-help" th:if="${selectedRoom == null}">Khách chưa được gán phòng. Hãy chọn phòng trước khi lưu hợp đồng.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label class="form-label">Ngày bắt đầu hợp đồng</label>
+                    <div class="input-glass">
+                        <i data-lucide="calendar-days" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input id="contractStartDate" type="date" name="startDate" th:value="${startDate}" required
+                               onchange="syncContractEndDate()" />
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Thời hạn nhanh</label>
+                    <div class="input-glass">
+                        <i data-lucide="timer-reset" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <select id="contractDurationMonths" name="durationMonths" onchange="syncContractEndDate()">
+                            <option th:each="m : ${durationOptions}"
+                                    th:value="${m}"
+                                    th:selected="${m == selectedDuration}"
+                                    th:text="${m + ' tháng'}">12 tháng</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="form-label">Ngày kết thúc hợp đồng</label>
+                <div class="input-glass">
+                    <i data-lucide="calendar-check" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <input id="contractEndDate" type="date" name="endDate" th:value="${endDate}" required />
+                </div>
+                <p class="form-help">Nếu chỉnh ngày kết thúc thủ công, hệ thống sẽ lưu đúng ngày bạn nhập.</p>
+            </div>
+
+            <div class="rounded-2xl p-4 bg-[color:var(--accent-soft)] text-[13px] text-[color:var(--accent-hover)] flex items-start gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 mt-0.5 shrink-0"></i>
+                <div>
+                    Khi lưu, trạng thái hợp đồng tự chuyển thành đang hiệu lực, sắp hết hạn hoặc hết hạn dựa trên ngày kết thúc.
+                    Nếu phòng chưa gắn khách, hệ thống cũng tự gắn khách này vào phòng đã chọn.
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <a href="/admin/contracts" class="btn btn-ghost">Hủy</a>
+                <button type="submit" class="btn btn-primary">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    Lưu hợp đồng
+                </button>
+            </div>
+        </section>
+
+        <aside class="space-y-5">
+            <div class="glass p-5">
+                <span class="eyebrow">Tóm tắt</span>
+                <div class="mt-4 space-y-3 text-[13px]">
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-[color:var(--text-mute)]">Mã hợp đồng</span>
+                        <span class="font-semibold mono" th:text="${contract != null ? contract.code : 'Tạo mới'}">HD</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-[color:var(--text-mute)]">Phòng hiện tại</span>
+                        <span class="font-semibold text-right" th:text="${currentRoom != null ? currentRoom.code + ' · ' + currentRoom.title : 'Chưa gán'}">P101</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-[color:var(--text-mute)]">Tiền thuê</span>
+                        <span class="font-semibold tnum text-[color:var(--accent)]"
+                              th:text="${selectedRoom != null ? h.vnd(selectedRoom.priceMonthly) : '—'}">0đ</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-[color:var(--text-mute)]">Tiền cọc</span>
+                        <span class="font-semibold tnum"
+                              th:text="${selectedRoom != null ? h.vnd(selectedRoom.depositAmount) : '—'}">0đ</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-5" th:if="${contracts != null and !contracts.isEmpty()}">
+                <span class="eyebrow">Lịch sử</span>
+                <div class="mt-4 space-y-2">
+                    <div th:each="c : ${contracts}"
+                         class="rounded-xl border border-[color:var(--line-soft)] bg-white/50 p-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="mono text-[12px] font-semibold" th:text="${c.code}">HD</span>
+                            <span class="badge"
+                                  th:classappend="${c.status.name() == 'ACTIVE' ? 'badge-emerald' : (c.status.name() == 'EXPIRING_SOON' ? 'badge-amber' : (c.status.name() == 'EXPIRED' ? 'badge-rose' : 'badge-mute'))}"
+                                  th:text="${c.status.name()}">ACTIVE</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mt-2 text-[11px] text-[color:var(--text-mute)]">
+                            <div>
+                                <div>Bắt đầu</div>
+                                <div class="font-semibold tnum text-[color:var(--text)]" th:text="${#temporals.format(c.startDate, 'dd/MM/yyyy')}">01/01/2026</div>
+                            </div>
+                            <div>
+                                <div>Kết thúc</div>
+                                <div class="font-semibold tnum text-[color:var(--text)]" th:text="${#temporals.format(c.endDate, 'dd/MM/yyyy')}">31/12/2026</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </form>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+    <script>
+        function syncContractEndDate() {
+            const startInput = document.getElementById('contractStartDate');
+            const durationInput = document.getElementById('contractDurationMonths');
+            const endInput = document.getElementById('contractEndDate');
+            if (!startInput || !durationInput || !endInput || !startInput.value) return;
+
+            const months = Number(durationInput.value || 0);
+            if (!months) return;
+            const date = new Date(startInput.value + 'T00:00:00');
+            date.setMonth(date.getMonth() + months);
+            date.setDate(date.getDate() - 1);
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            endInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+    </script>
+</th:block>
+</body>
+</html>
+

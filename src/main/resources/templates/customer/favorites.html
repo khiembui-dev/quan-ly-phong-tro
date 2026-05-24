@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/customer-layout}"
+      lang="vi">
+<head><title>Phòng yêu thích — SmartRent</title></head>
+<body>
+<div layout:fragment="content" class="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-16">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div>
+            <span class="eyebrow">Đã lưu của bạn</span>
+            <h1 class="text-[28px] sm:text-[34px] font-bold tracking-tight mt-2 inline-flex items-center gap-3">
+                Phòng yêu thích
+                <span th:if="${rooms != null and !rooms.isEmpty()}"
+                      class="text-[14px] font-medium px-2.5 py-1 rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)] tnum"
+                      th:text="${rooms.size()}">3</span>
+            </h1>
+            <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5">Các phòng bạn đã đánh dấu để xem lại sau.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/" class="btn btn-glass btn-sm">
+                <i data-lucide="search" class="w-4 h-4"></i>
+                Khám phá thêm
+            </a>
+        </div>
+    </div>
+
+    <div th:if="${rooms != null and !rooms.isEmpty()}" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <th:block th:each="r : ${rooms}">
+            <div th:replace="~{fragments/room-card :: card(${r})}"></div>
+        </th:block>
+    </div>
+
+    <div th:if="${rooms == null or rooms.isEmpty()}" class="empty">
+        <div class="empty-icon" style="background: #fef2f2; color: #dc2626;">
+            <i data-lucide="heart-off" class="w-7 h-7"></i>
+        </div>
+        <h3 class="text-[17px] font-semibold">Chưa có phòng yêu thích</h3>
+        <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5 max-w-md mx-auto">
+            Khám phá danh sách phòng và bấm trái tim để lưu các phòng bạn quan tâm — quay lại xem bất cứ lúc nào.
+        </p>
+        <a href="/" class="btn btn-primary mt-5">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            Khám phá phòng
+        </a>
+    </div>
+</div>
+</body>
+</html>

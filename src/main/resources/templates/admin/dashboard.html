@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Tổng quan - SmartRent</title></head>
+<body>
+<div layout:fragment="content">
+    <style>
+        .dash-panel {
+            position: relative;
+            overflow: hidden;
+        }
+        .dash-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(125deg, rgba(79, 70, 229, .08), transparent 32%),
+                linear-gradient(310deg, rgba(14, 165, 233, .08), transparent 30%);
+            opacity: .75;
+        }
+        .dash-panel > * { position: relative; }
+        .dash-grid {
+            background-image:
+                linear-gradient(to right, rgba(148, 163, 184, .12) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(148, 163, 184, .14) 1px, transparent 1px);
+            background-size: 92px 100%, 100% 44px;
+        }
+        .dash-bar {
+            transform: scaleY(.08);
+            transform-origin: bottom;
+            animation: dashBar .8s cubic-bezier(.16, 1, .3, 1) forwards;
+        }
+        .dash-month-chart {
+            position: relative;
+            min-height: 330px;
+            border-radius: 22px;
+            border: 1px solid rgba(15, 23, 42, .08);
+            background:
+                linear-gradient(to bottom, rgba(148, 163, 184, .16) 1px, transparent 1px),
+                linear-gradient(to right, rgba(148, 163, 184, .10) 1px, transparent 1px),
+                rgba(255, 255, 255, .58);
+            background-size: 100% 54px, 84px 100%, auto;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
+        }
+        .dash-month-bars {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(30px, 1fr));
+            gap: 8px;
+            align-items: end;
+            min-width: 0;
+            height: 238px;
+        }
+        .dash-month-col {
+            position: relative;
+            height: 100%;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            gap: 10px;
+            justify-items: center;
+            padding: 0 3px;
+        }
+        .dash-month-track {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            border-radius: 14px;
+            transition: background .18s ease-out;
+        }
+        .dash-month-col:hover .dash-month-track {
+            background: rgba(255,255,255,.62);
+        }
+        .dash-month-bar {
+            width: min(34px, 72%);
+            height: 0;
+            min-height: 0;
+            border-radius: 12px 12px 7px 7px;
+            background: linear-gradient(180deg, #7c3aed 0%, #4f46e5 46%, #10b981 100%);
+            box-shadow: 0 10px 24px rgba(79,70,229,.22), inset 0 1px 0 rgba(255,255,255,.38);
+            transform: scaleY(.08);
+            transform-origin: bottom;
+            animation: dashBar .78s cubic-bezier(.16, 1, .3, 1) forwards;
+        }
+        .dash-month-bar.has-data {
+            min-height: 10px;
+        }
+        .dash-month-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-mute);
+            font-feature-settings: 'tnum';
+            white-space: nowrap;
+        }
+        .dash-month-value {
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            z-index: 2;
+            transform: translate(-50%, 8px);
+            opacity: 0;
+            pointer-events: none;
+            min-width: 154px;
+            border-radius: 14px;
+            border: 1px solid rgba(15,23,42,.10);
+            background: rgba(255,255,255,.94);
+            box-shadow: 0 18px 40px rgba(15,23,42,.14);
+            padding: 10px 12px;
+            transition: opacity .18s ease-out, transform .18s ease-out;
+        }
+        .dash-month-col:hover .dash-month-value {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+        .dash-y-label {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 238px;
+            width: 88px;
+            padding: 2px 8px 26px 0;
+            text-align: right;
+            color: var(--text-mute);
+            font-size: 11px;
+            font-weight: 700;
+        }
+        @media (max-width: 760px) {
+            .dash-month-bars {
+                min-width: 680px;
+            }
+        }
+        .dash-soft-pulse {
+            animation: dashPulse 2.2s ease-in-out infinite;
+        }
+        @keyframes dashBar { to { transform: scaleY(1); } }
+        @keyframes dashPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, .20); }
+            50% { box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .dash-month-bar, .dash-bar {
+                animation: none;
+                transform: none;
+            }
+        }
+    </style>
+
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
+        <div>
+            <span class="eyebrow" th:text="#{admin.dashboard.eyebrow}">Tổng quan</span>
+            <h1 class="text-[28px] sm:text-[34px] font-bold mt-2">
+                <span th:text="#{admin.dashboard.greeting}">Xin chào,</span>
+                <span sec:authentication="principal.fullName" class="bg-gradient-to-br from-[color:var(--accent)] to-[color:var(--accent-2)] bg-clip-text text-transparent">Bạn</span>
+            </h1>
+            <p class="text-[13px] text-[color:var(--text-mute)] mt-1">
+                <span th:text="#{admin.dashboard.monthStatus}">Tình hình kinh doanh tháng này -</span>
+                <span class="font-medium text-[color:var(--text)]" th:text="${#dates.format(#dates.createNow(), 'MMMM yyyy')}">Tháng 5 2026</span>
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/admin/reports" class="btn btn-soft btn-sm">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i> <span th:text="#{nav.reports}">Báo cáo</span>
+            </a>
+            <a href="/admin/invoices" class="btn btn-glass btn-sm">
+                <i data-lucide="receipt" class="w-4 h-4"></i> <span th:text="#{admin.dashboard.createInvoice}">Tạo hóa đơn</span>
+            </a>
+            <a href="/admin/tenants" class="btn btn-primary btn-sm">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> <span th:text="#{nav.tenants}">Khách thuê</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <div class="kpi reveal reveal-1 dash-panel">
+            <div class="kpi-icon dash-soft-pulse" style="background: var(--accent-soft); color: var(--accent);">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label" th:text="#{admin.dashboard.revenueCollected}">Doanh thu đã thu</div>
+            <div class="kpi-value tnum" th:text="${h.vnd(monthlyRevenue)}">142.500.000đ</div>
+            <div class="kpi-trend up">
+                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                <span th:text="#{admin.dashboard.comparedWith}">so với</span>
+                <span th:text="${h.vnd(prevRevenue)}">126tr</span>
+                <span th:text="#{admin.dashboard.previousMonth}">tháng trước</span>
+            </div>
+        </div>
+        <div class="kpi reveal reveal-2 dash-panel">
+            <div class="kpi-icon" style="background: #fffbeb; color: #b45309;">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label" th:text="#{admin.dashboard.pendingPayment}">Chờ thanh toán</div>
+            <div class="kpi-value tnum" th:text="${h.vnd(pendingRevenue)}">7.260.000đ</div>
+            <div class="kpi-trend flat">
+                <span th:text="${h.vnd(overdueRevenue)}">0đ</span> <span th:text="#{admin.dashboard.overdue}">quá hạn</span>
+            </div>
+        </div>
+        <div class="kpi reveal reveal-3 dash-panel">
+            <div class="kpi-icon" style="background: #ecfdf5; color: #047857;">
+                <i data-lucide="bed" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label" th:text="#{admin.dashboard.roomsBreakdown}">Phòng / Trống / Đang ở</div>
+            <div class="kpi-value tnum">
+                <span th:text="${totalRooms}">12</span>
+                <span class="text-[color:var(--text-mute)] text-[18px]">
+                    · <span class="text-[color:var(--ok)]" th:text="${availableRooms}">3</span> /
+                    <span class="text-[color:var(--warn)]" th:text="${occupiedRooms}">9</span>
+                </span>
+            </div>
+            <div class="kpi-trend up"><span th:text="#{admin.dashboard.occupancy}">Lấp đầy</span> <span class="font-semibold tnum" th:text="${occupancyRate}">75</span>%</div>
+        </div>
+        <div class="kpi reveal reveal-4 dash-panel">
+            <div class="kpi-icon" style="background: #fef2f2; color: #dc2626;">
+                <i data-lucide="wrench" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label" th:text="#{admin.dashboard.openTickets}">Ticket mở</div>
+            <div class="kpi-value tnum" th:text="${openTickets}">2</div>
+            <div class="kpi-trend">
+                <a href="/admin/tickets" class="text-[color:var(--accent)] hover:underline inline-flex items-center gap-1">
+                    <span th:text="#{action.viewAll}">Xem tất cả</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid xl:grid-cols-[1.55fr_.9fr] gap-6 mb-6">
+        <div class="glass p-5 dash-panel reveal reveal-1">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
+                <div>
+                    <span class="eyebrow no-line" th:text="#{admin.dashboard.finance}">Tài chính</span>
+                    <h2 class="text-[22px] font-bold mt-1">
+                        <span th:text="#{admin.dashboard.monthlyRevenue}">Doanh thu theo tháng</span> <span class="tnum" th:text="${dashboardYear}">2026</span>
+                    </h2>
+                    <p class="text-[12px] text-[color:var(--text-mute)] mt-1" th:text="#{admin.dashboard.chartDesc}">
+                        Cột thể hiện số tiền thực thu trong từng tháng, đủ 12 tháng trong năm đang chọn.
+                    </p>
+                </div>
+                <div class="flex items-start gap-3 shrink-0">
+                    <form method="get" action="/admin" class="input-glass h-10 px-3">
+                        <i data-lucide="calendar-days" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <select name="year" class="font-semibold tnum" onchange="this.form.requestSubmit()">
+                            <option th:each="y : ${dashboardYears}"
+                                    th:value="${y}"
+                                    th:selected="${y == dashboardYear}"
+                                    th:text="${y}">2026</option>
+                        </select>
+                    </form>
+                    <div class="text-right">
+                        <div class="text-[11px] uppercase text-[color:var(--text-mute)]" th:text="#{admin.dashboard.collectedYear}">Đã thu trong năm</div>
+                        <div class="font-extrabold text-[20px] tnum text-[color:var(--accent)]" th:text="${h.vndCompact(dashboardReport.overview.collected)}">0đ</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dash-month-chart p-4">
+                <div class="flex items-stretch gap-2 overflow-x-auto pt-11">
+                    <div class="dash-y-label shrink-0">
+                        <span th:text="${h.vndCompact(dashboardReport.chartMax)}">60tr</span>
+                        <span th:text="${h.vndCompact(dashboardChartMidpoint)}">30tr</span>
+                        <span>0đ</span>
+                    </div>
+                    <div class="dash-month-bars flex-1" role="img" aria-label="Biểu đồ cột doanh thu theo tháng">
+                        <div th:each="m, iter : ${dashboardReport.months}" class="dash-month-col">
+                            <div class="dash-month-value">
+                                <div class="text-[12px] font-semibold text-[color:var(--text)]" th:text="${'Tháng ' + m.period.monthValue}">Tháng 1</div>
+                                <div class="mt-1 text-[16px] font-extrabold tnum text-[color:var(--ok)]" th:text="${h.vnd(m.collected)}">0đ</div>
+                                <div class="mt-1 text-[11px] text-[color:var(--text-mute)]">
+                                    <span th:text="${m.invoiceCount}">0</span> hóa đơn ·
+                                    còn thu <span class="tnum" th:text="${h.vndCompact(m.outstanding)}">0đ</span>
+                                </div>
+                            </div>
+                            <div class="dash-month-track">
+                                <div class="dash-month-bar"
+                                     th:classappend="${m.collected.signum() > 0} ? ' has-data' : ''"
+                                     th:style="'height:' + ${m.collected.signum() > 0 ? m.collectedHeight : 0} + '%; animation-delay:' + ${0.08 + iter.index * 0.035} + 's'"></div>
+                            </div>
+                            <div class="dash-month-label" th:text="${'T' + m.period.monthValue}">T1</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid sm:grid-cols-3 gap-3 mt-4">
+                <div class="rounded-[16px] bg-white/65 border border-[color:var(--line-soft)] p-3">
+                    <div class="text-[11px] uppercase text-[color:var(--text-mute)]">Đã thu</div>
+                    <div class="font-bold tnum text-[color:var(--ok)] mt-1" th:text="${h.vnd(dashboardReport.overview.collected)}">0đ</div>
+                </div>
+                <div class="rounded-[16px] bg-white/65 border border-[color:var(--line-soft)] p-3">
+                    <div class="text-[11px] uppercase text-[color:var(--text-mute)]">Công nợ</div>
+                    <div class="font-bold tnum text-[#b45309] mt-1" th:text="${h.vnd(dashboardReport.overview.outstanding)}">0đ</div>
+                </div>
+                <div class="rounded-[16px] bg-white/65 border border-[color:var(--line-soft)] p-3">
+                    <div class="text-[11px] uppercase text-[color:var(--text-mute)]">Chi phí</div>
+                    <div class="font-bold tnum text-[color:var(--err)] mt-1" th:text="${h.vnd(dashboardReport.overview.operatingCost)}">0đ</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-6">
+            <div class="glass p-5 reveal reveal-2">
+                <div class="flex items-start justify-between gap-4 mb-5">
+                    <div>
+                        <span class="eyebrow no-line">Vận hành</span>
+                        <h2 class="text-[20px] font-bold mt-1">Tình trạng phòng</h2>
+                    </div>
+                    <span class="badge badge-violet tnum" th:text="${occupancyRate + '%'}">75%</span>
+                </div>
+                <div class="grid sm:grid-cols-[150px_1fr] gap-5 items-center justify-items-center sm:justify-items-stretch">
+                    <div class="relative w-[132px] h-[132px] sm:w-[150px] sm:h-[150px] rounded-full"
+                         th:style="|background: conic-gradient(#4f46e5 0deg, #4f46e5 ${occupancyRate * 3.6}deg, rgba(15,23,42,.08) ${occupancyRate * 3.6}deg 360deg);|">
+                        <div class="absolute inset-[16px] rounded-full bg-white/90 grid place-items-center text-center">
+                            <div>
+                                <div class="text-[28px] font-extrabold tnum" th:text="${occupancyRate + '%'}">75%</div>
+                                <div class="text-[11px] text-[color:var(--text-mute)]">lấp đầy</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="inline-flex items-center gap-2 text-[13px] text-[color:var(--text-soft)]"><span class="w-2.5 h-2.5 rounded-full bg-[#4f46e5]"></span>Đang ở</span>
+                            <span class="font-bold tnum" th:text="${occupiedRooms}">9</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="inline-flex items-center gap-2 text-[13px] text-[color:var(--text-soft)]"><span class="w-2.5 h-2.5 rounded-full bg-[#10b981]"></span>Còn trống</span>
+                            <span class="font-bold tnum" th:text="${availableRooms}">3</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="inline-flex items-center gap-2 text-[13px] text-[color:var(--text-soft)]"><span class="w-2.5 h-2.5 rounded-full bg-[#ef4444]"></span>Bảo trì</span>
+                            <span class="font-bold tnum" th:text="${maintenanceRooms}">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-5 reveal reveal-3">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                        <span class="eyebrow no-line">Chi phí</span>
+                        <h2 class="text-[20px] font-bold mt-1">Vận hành kỳ này</h2>
+                    </div>
+                    <span class="badge badge-rose" th:text="${dashboardReport.overview.costRatio + '%'}">0%</span>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-[13px] mb-1.5">
+                            <span>Điện</span><span class="font-semibold tnum" th:text="${h.vnd(dashboardReport.overview.electricCost)}">0đ</span>
+                        </div>
+                        <div class="h-2 rounded-full bg-black/[.04] overflow-hidden">
+                            <div class="h-full rounded-full bg-[#4f46e5] dash-bar" style="width: 68%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[13px] mb-1.5">
+                            <span>Nước</span><span class="font-semibold tnum" th:text="${h.vnd(dashboardReport.overview.waterCost)}">0đ</span>
+                        </div>
+                        <div class="h-2 rounded-full bg-black/[.04] overflow-hidden">
+                            <div class="h-full rounded-full bg-[#0ea5e9] dash-bar" style="width: 46%; animation-delay: .12s"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[13px] mb-1.5">
+                            <span>Sửa chữa</span><span class="font-semibold tnum" th:text="${h.vnd(dashboardReport.overview.maintenanceCost)}">0đ</span>
+                        </div>
+                        <div class="h-2 rounded-full bg-black/[.04] overflow-hidden">
+                            <div class="h-full rounded-full bg-[#ef4444] dash-bar" style="width: 32%; animation-delay: .22s"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid xl:grid-cols-[1fr_.72fr] gap-6 mb-6">
+        <div class="card-pad-0 reveal reveal-4">
+            <div class="px-5 sm:px-6 py-4 flex items-center justify-between border-b border-[color:var(--line-soft)]">
+                <div>
+                    <h3 class="font-semibold text-[15px]">Cần xử lý ngay</h3>
+                    <p class="text-[12px] text-[color:var(--text-mute)] mt-0.5">Hóa đơn quá hạn, kỳ thanh toán sắp tới, ticket cần xử lý.</p>
+                </div>
+                <span class="badge badge-amber"><span th:text="${needAttention != null ? needAttention.size() : 0}">3</span> mục</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                    <tr><th>Loại</th><th>Mô tả</th><th>Liên quan</th><th>Hạn</th><th class="text-right">Hành động</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${needAttention}">
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${row.kind == 'OVERDUE' ? 'badge-rose' : (row.kind == 'EXPIRING' ? 'badge-amber' : 'badge-violet')}">
+                                <span th:switch="${row.kind}">
+                                    <span th:case="'OVERDUE'">Quá hạn</span>
+                                    <span th:case="'EXPIRING'">Sắp tới</span>
+                                    <span th:case="'ACTION'">Cần xử lý</span>
+                                </span>
+                            </span>
+                        </td>
+                        <td class="font-medium" th:text="${row.title}">Hóa đơn quá hạn</td>
+                        <td class="mono text-[12px] text-[color:var(--text-mute)]" th:text="${row.ref}">INV-001</td>
+                        <td class="tnum" th:text="${row.dueIn}">3 ngày</td>
+                        <td class="text-right">
+                            <a href="/admin/invoices" class="btn btn-soft btn-sm">
+                                Xử lý
+                                <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr th:if="${needAttention == null or needAttention.isEmpty()}">
+                        <td colspan="5" class="text-center py-8 text-[color:var(--text-mute)]">
+                            <i data-lucide="check-circle-2" class="w-8 h-8 mx-auto mb-2 opacity-50 text-[color:var(--ok)]"></i>
+                            <div class="text-[13px]">Tất cả đều ổn.</div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="glass p-5 reveal reveal-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-[15px]">Hoạt động hôm nay</h3>
+                <span class="badge badge-violet" th:text="${activities.size()}">4</span>
+            </div>
+            <ul class="space-y-3.5">
+                <li th:each="a : ${activities}" class="flex gap-3">
+                    <span th:classappend="${a.kind == 'ok' ? 'bg-[color:var(--ok-soft)] text-[color:var(--ok)]' :
+                                              (a.kind == 'warn' ? 'bg-[#fffbeb] text-[#b45309]' :
+                                                                  'bg-[color:var(--accent-soft)] text-[color:var(--accent)]')}"
+                          class="w-9 h-9 rounded-xl grid place-items-center shrink-0">
+                        <i th:attr="data-lucide=${a.icon}" class="w-4 h-4"></i>
+                    </span>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[13px] font-medium leading-snug" th:text="${a.title}">Hoạt động</div>
+                        <div class="text-[11px] text-[color:var(--text-faint)] mt-0.5" th:text="${a.time}">vừa xong</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 reveal reveal-6">
+        <a href="/admin/utilities" class="glass p-4 flex items-center gap-3 hover:-translate-y-0.5 transition">
+            <span class="w-11 h-11 rounded-xl bg-[color:var(--accent-soft)] text-[color:var(--accent)] grid place-items-center">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+            </span>
+            <span class="font-semibold text-[13px]">Ghi điện nước</span>
+        </a>
+        <a href="/admin/invoices" class="glass p-4 flex items-center gap-3 hover:-translate-y-0.5 transition">
+            <span class="w-11 h-11 rounded-xl bg-[#fffbeb] text-[#b45309] grid place-items-center">
+                <i data-lucide="receipt" class="w-5 h-5"></i>
+            </span>
+            <span class="font-semibold text-[13px]">Tạo hóa đơn</span>
+        </a>
+        <a href="/admin/tickets" class="glass p-4 flex items-center gap-3 hover:-translate-y-0.5 transition">
+            <span class="w-11 h-11 rounded-xl bg-[#fef2f2] text-[#dc2626] grid place-items-center">
+                <i data-lucide="wrench" class="w-5 h-5"></i>
+            </span>
+            <span class="font-semibold text-[13px]">Ticket</span>
+        </a>
+        <a href="/admin/automations" class="glass p-4 flex items-center gap-3 hover:-translate-y-0.5 transition">
+            <span class="w-11 h-11 rounded-xl bg-[#ecfdf5] text-[#047857] grid place-items-center">
+                <i data-lucide="bot" class="w-5 h-5"></i>
+            </span>
+            <span class="font-semibold text-[13px]">Tự động hóa</span>
+        </a>
+    </div>
+</div>
+</body>
+</html>

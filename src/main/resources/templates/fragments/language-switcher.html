@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="switcher"
+     class="language-switcher"
+     x-data="{ langOpen: false }"
+     @keydown.escape.window="langOpen = false"
+     @click.outside="langOpen = false">
+    <button type="button"
+            class="language-trigger"
+            @click="langOpen = !langOpen"
+            aria-haspopup="menu"
+            th:attr="aria-label=#{language.switch}"
+            :aria-expanded="langOpen.toString()">
+        <i data-lucide="globe-2" class="w-4 h-4"></i>
+        <span class="language-label"
+              th:text="${currentLang == 'en'} ? #{language.en} : #{language.vi}">Tiếng Việt</span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition"
+           :class="langOpen ? 'rotate-180' : ''"></i>
+    </button>
+
+    <div x-show="langOpen"
+         x-cloak
+         x-transition.opacity
+         class="language-menu"
+         role="menu">
+        <a th:href="${langSwitchViUrl}"
+           class="language-option"
+           th:classappend="${currentLang == 'vi'} ? ' active' : ''"
+           role="menuitem">
+            <span th:text="#{language.vi}">Tiếng Việt</span>
+            <i th:if="${currentLang == 'vi'}" data-lucide="check" class="w-3.5 h-3.5"></i>
+        </a>
+        <a th:href="${langSwitchEnUrl}"
+           class="language-option"
+           th:classappend="${currentLang == 'en'} ? ' active' : ''"
+           role="menuitem">
+            <span th:text="#{language.en}">English</span>
+            <i th:if="${currentLang == 'en'}" data-lucide="check" class="w-3.5 h-3.5"></i>
+        </a>
+    </div>
+</div>
+</body>
+</html>

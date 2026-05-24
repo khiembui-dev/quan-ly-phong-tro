@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Flash alert — auto-show + auto-hide; rendered when flashMessage attribute present -->
+<div th:fragment="alert"
+     th:if="${flashMessage != null}"
+     x-data="{ show: true }"
+     x-show="show"
+     x-init="setTimeout(() => show = false, 5000)"
+     x-transition.opacity
+     class="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[520px] w-[calc(100%-2rem)]"
+     th:with="kind=${flashKind != null ? flashKind : 'INFO'}">
+    <div class="glass-strong rounded-2xl px-4 py-3.5 flex items-start gap-3 shadow-glass-lg"
+         th:classappend="|
+            ${kind == 'OK'   ? 'border-l-4 border-l-[color:var(--ok)]' : ''}
+            ${kind == 'INFO' ? 'border-l-4 border-l-[color:var(--accent)]' : ''}
+            ${kind == 'WARN' ? 'border-l-4 border-l-[color:var(--warn)]' : ''}
+            ${kind == 'ERR'  ? 'border-l-4 border-l-[color:var(--err)]'  : ''}|">
+        <div class="w-8 h-8 rounded-lg grid place-items-center shrink-0"
+             th:classappend="|
+                ${kind == 'OK'   ? 'bg-[color:var(--ok-soft)]   text-[color:var(--ok)]' : ''}
+                ${kind == 'INFO' ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}
+                ${kind == 'WARN' ? 'bg-[color:var(--warn-soft)] text-[color:var(--warn)]' : ''}
+                ${kind == 'ERR'  ? 'bg-[color:var(--err-soft)]  text-[color:var(--err)]' : ''}|">
+            <i th:attr="data-lucide=${kind == 'OK' ? 'check-circle-2' : (kind == 'WARN' ? 'alert-triangle' : (kind == 'ERR' ? 'alert-circle' : 'info'))}"
+               class="w-4 h-4"></i>
+        </div>
+        <div class="flex-1 text-[13.5px] leading-relaxed pt-1" th:text="${flashMessage}">Message</div>
+        <button type="button" @click="show = false"
+                class="w-7 h-7 grid place-items-center rounded-md hover:bg-black/[0.06] transition shrink-0">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/head :: head('Không tìm thấy — SmartRent')}"></head>
+<body class="min-h-screen relative overflow-hidden">
+<div class="mesh-bg"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+<div class="relative z-10 min-h-screen grid place-items-center px-6">
+    <div class="text-center max-w-[520px]">
+        <div class="text-[120px] font-black tracking-tighter bg-gradient-to-br from-indigo-500 to-cyan-500 bg-clip-text text-transparent">404</div>
+        <h1 class="text-[24px] font-bold tracking-tight">Không tìm thấy trang</h1>
+        <p class="text-[14px] text-[color:var(--text-mute)] mt-2">Trang bạn tìm không tồn tại hoặc đã bị di chuyển.</p>
+        <a href="/" class="btn btn-primary mt-6">Về trang chủ</a>
+    </div>
+</div>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

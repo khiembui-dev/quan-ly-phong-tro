@@ -1,0 +1,51 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/glassliving
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        globally_quoted_identifiers: false
+  h2:
+    console:
+      enabled: false
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev-seed
+    baseline-on-migrate: true
+    out-of-order: true
+    validate-on-migrate: false
+
+  cache:
+    type: simple   # In dev, use in-memory ConcurrentMap cache; Redis used in prod.
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 1s
+
+management:
+  health:
+    redis:
+      enabled: false   # Redis is optional in dev; skip its health check.
+    mail:
+      enabled: false   # MailHog might not be running.
+
+logging:
+  level:
+    org.hibernate.SQL: INFO
+    org.hibernate.orm.jdbc.bind: INFO
+    org.springframework.web: INFO
+
+app:
+  ai:
+    enabled: false   # Mock AI in dev, real Anthropic later

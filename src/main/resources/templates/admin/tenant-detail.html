@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Chi tiết khách — SmartRent</title></head>
+<body>
+<div layout:fragment="content">
+
+    <!-- Breadcrumb / back -->
+    <div class="mb-5">
+        <a href="/admin/tenants" class="text-[13px] text-[color:var(--text-mute)] inline-flex items-center gap-1.5 hover:text-[color:var(--accent)]">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Khách thuê
+        </a>
+    </div>
+
+    <!-- Tenant header card -->
+    <div class="glass p-6 mb-6 reveal reveal-1">
+        <div class="flex items-start gap-5 flex-wrap">
+            <div class="avatar avatar-xl avatar-violet"
+                 th:text="${#strings.substring(tenant.fullName, 0, 1)}">U</div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <h1 class="text-[26px] font-bold tracking-tight" th:text="${tenant.fullName}">Khách</h1>
+                    <span class="badge badge-violet">TENANT</span>
+                    <span th:if="${tenant.status.name() == 'ACTIVE'}" class="badge badge-emerald">Đang hoạt động</span>
+                    <span th:unless="${tenant.status.name() == 'ACTIVE'}" class="badge badge-mute" th:text="${tenant.status.name()}">STATUS</span>
+                </div>
+                <div class="flex flex-wrap gap-x-5 gap-y-1.5 mt-2 text-[13px] text-[color:var(--text-soft)]">
+                    <span class="inline-flex items-center gap-1.5">
+                        <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                        <span th:text="${tenant.email}">email@…</span>
+                    </span>
+                    <span th:if="${tenant.phone != null}" class="inline-flex items-center gap-1.5 tnum">
+                        <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                        <span th:text="${tenant.phone}">0901xxxxxx</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                        Tham gia <span th:text="${#temporals.format(tenant.createdAt, 'dd/MM/yyyy')}">01/01/2026</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-5">
+        <!-- Currently renting rooms -->
+        <div class="glass p-5 lg:col-span-2 reveal reveal-2">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-[16px] font-semibold">Đang thuê</h2>
+                <span class="badge badge-violet tnum"
+                      th:text="${currentRooms != null ? #lists.size(currentRooms) : 0}">0</span>
+            </div>
+            <div th:if="${currentRooms != null and !currentRooms.isEmpty()}" class="space-y-3">
+                <div th:each="r : ${currentRooms}"
+                     class="flex items-center gap-3 p-3 rounded-xl bg-white/40 border border-[color:var(--line-soft)]">
+                    <div class="avatar avatar-md avatar-cyan tnum" th:text="${r.code}">P1</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold truncate" th:text="${r.title}">Phòng</div>
+                        <div class="text-[12px] text-[color:var(--text-mute)] inline-flex items-center gap-1.5">
+                            <i data-lucide="map-pin" class="w-3 h-3"></i>
+                            <span th:text="${r.district + ', ' + r.city}">Q1, TP.HCM</span>
+                        </div>
+                        <div class="mt-1 text-[11px] font-semibold"
+                             th:classappend="${h.roomUsageTextClass(r.currentTenantPaidUntil)}">
+                            <i data-lucide="calendar-clock" class="w-3 h-3 inline-block align-[-2px] mr-0.5"></i>
+                            <span th:text="${h.roomUsageLabel(r.currentTenantPaidUntil)}">Còn 12 ngày</span>
+                            <span th:if="${r.currentTenantPaidUntil != null}" class="font-normal text-[color:var(--text-mute)]"
+                                  th:text="${' · đến ' + #temporals.format(r.currentTenantPaidUntil, 'dd/MM/yyyy')}"> · đến 09/06/2026</span>
+                        </div>
+                        <div class="mt-2 grid sm:grid-cols-2 gap-2 text-[11px]">
+                            <div class="rounded-lg bg-white/55 border border-[color:var(--line-soft)] px-2.5 py-2">
+                                <div class="text-[color:var(--text-mute)]">Ngày bắt đầu ở</div>
+                                <div class="font-semibold tnum"
+                                     th:text="${r.currentTenantStartedOn != null ? #temporals.format(r.currentTenantStartedOn, 'dd/MM/yyyy') : 'Chưa đặt'}">09/05/2026</div>
+                            </div>
+                            <div class="rounded-lg bg-white/55 border border-[color:var(--line-soft)] px-2.5 py-2">
+                                <div class="text-[color:var(--text-mute)]">Ngày hết hạn</div>
+                                <div class="font-semibold tnum"
+                                     th:text="${r.currentTenantPaidUntil != null ? #temporals.format(r.currentTenantPaidUntil, 'dd/MM/yyyy') : 'Chưa đặt'}">08/06/2026</div>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="text-[14px] font-bold tnum text-[color:var(--accent)]"
+                          th:text="${h.vnd(r.priceMonthly)}">8.500.000₫</span>
+                </div>
+            </div>
+            <div th:if="${currentRooms == null or currentRooms.isEmpty()}"
+                 class="text-[13px] text-[color:var(--text-mute)] italic">
+                Khách hiện không thuê phòng nào của bạn.
+            </div>
+            <form th:action="@{'/admin/tenants/' + ${tenant.id} + '/room'}" method="post"
+                  class="mt-4 pt-4 border-t border-[color:var(--line-soft)] grid lg:grid-cols-[1fr_160px_160px_auto] gap-2">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <input type="hidden" name="returnTo" value="detail" />
+                <div class="input-glass h-10">
+                    <i data-lucide="bed-double" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <select name="roomId" class="text-[13px]">
+                        <option value="" th:selected="${currentRoom == null}">Đang trống</option>
+                        <option th:each="rr : ${assignableRooms}"
+                                th:value="${rr.id}"
+                                th:selected="${currentRoom != null and currentRoom.id.equals(rr.id)}"
+                                th:disabled="${rr.currentTenantId != null and !rr.currentTenantId.equals(tenant.id)}"
+                                th:text="${rr.code + ' · ' + rr.title + (rr.currentTenantId != null and !rr.currentTenantId.equals(tenant.id) ? ' · đã có khách' : '')}">
+                            P101 · Studio
+                        </option>
+                    </select>
+                </div>
+                <div class="input-glass h-10">
+                    <i data-lucide="calendar-days" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <input type="date" name="startedOn"
+                           th:value="${currentRoom != null and currentRoom.currentTenantStartedOn != null ? currentRoom.currentTenantStartedOn : today}"
+                           class="text-[13px]" title="Ngày bắt đầu ở" />
+                </div>
+                <div class="input-glass h-10">
+                    <i data-lucide="calendar-clock" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <input type="date" name="paidUntil"
+                           th:value="${currentRoom != null and currentRoom.currentTenantPaidUntil != null ? currentRoom.currentTenantPaidUntil : suggestedPaidUntil}"
+                           class="text-[13px]" title="Ngày hết hạn / đã thanh toán đến" />
+                </div>
+                <button type="submit" class="btn btn-soft btn-sm h-10">
+                    <i data-lucide="save" class="w-3.5 h-3.5"></i> Lưu
+                </button>
+            </form>
+        </div>
+
+        <!-- Stay window summary -->
+        <div class="space-y-4 reveal reveal-3">
+            <div class="kpi">
+                <span class="kpi-label">Ngày bắt đầu ở</span>
+                <span class="kpi-value tnum text-[20px]"
+                      th:text="${currentRoom != null and currentRoom.currentTenantStartedOn != null ? #temporals.format(currentRoom.currentTenantStartedOn, 'dd/MM/yyyy') : 'Chưa đặt'}">09/05/2026</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi-label">Ngày hết hạn</span>
+                <span class="kpi-value tnum text-[20px]"
+                      th:text="${currentRoom != null and currentRoom.currentTenantPaidUntil != null ? #temporals.format(currentRoom.currentTenantPaidUntil, 'dd/MM/yyyy') : 'Chưa đặt'}">08/06/2026</span>
+                <span th:if="${currentRoom != null}" class="badge mt-2"
+                      th:classappend="${h.roomUsageBadgeClass(currentRoom.currentTenantPaidUntil)}"
+                      th:text="${h.roomUsageLabel(currentRoom.currentTenantPaidUntil)}">Còn 29 ngày</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi-label">Hóa đơn chưa thu</span>
+                <span class="kpi-value tnum" th:text="${openInvoiceCount}">0</span>
+                <span class="text-[12px] text-[color:var(--text-mute)]">
+                    Tổng <span class="font-semibold tnum" th:text="${h.vnd(openInvoiceAmount)}">0đ</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="space-y-4 reveal reveal-3">
+            <div class="kpi">
+                <span class="kpi-label">Hóa đơn gần đây</span>
+                <span class="kpi-value tnum" th:text="${invoices != null ? #lists.size(invoices) : 0}">0</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi-label">Trạng thái phòng</span>
+                <span class="kpi-value text-[20px]"
+                      th:text="${currentRoom != null ? 'Đang ở' : 'Chưa gán'}">Đang ở</span>
+            </div>
+            <div id="security" class="glass p-5">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                        <span class="eyebrow">Bảo mật</span>
+                        <h2 class="text-[16px] font-semibold mt-1">Đổi mật khẩu</h2>
+                        <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                            Đặt mật khẩu mới để khách đăng nhập lại vào khu vực khách hàng.
+                        </p>
+                    </div>
+                    <i data-lucide="shield-check" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                </div>
+                <form th:action="@{'/admin/tenants/' + ${tenant.id} + '/password'}"
+                      method="post"
+                      class="space-y-3">
+                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <div>
+                        <label class="form-label">Mật khẩu mới</label>
+                        <div class="input-glass h-10">
+                            <i data-lucide="lock" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="password" name="newPassword" required minlength="8" maxlength="64"
+                                   autocomplete="new-password" placeholder="Ít nhất 8 ký tự" class="text-[13px]" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Nhập lại mật khẩu</label>
+                        <div class="input-glass h-10">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="password" name="confirmPassword" required minlength="8" maxlength="64"
+                                   autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" class="text-[13px]" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-full"
+                            onclick="return confirm('Đổi mật khẩu đăng nhập cho khách này?');">
+                        <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                        Đổi mật khẩu
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tenant identity profile -->
+    <div id="identity" class="glass p-5 mt-6 reveal reveal-4">
+        <div class="flex items-start justify-between gap-3 flex-wrap mb-5">
+            <div>
+                <span class="eyebrow">Hồ sơ khách thuê</span>
+                <h2 class="text-[18px] font-semibold mt-1">CCCD/CMND & thông tin định danh</h2>
+                <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                    Admin có thể cập nhật ảnh CCCD hai mặt thay khách hoặc xác minh hồ sơ khách đã tự tải lên.
+                </p>
+            </div>
+            <span th:if="${tenant.identityVerified}" class="badge badge-emerald">
+                <i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Đã xác minh
+            </span>
+            <span th:unless="${tenant.identityVerified}" class="badge badge-amber">
+                <i data-lucide="clock-3" class="w-3.5 h-3.5"></i> Chờ xác minh
+            </span>
+        </div>
+
+        <form th:action="@{'/admin/tenants/' + ${tenant.id} + '/identity'}" method="post" enctype="multipart/form-data"
+              class="grid xl:grid-cols-[1fr_420px] gap-5">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+            <div class="space-y-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Loại giấy tờ</label>
+                        <div class="input-glass">
+                            <i data-lucide="id-card" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <select name="identityType">
+                                <option value="" th:selected="${tenant.identityType == null}">Chọn loại giấy tờ</option>
+                                <option value="CCCD" th:selected="${tenant.identityType != null and tenant.identityType.name() == 'CCCD'}">CCCD</option>
+                                <option value="CMND" th:selected="${tenant.identityType != null and tenant.identityType.name() == 'CMND'}">CMND</option>
+                                <option value="PASSPORT" th:selected="${tenant.identityType != null and tenant.identityType.name() == 'PASSPORT'}">Hộ chiếu</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Số giấy tờ</label>
+                        <div class="input-glass">
+                            <i data-lucide="hash" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input name="identityNumber" type="text" maxlength="32" th:value="${tenant.identityNumber}"
+                                   placeholder="Số CCCD/CMND" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Ngày cấp</label>
+                        <div class="input-glass">
+                            <i data-lucide="calendar" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input name="identityIssuedDate" type="date" th:value="${tenant.identityIssuedDate}" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Nơi cấp</label>
+                        <div class="input-glass">
+                            <i data-lucide="landmark" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input name="identityIssuedPlace" type="text" maxlength="160" th:value="${tenant.identityIssuedPlace}"
+                                   placeholder="Cục CSQLHC về TTXH..." />
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Địa chỉ thường trú</label>
+                    <div class="input-glass">
+                        <i data-lucide="map-pinned" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input name="permanentAddress" type="text" maxlength="240" th:value="${tenant.permanentAddress}"
+                               placeholder="Địa chỉ theo giấy tờ" />
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--line-soft)] bg-white/50 px-4 py-3 flex-wrap">
+                    <label class="inline-flex items-center gap-2 text-[13px] font-semibold cursor-pointer">
+                        <input type="checkbox" name="identityVerified" value="true"
+                               th:checked="${tenant.identityVerified}"
+                               class="rounded text-[color:var(--accent)]" />
+                        Đánh dấu đã xác minh hồ sơ
+                    </label>
+                    <span class="text-[12px] text-[color:var(--text-mute)] tnum"
+                          th:text="${tenant.identityUpdatedAt != null ? 'Cập nhật ' + #temporals.format(tenant.identityUpdatedAt, 'dd/MM/yyyy HH:mm') : 'Chưa có lịch sử cập nhật'}">
+                        Chưa có lịch sử cập nhật
+                    </span>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        Lưu hồ sơ
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 xl:grid-cols-1 gap-4">
+                <div class="glass-thin rounded-2xl p-4" data-identity-card="front">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <div class="font-semibold text-[14px]">CCCD mặt trước</div>
+                            <div class="text-[11px] text-[color:var(--text-mute)]">JPG, PNG hoặc WEBP</div>
+                        </div>
+                        <span data-identity-preview-badge="front" class="badge"
+                              th:classappend="${tenant.identityFrontUrl != null ? ' badge-emerald' : ' badge-mute'}"
+                              th:text="${tenant.identityFrontUrl != null ? 'Đã có' : 'Thiếu'}">Thiếu</span>
+                    </div>
+                    <div class="aspect-[16/10] rounded-2xl overflow-hidden border border-[color:var(--line-soft)] bg-white/70 grid place-items-center relative">
+                        <img data-identity-preview-img="front"
+                             th:src="${tenant.identityFrontUrl != null ? tenant.identityFrontUrl : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='}"
+                             alt="CCCD mặt trước"
+                             class="w-full h-full object-contain"
+                             th:classappend="${tenant.identityFrontUrl == null ? ' hidden' : ''}"
+                             onerror="this.classList.add('hidden'); this.parentElement.querySelector('[data-image-error]').classList.remove('hidden')" />
+                        <div data-image-error class="hidden absolute inset-0 grid place-items-center text-center text-[12px] text-[color:var(--err)] bg-white p-4">
+                            Ảnh không tải được. Hãy chọn lại file JPG/PNG/WEBP.
+                        </div>
+                        <div data-identity-placeholder="front" class="text-center text-[12px] text-[color:var(--text-mute)]"
+                             th:classappend="${tenant.identityFrontUrl != null ? ' hidden' : ''}">
+                            <i data-lucide="image-plus" class="w-8 h-8 mx-auto mb-2"></i>
+                            Chưa tải ảnh mặt trước
+                        </div>
+                    </div>
+                    <label class="btn btn-glass btn-sm w-full mt-3 cursor-pointer">
+                        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                        Chọn ảnh mặt trước
+                        <input data-identity-input="front" name="identityFront" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
+                    </label>
+                    <button th:if="${tenant.identityFrontUrl != null}" type="submit" form="deleteIdentityFrontForm"
+                            class="btn btn-ghost btn-sm w-full mt-2 text-[color:var(--err)] hover:bg-red-50"
+                            onclick="return confirm('Xóa ảnh CCCD mặt trước hiện tại?');">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        Xóa ảnh mặt trước
+                    </button>
+                </div>
+
+                <div class="glass-thin rounded-2xl p-4" data-identity-card="back">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <div class="font-semibold text-[14px]">CCCD mặt sau</div>
+                            <div class="text-[11px] text-[color:var(--text-mute)]">JPG, PNG hoặc WEBP</div>
+                        </div>
+                        <span data-identity-preview-badge="back" class="badge"
+                              th:classappend="${tenant.identityBackUrl != null ? ' badge-emerald' : ' badge-mute'}"
+                              th:text="${tenant.identityBackUrl != null ? 'Đã có' : 'Thiếu'}">Thiếu</span>
+                    </div>
+                    <div class="aspect-[16/10] rounded-2xl overflow-hidden border border-[color:var(--line-soft)] bg-white/70 grid place-items-center relative">
+                        <img data-identity-preview-img="back"
+                             th:src="${tenant.identityBackUrl != null ? tenant.identityBackUrl : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='}"
+                             alt="CCCD mặt sau"
+                             class="w-full h-full object-contain"
+                             th:classappend="${tenant.identityBackUrl == null ? ' hidden' : ''}"
+                             onerror="this.classList.add('hidden'); this.parentElement.querySelector('[data-image-error]').classList.remove('hidden')" />
+                        <div data-image-error class="hidden absolute inset-0 grid place-items-center text-center text-[12px] text-[color:var(--err)] bg-white p-4">
+                            Ảnh không tải được. Hãy chọn lại file JPG/PNG/WEBP.
+                        </div>
+                        <div data-identity-placeholder="back" class="text-center text-[12px] text-[color:var(--text-mute)]"
+                             th:classappend="${tenant.identityBackUrl != null ? ' hidden' : ''}">
+                            <i data-lucide="image-plus" class="w-8 h-8 mx-auto mb-2"></i>
+                            Chưa tải ảnh mặt sau
+                        </div>
+                    </div>
+                    <label class="btn btn-glass btn-sm w-full mt-3 cursor-pointer">
+                        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                        Chọn ảnh mặt sau
+                        <input data-identity-input="back" name="identityBack" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
+                    </label>
+                    <button th:if="${tenant.identityBackUrl != null}" type="submit" form="deleteIdentityBackForm"
+                            class="btn btn-ghost btn-sm w-full mt-2 text-[color:var(--err)] hover:bg-red-50"
+                            onclick="return confirm('Xóa ảnh CCCD mặt sau hiện tại?');">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        Xóa ảnh mặt sau
+                    </button>
+                </div>
+            </div>
+        </form>
+        <form id="deleteIdentityFrontForm"
+              th:action="@{'/admin/tenants/' + ${tenant.id} + '/identity/front/delete'}"
+              method="post" class="hidden">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        </form>
+        <form id="deleteIdentityBackForm"
+              th:action="@{'/admin/tenants/' + ${tenant.id} + '/identity/back/delete'}"
+              method="post" class="hidden">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        </form>
+    </div>
+
+    <!-- Recent invoices -->
+    <div class="glass p-5 mt-6 reveal reveal-6" th:if="${invoices != null and !invoices.isEmpty()}">
+        <h2 class="text-[16px] font-semibold mb-4">Hóa đơn gần đây</h2>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Mã hóa đơn</th>
+                        <th>Kỳ</th>
+                        <th>Phát hành</th>
+                        <th>Tổng</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="inv : ${invoices}"
+                        th:data-href="@{'/admin/invoices/' + ${inv.id}}"
+                        class="cursor-pointer hover:bg-[color:var(--accent-soft)]/40 transition"
+                        onclick="if (!event.target.closest('a, button, form, input, select, textarea')) window.location.href = this.dataset.href">
+                        <td>
+                            <a th:href="@{'/admin/invoices/' + ${inv.id}}"
+                               class="mono font-semibold text-[color:var(--accent)] hover:underline"
+                               th:text="${inv.code}">INV-001</a>
+                        </td>
+                        <td class="tnum" th:text="${inv.periodMonth + '/' + inv.periodYear}">5/2026</td>
+                        <td class="tnum" th:text="${#temporals.format(inv.issueDate, 'dd/MM/yyyy')}">01/05/2026</td>
+                        <td class="tnum font-semibold" th:text="${h.vnd(inv.totalAmount)}">10.000.000₫</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${inv.status.name() == 'PAID' ? 'badge-emerald' :
+                                                   (inv.status.name() == 'OVERDUE' ? 'badge-rose' : 'badge-amber')}"
+                                  th:text="${inv.status.name()}">PENDING</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<th:block layout:fragment="extra-scripts">
+    <script>
+        (() => {
+            const previewUrls = new Map();
+
+            function setBadge(card, text, className) {
+                const badge = card?.querySelector('[data-identity-preview-badge]');
+                if (!badge) return;
+                badge.textContent = text;
+                badge.classList.remove('badge-emerald', 'badge-mute', 'badge-amber');
+                badge.classList.add(className);
+            }
+
+            document.querySelectorAll('[data-identity-input]').forEach((input) => {
+                input.addEventListener('change', () => {
+                    const file = input.files && input.files[0];
+                    const side = input.dataset.identityInput;
+                    const card = input.closest('[data-identity-card]');
+                    const img = card?.querySelector('[data-identity-preview-img]');
+                    const placeholder = card?.querySelector('[data-identity-placeholder]');
+                    const error = card?.querySelector('[data-image-error]');
+
+                    if (!file || !img) return;
+                    if (!file.type || !file.type.startsWith('image/')) {
+                        input.value = '';
+                        alert('Vui lòng chọn file ảnh JPG, PNG hoặc WEBP.');
+                        return;
+                    }
+
+                    if (previewUrls.has(side)) {
+                        URL.revokeObjectURL(previewUrls.get(side));
+                    }
+
+                    const previewUrl = URL.createObjectURL(file);
+                    previewUrls.set(side, previewUrl);
+                    img.src = previewUrl;
+                    img.classList.remove('hidden');
+                    placeholder?.classList.add('hidden');
+                    error?.classList.add('hidden');
+                    setBadge(card, 'Chờ lưu', 'badge-amber');
+                });
+            });
+
+            window.addEventListener('beforeunload', () => {
+                previewUrls.forEach((url) => URL.revokeObjectURL(url));
+            });
+        })();
+    </script>
+</th:block>
+</body>
+</html>

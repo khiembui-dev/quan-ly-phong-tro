@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  thymeleaf:
+    cache: true
+
+  devtools:
+    restart:
+      enabled: false
+
+server:
+  forward-headers-strategy: native
+  tomcat:
+    max-threads: 200
+    accept-count: 100
+
+logging:
+  level:
+    root: INFO
+    vn.glassliving: INFO

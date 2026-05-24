@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Trợ lý AI — SmartRent</title></head>
+<body>
+<div layout:fragment="content" x-data="aiAssistant()" x-init="open = true; window.__AI_CONTEXT__ = 'ADMIN';">
+
+    <div class="grid lg:grid-cols-[1fr_320px] gap-6 max-w-[1280px] mx-auto">
+
+        <div>
+            <div class="text-center max-w-[680px] mx-auto pt-6">
+                <div class="w-16 h-16 mx-auto rounded-full grid place-items-center text-white"
+                     style="background: linear-gradient(135deg,#4f46e5,#7c3aed,#06b6d4); box-shadow: 0 12px 32px rgba(79,70,229,0.35);">
+                    <i data-lucide="sparkles" class="w-7 h-7"></i>
+                </div>
+                <h1 class="text-[28px] font-bold tracking-tight mt-4">SmartRent AI Assistant</h1>
+                <p class="text-[14px] text-[color:var(--text-mute)] mt-2">
+                    Hỏi gì cũng được — phân tích doanh thu, tìm phòng cần sửa, soạn email, dự báo. AI hiểu nghiệp vụ phòng trọ.
+                </p>
+            </div>
+
+            <form class="glass-strong mt-6 p-3 flex items-center gap-2 max-w-[800px] mx-auto rounded-3xl"
+                  @submit.prevent="submit()">
+                <i data-lucide="message-circle" class="w-5 h-5 text-[color:var(--accent)] ml-2"></i>
+                <input class="flex-1 bg-transparent border-0 outline-none text-[15px] py-2"
+                       x-model="q"
+                       placeholder="Hỏi gì cũng được — VD: 'Phòng nào sắp hết hạn tháng sau?'" />
+                <button type="submit" class="btn btn-primary !rounded-2xl"
+                        :disabled="loading || !q.trim()">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    Gửi
+                </button>
+            </form>
+
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-2 max-w-[800px] mx-auto">
+                <button class="pill" @click="quickAsk('Doanh thu Q2 chi tiết theo cơ sở')">Doanh thu Q2 theo cơ sở</button>
+                <button class="pill" @click="quickAsk('Phòng nào cần sửa chữa tháng này?')">Phòng cần sửa chữa</button>
+                <button class="pill" @click="quickAsk('Top 5 khách trễ hạn nhiều nhất')">Khách trễ hạn nhiều nhất</button>
+                <button class="pill" @click="quickAsk('Soạn email thông báo tăng giá 5%')">Soạn email tăng giá</button>
+                <button class="pill" @click="quickAsk('Dự báo doanh thu 3 tháng tới')">Dự báo doanh thu</button>
+            </div>
+
+            <div class="mt-8 max-w-[800px] mx-auto space-y-4">
+                <template x-for="(m, i) in msgs.slice(1)" :key="i">
+                    <div :class="m.role === 'user' ? 'flex justify-end' : 'glass p-5'">
+                        <div :class="m.role === 'user' ? 'bubble-out max-w-[80%]' : ''"
+                             class="text-[14px] leading-relaxed whitespace-pre-line"
+                             x-text="m.text"></div>
+                    </div>
+                </template>
+                <div x-show="loading" class="glass p-5">
+                    <div class="flex items-center gap-2 text-[color:var(--text-mute)] text-[13px]">
+                        <i data-lucide="loader-circle" class="w-4 h-4 animate-spin"></i>
+                        Đang suy nghĩ…
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History sidebar -->
+        <aside class="self-start sticky top-24">
+            <div class="glass p-5">
+                <h3 class="font-semibold mb-3">Lịch sử truy vấn</h3>
+                <ul class="space-y-2">
+                    <li th:each="h : ${history}" class="text-[12px] p-2 rounded-md hover:bg-black/5 transition cursor-pointer">
+                        <div class="font-medium line-clamp-2" th:text="${h.prompt}">Câu hỏi</div>
+                        <div class="text-[color:var(--text-faint)] mt-0.5" th:text="${#temporals.format(h.createdAt, 'dd/MM HH:mm')}">06/05 14:30</div>
+                    </li>
+                    <li th:if="${history == null or history.isEmpty()}" class="text-[12px] text-[color:var(--text-mute)] p-2">
+                        Chưa có truy vấn nào.
+                    </li>
+                </ul>
+            </div>
+        </aside>
+    </div>
+</div>
+</body>
+</html>

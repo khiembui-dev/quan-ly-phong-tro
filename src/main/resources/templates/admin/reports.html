@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Báo cáo - SmartRent</title></head>
+<body>
+<div layout:fragment="content">
+    <style>
+        .report-chart-shell {
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
+        }
+        .report-chart-shell::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 16% 0%, rgba(79, 70, 229, .12), transparent 34%),
+                radial-gradient(circle at 88% 10%, rgba(6, 182, 212, .12), transparent 36%),
+                linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.42));
+        }
+        .report-chart-shell > * { position: relative; }
+        .report-chart-card {
+            border: 1px solid rgba(15, 23, 42, .07);
+            background: rgba(255,255,255,.68);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 18px 44px rgba(15,23,42,.07);
+            border-radius: 24px;
+        }
+        .report-chart-grid {
+            position: relative;
+            background-image:
+                linear-gradient(to right, rgba(148, 163, 184, .10) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(148, 163, 184, .13) 1px, transparent 1px);
+            background-size: 110px 100%, 100% 42px;
+        }
+        .report-chart-grid::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: linear-gradient(90deg, rgba(255,255,255,.92), transparent 8%, transparent 92%, rgba(255,255,255,.92));
+        }
+        .report-chart-grid > * {
+            position: relative;
+            z-index: 1;
+        }
+        .report-metric-chip {
+            border: 1px solid rgba(15,23,42,.07);
+            background: rgba(255,255,255,.72);
+            border-radius: 18px;
+            padding: 12px 14px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+        }
+        .report-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--text-soft);
+            font-size: 12px;
+        }
+        .report-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(15,23,42,.07);
+            background: rgba(255,255,255,.68);
+            border-radius: 999px;
+            padding: 7px 10px;
+        }
+        .report-swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            box-shadow: 0 0 0 3px rgba(255,255,255,.8);
+        }
+        .report-line {
+            stroke-dasharray: 1300;
+            stroke-dashoffset: 1300;
+            animation: reportLine 1.18s cubic-bezier(.16, 1, .3, 1) forwards;
+        }
+        .report-line.avg3 { animation-delay: .14s; }
+        .report-line.avg6 { animation-delay: .24s; }
+        .report-line.cost { animation-delay: .34s; }
+        .report-area {
+            opacity: 0;
+            transform: translateY(8px);
+            animation: reportArea .75s ease-out .28s forwards;
+        }
+        .report-dot {
+            opacity: 0;
+            transform: scale(.65);
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: reportDot .38s cubic-bezier(.2, 1.7, .35, 1) forwards;
+        }
+        .report-hotspot { cursor: help; }
+        .report-axis-label {
+            fill: #64748b;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .report-bar-wrap {
+            background:
+                linear-gradient(to top, rgba(148, 163, 184, .12) 1px, transparent 1px);
+            background-size: 100% 36px;
+        }
+        .report-bar-column {
+            min-width: 90px;
+            border-radius: 18px;
+            padding: 10px 8px 8px;
+            transition: background .2s ease-out;
+        }
+        .report-bar-column:hover {
+            background: rgba(255,255,255,.72);
+        }
+        .report-bar {
+            min-height: 6px;
+            border-radius: 12px 12px 6px 6px;
+            transform: scaleY(.08);
+            transform-origin: bottom;
+            animation: reportBar .75s cubic-bezier(.16, 1, .3, 1) forwards;
+        }
+        .report-bar-value {
+            min-height: 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: rgba(255,255,255,.68);
+            border: 1px solid rgba(15,23,42,.06);
+        }
+        .report-finance-list {
+            display: grid;
+            gap: 12px;
+        }
+        .report-finance-row {
+            display: grid;
+            grid-template-columns: 132px minmax(320px, 1fr) 280px;
+            gap: 16px;
+            align-items: stretch;
+            padding: 14px;
+            border-radius: 22px;
+            background: rgba(255,255,255,.64);
+            border: 1px solid rgba(15,23,42,.07);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
+        }
+        .report-finance-row:hover {
+            background: rgba(255,255,255,.82);
+            border-color: rgba(79,70,229,.20);
+        }
+        .report-period-block {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-radius: 18px;
+            padding: 12px;
+            background: linear-gradient(145deg, rgba(79,70,229,.10), rgba(6,182,212,.06));
+        }
+        .report-progress-set {
+            display: grid;
+            gap: 10px;
+            align-content: center;
+        }
+        .report-progress-row {
+            display: grid;
+            grid-template-columns: 112px minmax(140px, 1fr) 92px;
+            gap: 10px;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-soft);
+        }
+        .report-progress-track {
+            height: 10px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(15,23,42,.07);
+        }
+        .report-progress-fill {
+            height: 100%;
+            min-width: 0;
+            border-radius: inherit;
+            transition: width .45s cubic-bezier(.16,1,.3,1);
+        }
+        .report-fill-revenue { background: linear-gradient(90deg, #4f46e5, #8b5cf6); }
+        .report-fill-collected { background: linear-gradient(90deg, #059669, #34d399); }
+        .report-fill-cost { background: linear-gradient(90deg, #ef4444, #fb923c); }
+        .report-fill-debt { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .report-fill-profit { background: linear-gradient(90deg, #0ea5e9, #22c55e); }
+        .report-fill-loss { background: linear-gradient(90deg, #fb7185, #ef4444); }
+        .report-row-summary {
+            display: grid;
+            gap: 8px;
+            align-content: center;
+        }
+        .report-summary-cell {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 10px;
+            border-radius: 14px;
+            background: rgba(255,255,255,.66);
+            border: 1px solid rgba(15,23,42,.06);
+            font-size: 12px;
+        }
+        .report-health-card {
+            border-radius: 22px;
+            padding: 16px;
+            background: rgba(255,255,255,.66);
+            border: 1px solid rgba(15,23,42,.07);
+        }
+        .report-health-bar {
+            height: 12px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(15,23,42,.07);
+        }
+        .report-health-fill {
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #4f46e5, #06b6d4);
+        }
+        @media (max-width: 1180px) {
+            .report-finance-row {
+                grid-template-columns: 1fr;
+            }
+            .report-period-block {
+                gap: 10px;
+            }
+        }
+        @keyframes reportLine { to { stroke-dashoffset: 0; } }
+        @keyframes reportArea { to { opacity: 1; transform: translateY(0); } }
+        @keyframes reportDot { to { opacity: 1; transform: scale(1); } }
+        @keyframes reportBar { to { transform: scaleY(1); } }
+        @media (prefers-reduced-motion: reduce) {
+            .report-line, .report-area, .report-dot, .report-bar {
+                animation: none;
+                opacity: 1;
+                transform: none;
+                stroke-dashoffset: 0;
+            }
+        }
+    </style>
+
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
+        <div>
+            <span class="eyebrow">Phân tích</span>
+            <h1 class="text-[28px] sm:text-[32px] font-bold mt-2">Báo cáo & phân tích</h1>
+            <p class="text-[13px] text-[color:var(--text-mute)] mt-1">
+                Theo dõi tiền đã thu theo từng tháng, số phòng, số khách và trạng thái phòng đang ở/còn trống.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a th:href="@{/admin/reports/export.csv(fromMonth=${fromMonth},fromYear=${fromYear},toMonth=${toMonth},toYear=${toYear},propertyId=${selectedPropertyId})}"
+               class="btn btn-soft btn-sm h-10 px-4">
+                <i data-lucide="download" class="w-4 h-4"></i> Xuất CSV
+            </a>
+            <a href="/admin/utilities" class="btn btn-primary btn-sm h-10 px-4">
+                <i data-lucide="calculator" class="w-4 h-4"></i> Tính tiền phòng
+            </a>
+        </div>
+    </div>
+
+    <div class="glass p-4 mb-5">
+        <form method="get" action="/admin/reports" class="grid sm:grid-cols-2 xl:grid-cols-7 gap-3 items-end">
+            <div>
+                <label class="form-label">Từ tháng</label>
+                <div class="input-glass h-11">
+                    <i data-lucide="calendar" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <select name="fromMonth" onchange="this.form.requestSubmit()">
+                        <option th:each="m : ${#numbers.sequence(1,12)}" th:value="${m}" th:selected="${m == fromMonth}" th:text="${m}">1</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="form-label">Từ năm</label>
+                <div class="input-glass h-11">
+                    <input type="number" min="2020" max="2100" name="fromYear" th:value="${fromYear}" onchange="this.form.requestSubmit()" />
+                </div>
+            </div>
+            <div>
+                <label class="form-label">Đến tháng</label>
+                <div class="input-glass h-11">
+                    <i data-lucide="calendar-days" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <select name="toMonth" onchange="this.form.requestSubmit()">
+                        <option th:each="m : ${#numbers.sequence(1,12)}" th:value="${m}" th:selected="${m == toMonth}" th:text="${m}">5</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="form-label">Đến năm</label>
+                <div class="input-glass h-11">
+                    <input type="number" min="2020" max="2100" name="toYear" th:value="${toYear}" onchange="this.form.requestSubmit()" />
+                </div>
+            </div>
+            <div class="sm:col-span-2 xl:col-span-3">
+                <label class="form-label">Cơ sở</label>
+                <div class="input-glass h-11">
+                    <i data-lucide="building-2" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <select name="propertyId" onchange="this.form.requestSubmit()">
+                        <option value="">Tất cả cơ sở</option>
+                        <option th:each="p : ${report.properties}"
+                                th:value="${p.id}"
+                                th:selected="${selectedPropertyId != null and p.id.equals(selectedPropertyId)}"
+                                th:text="${p.name}">Glass Tower</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-3 mb-5">
+        <div class="kpi">
+            <div class="kpi-icon" style="background: #ecfdf5; color: #047857;">
+                <i data-lucide="wallet" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Đã thu trong kỳ</div>
+            <div class="kpi-value tnum text-[color:var(--ok)]" th:text="${h.vnd(report.overview.collected)}">0đ</div>
+            <div class="kpi-trend flat"><span th:text="${report.overview.invoiceCount}">0</span> hóa đơn</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-icon" style="background: var(--accent-soft); color: var(--accent);">
+                <i data-lucide="building-2" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Tổng phòng</div>
+            <div class="kpi-value tnum" th:text="${report.overview.roomCount}">0</div>
+            <div class="kpi-trend flat">toàn bộ phòng đang quản lý</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-icon" style="background: #eef0ff; color: #4f46e5;">
+                <i data-lucide="users" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Khách đang ở</div>
+            <div class="kpi-value tnum" th:text="${report.overview.tenantCount}">0</div>
+            <div class="kpi-trend flat">khách được gán phòng</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-icon" style="background: #ecfeff; color: #0891b2;">
+                <i data-lucide="door-closed" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Phòng đang ở</div>
+            <div class="kpi-value tnum" th:text="${report.overview.occupiedRooms}">0</div>
+            <div class="kpi-trend up"><span th:text="${report.overview.occupancyRate + '%'}">0%</span> lấp đầy</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-icon" style="background: #fffbeb; color: #b45309;">
+                <i data-lucide="door-open" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Phòng còn trống</div>
+            <div class="kpi-value tnum text-[color:var(--warn)]" th:text="${report.overview.vacantRooms}">0</div>
+            <div class="kpi-trend flat"><span th:text="${report.overview.maintenanceRooms}">0</span> phòng bảo trì</div>
+        </div>
+    </div>
+
+    <div class="grid 2xl:grid-cols-[1.45fr_.75fr] gap-5 mb-5">
+        <div class="glass p-5 report-chart-shell">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
+                <div>
+                    <span class="eyebrow">Thu tiền</span>
+                    <h2 class="text-[22px] font-bold mt-1">Tiền đã thu theo tháng</h2>
+                    <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                        Mỗi kỳ thể hiện tổng hóa đơn, số tiền đã thu và phần còn phải thu để admin rà soát nhanh.
+                    </p>
+                </div>
+                <div class="report-legend">
+                    <span class="report-legend-item"><span class="report-swatch bg-[#4f46e5]"></span>Tổng hóa đơn</span>
+                    <span class="report-legend-item"><span class="report-swatch bg-[#059669]"></span>Đã thu</span>
+                    <span class="report-legend-item"><span class="report-swatch bg-[#f59e0b]"></span>Chưa thu</span>
+                </div>
+            </div>
+
+            <div class="report-finance-list">
+                <div th:each="m : ${report.months}" class="report-finance-row">
+                    <div class="report-period-block">
+                        <div>
+                            <div class="text-[11px] uppercase tracking-[0.12em] text-[color:var(--text-mute)]">Kỳ</div>
+                            <div class="text-[20px] font-bold tnum mt-1" th:text="${m.label}">05/2026</div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="badge badge-violet"><span th:text="${m.invoiceCount}">0</span> hóa đơn</span>
+                            <span class="badge"
+                                  th:classappend="${m.collected.signum() > 0} ? 'badge-emerald' : 'badge-violet'"
+                                  th:text="${m.collected.signum() > 0 ? 'Đã có thu' : 'Chưa phát sinh thu'}">Đã có thu</span>
+                        </div>
+                    </div>
+
+                    <div class="report-progress-set">
+                        <div class="report-progress-row">
+                            <span class="font-semibold">Tổng hóa đơn</span>
+                            <div class="report-progress-track">
+                                <div class="report-progress-fill report-fill-revenue"
+                                     th:style="'width:' + ${m.revenue.signum() > 0 ? m.revenueHeight : 0} + '%'"></div>
+                            </div>
+                            <span class="text-right font-semibold tnum" th:text="${h.vndCompact(m.revenue)}">0đ</span>
+                        </div>
+                        <div class="report-progress-row">
+                            <span class="font-semibold">Đã thu</span>
+                            <div class="report-progress-track">
+                                <div class="report-progress-fill report-fill-collected"
+                                     th:style="'width:' + ${m.collected.signum() > 0 ? m.collectedHeight : 0} + '%'"></div>
+                            </div>
+                            <span class="text-right font-semibold tnum text-[color:var(--ok)]" th:text="${h.vndCompact(m.collected)}">0đ</span>
+                        </div>
+                        <div class="report-progress-row">
+                            <span class="font-semibold">Chưa thu</span>
+                            <div class="report-progress-track">
+                                <div class="report-progress-fill report-fill-debt"
+                                     th:style="'width:' + ${m.outstanding.signum() > 0 ? m.outstandingHeight : 0} + '%'"></div>
+                            </div>
+                            <span class="text-right font-semibold tnum text-[color:var(--warn)]" th:text="${h.vndCompact(m.outstanding)}">0đ</span>
+                        </div>
+                    </div>
+
+                    <div class="report-row-summary">
+                        <div class="report-summary-cell">
+                            <span>Hóa đơn</span>
+                            <strong class="tnum"><span th:text="${m.invoiceCount}">0</span></strong>
+                        </div>
+                        <div class="report-summary-cell">
+                            <span>Tổng</span>
+                            <strong class="tnum" th:text="${h.vndCompact(m.revenue)}">0đ</strong>
+                        </div>
+                        <div class="report-summary-cell">
+                            <span>Đã thu</span>
+                            <strong class="tnum text-[color:var(--ok)]" th:text="${h.vndCompact(m.collected)}">0đ</strong>
+                        </div>
+                        <div class="report-summary-cell">
+                            <span>Chưa thu</span>
+                            <strong class="tnum text-[color:var(--warn)]" th:text="${h.vndCompact(m.outstanding)}">0đ</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass p-5 report-chart-shell">
+            <div class="flex items-start justify-between gap-3 mb-5">
+                <div>
+                    <span class="eyebrow">Hiện trạng</span>
+                    <h2 class="text-[22px] font-bold mt-1">Phòng & khách</h2>
+                    <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                        Tóm tắt số phòng, số khách, phòng đang ở và phòng còn trống theo bộ lọc cơ sở hiện tại.
+                    </p>
+                </div>
+                <span class="badge badge-violet">hiện tại</span>
+            </div>
+
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="report-health-card">
+                        <div class="text-[12px] text-[color:var(--text-mute)]">Tổng phòng</div>
+                        <div class="text-[28px] font-bold tnum mt-1" th:text="${report.overview.roomCount}">0</div>
+                    </div>
+                    <div class="report-health-card">
+                        <div class="text-[12px] text-[color:var(--text-mute)]">Khách đang ở</div>
+                        <div class="text-[28px] font-bold tnum mt-1 text-[color:var(--accent)]" th:text="${report.overview.tenantCount}">0</div>
+                    </div>
+                </div>
+
+                <div class="report-health-card">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <div class="text-[12px] text-[color:var(--text-mute)]">Phòng đang ở</div>
+                            <div class="text-[24px] font-bold tnum text-[color:var(--ok)]">
+                                <span th:text="${report.overview.occupiedRooms}">0</span>
+                                <span class="text-[13px] text-[color:var(--text-mute)] font-semibold">phòng</span>
+                            </div>
+                        </div>
+                        <span class="badge badge-emerald" th:text="${report.overview.occupancyRate + '%'}">0%</span>
+                    </div>
+                    <div class="report-health-bar">
+                        <div class="report-health-fill"
+                             th:style="'width:' + ${report.overview.occupancyRate} + '%'"></div>
+                    </div>
+                    <div class="mt-2 text-[12px] text-[color:var(--text-mute)]">
+                        <strong class="tnum" th:text="|${report.overview.occupiedRooms}/${report.overview.roomCount}|">0/0</strong>
+                        phòng đang có khách thuê.
+                    </div>
+                </div>
+
+                <div class="report-health-card">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <div class="text-[12px] text-[color:var(--text-mute)]">Phòng còn trống</div>
+                            <div class="text-[24px] font-bold tnum text-[color:var(--warn)]">
+                                <span th:text="${report.overview.vacantRooms}">0</span>
+                                <span class="text-[13px] text-[color:var(--text-mute)] font-semibold">phòng</span>
+                            </div>
+                        </div>
+                        <span class="badge" th:text="${report.overview.vacantRate + '%'}">0%</span>
+                    </div>
+                    <div class="report-health-bar">
+                        <div class="report-health-fill report-fill-debt"
+                             th:style="'width:' + ${report.overview.vacantRate} + '%'"></div>
+                    </div>
+                    <div class="mt-2 text-[12px] text-[color:var(--text-mute)]">
+                        Các phòng trống cần ưu tiên hiển thị rõ ở trang Phòng để tăng tỷ lệ lấp đầy.
+                    </div>
+                </div>
+
+                <div class="report-health-card">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <div class="text-[12px] text-[color:var(--text-mute)]">Phòng bảo trì</div>
+                            <div class="text-[24px] font-bold tnum" th:text="${report.overview.maintenanceRooms}">0</div>
+                        </div>
+                        <span class="badge" th:text="${report.overview.maintenanceRate + '%'}">0%</span>
+                    </div>
+                    <div class="report-health-bar">
+                        <div class="report-health-fill report-fill-cost"
+                             th:style="'width:' + ${report.overview.maintenanceRate} + '%'"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-3 text-[12px]">
+                        <div class="rounded-xl bg-white/65 border border-[color:var(--line-soft)] p-2">
+                            <div class="text-[color:var(--text-mute)]">Tỷ lệ thu</div>
+                            <div class="font-semibold tnum text-[color:var(--ok)]" th:text="${report.overview.collectionRate + '%'}">0%</div>
+                        </div>
+                        <div class="rounded-xl bg-white/65 border border-[color:var(--line-soft)] p-2">
+                            <div class="text-[color:var(--text-mute)]">Còn phải thu</div>
+                            <div class="font-semibold tnum text-[color:var(--warn)]" th:text="${h.vndCompact(report.overview.outstanding)}">0đ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid xl:grid-cols-[1fr_.72fr] gap-5 mb-5">
+        <div class="card-pad-0">
+            <div class="px-5 sm:px-6 py-4 border-b border-[color:var(--line-soft)] flex items-center justify-between gap-3">
+                <div>
+                    <h3 class="font-semibold text-[15px]">Thu tiền theo tháng/năm</h3>
+                    <p class="text-[12px] text-[color:var(--text-mute)] mt-0.5">Chỉ thống kê tổng hóa đơn, tiền đã thu và phần chưa thu theo từng kỳ.</p>
+                </div>
+                <span class="badge badge-violet" th:text="${fromMonth + '/' + fromYear + ' - ' + toMonth + '/' + toYear}">01/2026 - 05/2026</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>Kỳ</th>
+                        <th class="text-right">Hóa đơn</th>
+                        <th class="text-right">Tổng hóa đơn</th>
+                        <th class="text-right">Đã thu</th>
+                        <th class="text-right">Chưa thu</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="m : ${report.months}">
+                        <td class="font-semibold tnum" th:text="${m.label}">05/2026</td>
+                        <td class="text-right tnum" th:text="${m.invoiceCount}">0</td>
+                        <td class="text-right font-semibold tnum" th:text="${h.vnd(m.revenue)}">0đ</td>
+                        <td class="text-right tnum text-[color:var(--ok)]" th:text="${h.vnd(m.collected)}">0đ</td>
+                        <td class="text-right tnum text-[color:var(--warn)]" th:text="${h.vnd(m.outstanding)}">0đ</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="glass p-5">
+            <div class="flex items-start gap-3 mb-4">
+                <div class="kpi-icon shrink-0" style="background: #eef0ff; color: #4f46e5;">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <span class="eyebrow">Gợi ý thông minh</span>
+                    <h3 class="font-bold text-[18px] mt-1">Điểm cần chú ý</h3>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div th:each="note : ${report.insights}" class="rounded-[18px] border border-[color:var(--line-soft)] bg-white/65 p-4 text-[13px] leading-6 text-[color:var(--text-soft)]">
+                    <span th:text="${note}">Gợi ý</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid xl:grid-cols-2 gap-5">
+        <div class="card-pad-0">
+            <div class="px-5 sm:px-6 py-4 border-b border-[color:var(--line-soft)]">
+                <h3 class="font-semibold text-[15px]">Thu tiền theo cơ sở</h3>
+                <p class="text-[12px] text-[color:var(--text-mute)] mt-0.5">So sánh số phòng, tổng hóa đơn và tiền đã thu theo từng cơ sở.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>Cơ sở</th>
+                        <th class="text-right">Phòng</th>
+                        <th class="text-right">Hóa đơn</th>
+                        <th class="text-right">Tổng hóa đơn</th>
+                        <th class="text-right">Đã thu</th>
+                        <th class="text-right">Chưa thu</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="p : ${report.propertyRows}">
+                        <td>
+                            <div class="font-semibold" th:text="${p.propertyName}">Cơ sở</div>
+                            <div class="text-[12px] text-[color:var(--text-mute)]">
+                                <span th:text="${p.invoiceCount}">0</span> hóa đơn ·
+                                <span class="tnum" th:text="${h.vnd(p.outstanding)}">0đ</span> chưa thu
+                            </div>
+                        </td>
+                        <td class="text-right tnum">
+                            <span th:text="${p.occupiedRooms}">0</span>/<span th:text="${p.roomCount}">0</span>
+                        </td>
+                        <td class="text-right tnum" th:text="${p.invoiceCount}">0</td>
+                        <td class="text-right font-semibold tnum" th:text="${h.vnd(p.revenue)}">0đ</td>
+                        <td class="text-right tnum text-[color:var(--ok)]" th:text="${h.vnd(p.collected)}">0đ</td>
+                        <td class="text-right font-semibold tnum text-[color:var(--warn)]" th:text="${h.vnd(p.outstanding)}">0đ</td>
+                    </tr>
+                    <tr th:if="${report.propertyRows.isEmpty()}">
+                        <td colspan="6" class="text-center text-[color:var(--text-mute)] py-8">Chưa có cơ sở nào.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-pad-0">
+            <div class="px-5 sm:px-6 py-4 border-b border-[color:var(--line-soft)]">
+                <h3 class="font-semibold text-[15px]">Thu tiền theo phòng</h3>
+                <p class="text-[12px] text-[color:var(--text-mute)] mt-0.5">Sắp xếp theo tổng hóa đơn để xem phòng nào đang phát sinh thu nhiều nhất.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>Phòng</th>
+                        <th class="text-right">Hóa đơn</th>
+                        <th class="text-right">Tổng hóa đơn</th>
+                        <th class="text-right">Đã thu</th>
+                        <th class="text-right">Chưa thu</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${report.rooms}">
+                        <td>
+                            <div class="font-semibold">
+                                <span th:text="${r.roomCode}">P101</span>
+                                <span class="text-[color:var(--text-mute)]">·</span>
+                                <span th:text="${r.roomTitle}">Phòng</span>
+                            </div>
+                            <div class="text-[12px] text-[color:var(--text-mute)]" th:text="${r.propertyName}">Cơ sở</div>
+                        </td>
+                        <td class="text-right tnum" th:text="${r.invoiceCount}">0</td>
+                        <td class="text-right font-semibold tnum" th:text="${h.vnd(r.revenue)}">0đ</td>
+                        <td class="text-right tnum text-[color:var(--ok)]" th:text="${h.vnd(r.collected)}">0đ</td>
+                        <td class="text-right font-semibold tnum text-[color:var(--warn)]" th:text="${h.vnd(r.outstanding)}">0đ</td>
+                    </tr>
+                    <tr th:if="${report.rooms.isEmpty()}">
+                        <td colspan="5" class="text-center text-[color:var(--text-mute)] py-8">Chưa có phòng nào trong bộ lọc.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

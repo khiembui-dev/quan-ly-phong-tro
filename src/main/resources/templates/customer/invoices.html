@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/customer-layout}"
+      lang="vi">
+<head><title>Hóa đơn - SmartRent</title></head>
+<body>
+<div layout:fragment="content" class="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-16">
+
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div>
+            <span class="eyebrow">Thanh toán</span>
+            <h1 class="text-[28px] sm:text-[34px] font-bold tracking-tight mt-2">Hóa đơn</h1>
+            <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5">
+                Theo dõi hóa đơn, xem đầy đủ từng khoản phí và thanh toán tự động.
+            </p>
+        </div>
+        <a href="/me#rooms" class="btn btn-glass btn-sm">
+            <i data-lucide="home" class="w-3.5 h-3.5"></i>
+            Phòng đang ở
+        </a>
+    </div>
+
+    <div th:if="${invoices != null and !invoices.isEmpty()}" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+        <div class="surface p-4">
+            <div class="kpi-label">Tổng hóa đơn</div>
+            <div class="text-[24px] font-extrabold tnum mt-1" th:text="${invoices.size()}">12</div>
+        </div>
+        <div class="surface p-4">
+            <div class="kpi-label">Đã thanh toán</div>
+            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--ok)]" th:text="${paidCount}">0</div>
+        </div>
+        <div class="surface p-4">
+            <div class="kpi-label">Chờ thanh toán</div>
+            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--warn)]" th:text="${openCount}">0</div>
+        </div>
+        <div class="surface p-4">
+            <div class="kpi-label">Quá hạn</div>
+            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--err)]" th:text="${overdueCount}">0</div>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Mã</th>
+                <th>Kỳ</th>
+                <th>Số tiền</th>
+                <th>Hạn</th>
+                <th>Trạng thái</th>
+                <th class="text-right">Thao tác</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="i : ${invoices}">
+                <td>
+                    <a th:href="@{'/me/invoices/' + ${i.id}}"
+                       class="mono text-[12px] text-[color:var(--accent)] hover:underline"
+                       th:text="${i.code}">INV-001</a>
+                </td>
+                <td class="tnum" th:text="${i.periodMonth + '/' + i.periodYear}">5/2026</td>
+                <td class="font-semibold tnum" th:text="${h.vnd(i.totalAmount)}">7tr</td>
+                <td class="tnum" th:text="${#temporals.format(i.dueDate, 'dd/MM/yyyy')}">10/05/2026</td>
+                <td>
+                    <span class="badge"
+                          th:classappend="${i.status.name() == 'PAID' ? 'badge-emerald' : (i.status.name() == 'OVERDUE' ? 'badge-rose' : (i.status.name() == 'CANCELLED' ? 'badge-mute' : 'badge-amber'))}">
+                        <span th:if="${i.status.name() == 'PENDING'}" class="dot dot-pulse" style="background:currentColor"></span>
+                        <span th:switch="${i.status.name()}">
+                            <span th:case="'PAID'">Đã trả</span>
+                            <span th:case="'PENDING'">Chờ thanh toán</span>
+                            <span th:case="'PARTIALLY_PAID'">Trả 1 phần</span>
+                            <span th:case="'OVERDUE'">Quá hạn</span>
+                            <span th:case="'CANCELLED'">Đã hủy</span>
+                        </span>
+                    </span>
+                </td>
+                <td class="text-right">
+                    <a th:href="@{'/me/invoices/' + ${i.id}}" class="btn btn-soft btn-sm">
+                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                        Xem phí
+                    </a>
+                </td>
+            </tr>
+            <tr th:if="${invoices == null or invoices.isEmpty()}">
+                <td colspan="6" class="text-center py-12">
+                    <div class="empty-icon mx-auto mb-4">
+                        <i data-lucide="receipt" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-[16px] font-semibold">Chưa có hóa đơn nào</h3>
+                    <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Hóa đơn sẽ xuất hiện khi chủ nhà phát hành cho phòng bạn đang thuê.</p>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

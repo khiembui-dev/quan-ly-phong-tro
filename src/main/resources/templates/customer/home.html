@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/customer-layout}"
+      lang="vi">
+<head>
+    <title>Trang chủ — SmartRent</title>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <!-- ============================================================
+         HERO
+         ============================================================ -->
+    <section class="relative">
+        <div class="mesh-bg">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+
+        <div class="relative max-w-[1200px] mx-auto px-6 pt-14 pb-12 sm:pt-24 sm:pb-20 text-center">
+
+            <!-- Eyebrow pill -->
+            <span class="reveal reveal-1 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-semibold text-[color:var(--text-soft)]"
+                  style="background: rgba(255,255,255,0.7); backdrop-filter: blur(16px); border: 1px solid var(--glass-border);">
+                <span class="relative flex w-2 h-2">
+                    <span class="absolute inline-flex w-full h-full rounded-full bg-[color:var(--accent)] opacity-75 animate-ping"></span>
+                    <span class="relative inline-flex w-2 h-2 rounded-full bg-[color:var(--accent)]"></span>
+                </span>
+                AI Matching · 24,000+ phòng đã được duyệt
+            </span>
+
+            <!-- Headline -->
+            <h1 class="reveal reveal-2 h-display text-[42px] sm:text-[64px] md:text-[78px] mt-5 sm:mt-7 max-w-[920px] mx-auto text-balance">
+                Tìm phòng trọ
+                <span class="relative inline-block">
+                    <span class="relative z-10" style="background: linear-gradient(135deg, #4f46e5, #7c3aed, #06b6d4); -webkit-background-clip: text; background-clip: text; color: transparent;">như ở nhà</span>
+                </span>.
+            </h1>
+            <p class="reveal reveal-3 mt-5 sm:mt-6 text-[16px] sm:text-[19px] text-[color:var(--text-soft)] max-w-[640px] mx-auto leading-relaxed text-balance">
+                Phòng được lọc kỹ theo phong cách sống, ngân sách và khu vực — minh bạch giá, hóa đơn, tiện nghi.
+            </p>
+
+            <!-- Search bar -->
+            <form action="/" method="get"
+                  x-data="{
+                      districts: [
+                          { value: '',         label: 'Tất cả khu vực' },
+                          { value: 'Quận 1',   label: 'Quận 1' },
+                          { value: 'Quận 3',   label: 'Quận 3' },
+                          { value: 'Quận 7',   label: 'Quận 7' },
+                          { value: 'Thủ Đức',  label: 'Thủ Đức' },
+                          { value: 'Bình Thạnh', label: 'Bình Thạnh' }
+                      ],
+                      budgets: [
+                          { value: '',         label: 'Tất cả ngân sách' },
+                          { value: '5000000',  label: 'Dưới 5 triệu' },
+                          { value: '8000000',  label: 'Dưới 8 triệu' },
+                          { value: '12000000', label: 'Dưới 12 triệu' },
+                          { value: '20000000', label: 'Dưới 20 triệu' }
+                      ],
+                      district:  $el.dataset.district  || '',
+                      maxPrice:  $el.dataset.maxprice  || '',
+                      open: null,
+                      labelFor(opts, val) { const m = opts.find(o => o.value === val); return m ? m.label : opts[0].label; }
+                  }"
+                  th:data-district="${district}"
+                  th:data-maxprice="${maxPrice}"
+                  @keydown.escape.window="open = null"
+                  class="reveal reveal-4 glass-strong mt-10 sm:mt-12 p-2.5 sm:p-3 grid md:grid-cols-[1.2fr_1fr_1.4fr_auto] gap-2 max-w-[1000px] mx-auto rounded-[28px] relative z-30">
+
+                <!-- DISTRICT -->
+                <div class="relative">
+                    <input type="hidden" name="district" :value="district" />
+                    <button type="button" @click="open = open === 'd' ? null : 'd'"
+                            :class="open === 'd' ? 'ring-4 ring-[color:var(--accent-ring)] !border-[color:var(--accent)]' : ''"
+                            class="input-glass !h-14 !rounded-2xl w-full text-left transition">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-[color:var(--accent)] shrink-0"></i>
+                        <span class="flex-1 truncate text-[14px] font-medium" x-text="labelFor(districts, district)"
+                              :class="!district ? 'text-[color:var(--text-faint)] font-normal' : ''">Tất cả khu vực</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-[color:var(--text-mute)] transition shrink-0"
+                           :class="open === 'd' ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div x-show="open === 'd'" x-cloak
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         @click.outside="if (open === 'd') open = null"
+                         class="absolute top-full left-0 right-0 mt-2 glass-strong rounded-2xl p-1.5 z-40 max-h-[320px] overflow-y-auto">
+                        <template x-for="opt in districts" :key="opt.value">
+                            <button type="button"
+                                    @click="district = opt.value; open = null"
+                                    :class="district === opt.value ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)] font-semibold' : 'hover:bg-black/[0.04]'"
+                                    class="w-full text-left px-3 py-2.5 rounded-xl text-[14px] flex items-center justify-between transition">
+                                <span class="flex items-center gap-2">
+                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 opacity-60"></i>
+                                    <span x-text="opt.label"></span>
+                                </span>
+                                <i data-lucide="check" class="w-4 h-4 text-[color:var(--accent)]" x-show="district === opt.value"></i>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- DATE -->
+                <div class="input-glass !h-14 !rounded-2xl">
+                    <i data-lucide="calendar" class="w-4 h-4 text-[color:var(--accent)] shrink-0"></i>
+                    <input type="date" name="moveIn" class="!bg-transparent text-[14px] font-medium" />
+                </div>
+
+                <!-- BUDGET -->
+                <div class="relative">
+                    <input type="hidden" name="maxPrice" :value="maxPrice" />
+                    <button type="button" @click="open = open === 'b' ? null : 'b'"
+                            :class="open === 'b' ? 'ring-4 ring-[color:var(--accent-ring)] !border-[color:var(--accent)]' : ''"
+                            class="input-glass !h-14 !rounded-2xl w-full text-left transition">
+                        <i data-lucide="wallet" class="w-4 h-4 text-[color:var(--accent)] shrink-0"></i>
+                        <span class="flex-1 truncate text-[14px] font-medium" x-text="labelFor(budgets, maxPrice)"
+                              :class="!maxPrice ? 'text-[color:var(--text-faint)] font-normal' : ''">Ngân sách</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-[color:var(--text-mute)] transition shrink-0"
+                           :class="open === 'b' ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div x-show="open === 'b'" x-cloak
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         @click.outside="if (open === 'b') open = null"
+                         class="absolute top-full left-0 right-0 mt-2 glass-strong rounded-2xl p-1.5 z-40 max-h-[320px] overflow-y-auto">
+                        <template x-for="opt in budgets" :key="opt.value">
+                            <button type="button"
+                                    @click="maxPrice = opt.value; open = null"
+                                    :class="maxPrice === opt.value ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)] font-semibold' : 'hover:bg-black/[0.04]'"
+                                    class="w-full text-left px-3 py-2.5 rounded-xl text-[14px] flex items-center justify-between transition">
+                                <span class="flex items-center gap-2">
+                                    <i data-lucide="banknote" class="w-3.5 h-3.5 opacity-60"></i>
+                                    <span x-text="opt.label"></span>
+                                </span>
+                                <i data-lucide="check" class="w-4 h-4 text-[color:var(--accent)]" x-show="maxPrice === opt.value"></i>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- SUBMIT -->
+                <button type="submit" class="btn btn-primary !h-14 !rounded-2xl px-6 sm:px-8 group whitespace-nowrap">
+                    <i data-lucide="search" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+                    <span>Tìm phòng</span>
+                </button>
+            </form>
+
+            <!-- Trust signals -->
+            <div class="reveal reveal-5 mt-8 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-[13px]">
+                <span class="inline-flex items-center gap-1.5 text-[color:var(--text-soft)]">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-[color:var(--ok)]"></i>
+                    <strong class="font-semibold text-[color:var(--text)]">100%</strong> phòng đã xác minh
+                </span>
+                <span class="hidden sm:inline w-1 h-1 rounded-full bg-[color:var(--text-faint)]"></span>
+                <span class="inline-flex items-center gap-1.5 text-[color:var(--text-soft)]">
+                    <i data-lucide="zap" class="w-4 h-4 text-[color:var(--accent)]"></i>
+                    Phản hồi <strong class="font-semibold text-[color:var(--text)]">trong 1 giờ</strong>
+                </span>
+                <span class="hidden sm:inline w-1 h-1 rounded-full bg-[color:var(--text-faint)]"></span>
+                <span class="inline-flex items-center gap-1.5 text-[color:var(--text-soft)]">
+                    <i data-lucide="lock" class="w-4 h-4 text-[color:var(--accent)]"></i>
+                    Cọc hoàn <strong class="font-semibold text-[color:var(--text)]">100%</strong> nếu hủy
+                </span>
+                <span class="hidden sm:inline w-1 h-1 rounded-full bg-[color:var(--text-faint)]"></span>
+                <span class="inline-flex items-center gap-1.5 text-[color:var(--text-soft)]">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-[color:var(--accent)]"></i>
+                    AI tư vấn <strong class="font-semibold text-[color:var(--text)]">24/7</strong>
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         AVAILABLE ROOMS
+         ============================================================ -->
+    <section class="max-w-[1280px] mx-auto px-6 mt-4 sm:mt-12 relative z-0">
+        <div class="section-head mb-10">
+            <span class="eyebrow">Đề xuất hôm nay</span>
+            <h2>Phòng đang còn trống</h2>
+            <p>
+                Có <span class="font-semibold text-[color:var(--text)] tnum" th:text="${totalRooms}">0</span> phòng đang sẵn sàng cho thuê — phòng nào cũng đã được xác minh.
+            </p>
+
+            <!-- Category tabs -->
+            <div class="mt-7 inline-flex items-center gap-1 glass-thin p-1 rounded-2xl text-[13px] font-medium flex-wrap justify-center">
+                <a href="/"
+                   th:classappend="${type == null or type == ''} ? 'bg-[color:var(--accent)] text-white shadow-[0_6px_14px_rgba(79,70,229,0.28)]' : 'text-[color:var(--text-soft)]'"
+                   class="px-4 py-2 rounded-xl transition hover:bg-black/[0.04]">Tất cả</a>
+                <a href="/?type=STUDIO"
+                   th:classappend="${type == 'STUDIO'} ? 'bg-[color:var(--accent)] text-white shadow-[0_6px_14px_rgba(79,70,229,0.28)]' : 'text-[color:var(--text-soft)]'"
+                   class="px-4 py-2 rounded-xl transition hover:bg-black/[0.04]">Studio</a>
+                <a href="/?type=DOUBLE"
+                   th:classappend="${type == 'DOUBLE'} ? 'bg-[color:var(--accent)] text-white shadow-[0_6px_14px_rgba(79,70,229,0.28)]' : 'text-[color:var(--text-soft)]'"
+                   class="px-4 py-2 rounded-xl transition hover:bg-black/[0.04]">Phòng đôi</a>
+                <a href="/?type=PENTHOUSE"
+                   th:classappend="${type == 'PENTHOUSE'} ? 'bg-[color:var(--accent)] text-white shadow-[0_6px_14px_rgba(79,70,229,0.28)]' : 'text-[color:var(--text-soft)]'"
+                   class="px-4 py-2 rounded-xl transition hover:bg-black/[0.04]">Penthouse</a>
+                <a href="/?petAllowed=true"
+                   th:classappend="${petAllowed} ? 'bg-[color:var(--accent)] text-white shadow-[0_6px_14px_rgba(79,70,229,0.28)]' : 'text-[color:var(--text-soft)]'"
+                   class="px-4 py-2 rounded-xl transition hover:bg-black/[0.04]">Cho thú cưng</a>
+            </div>
+        </div>
+
+        <div th:if="${rooms != null and !rooms.isEmpty()}" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <th:block th:each="r : ${rooms}">
+                <div th:replace="~{fragments/room-card :: card(${r})}"></div>
+            </th:block>
+        </div>
+
+        <div th:if="${rooms == null or rooms.isEmpty()}" class="empty">
+            <div class="empty-icon">
+                <i data-lucide="search-x" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-[18px] font-semibold">Chưa tìm thấy phòng phù hợp</h3>
+            <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5">Thử nới rộng bộ lọc hoặc khu vực khác.</p>
+            <a href="/" class="btn btn-primary mt-5">Bỏ bộ lọc</a>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         WHY CHOOSE US
+         ============================================================ -->
+    <section class="max-w-[1280px] mx-auto px-6 mt-24 sm:mt-32">
+        <div class="section-head mb-12">
+            <span class="eyebrow">Tại sao chọn SmartRent</span>
+            <h2>Thuê phòng chưa bao giờ dễ đến vậy</h2>
+            <p>Quy trình minh bạch, công nghệ AI cá nhân hoá, hỗ trợ 24/7 — từ tìm phòng đến quản lý hóa đơn.</p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="glass p-6 reveal reveal-1">
+                <div class="w-14 h-14 rounded-2xl bg-white shadow-sm grid place-items-center">
+                    <img th:src="${h.fluency('verified-account.png')}" alt="" class="w-10 h-10" loading="lazy" />
+                </div>
+                <h3 class="font-semibold text-[16px] mt-5">100% phòng xác minh</h3>
+                <p class="text-[13px] text-[color:var(--text-mute)] mt-2 leading-relaxed">
+                    Mọi phòng đều được kiểm tra trực tiếp. Ảnh thật, giá thật, không có phòng "ma".
+                </p>
+            </div>
+            <div class="glass p-6 reveal reveal-2">
+                <div class="w-14 h-14 rounded-2xl bg-white shadow-sm grid place-items-center">
+                    <img th:src="${h.fluency('chatbot.png')}" alt="" class="w-10 h-10" loading="lazy" />
+                </div>
+                <h3 class="font-semibold text-[16px] mt-5">AI tư vấn cá nhân</h3>
+                <p class="text-[13px] text-[color:var(--text-mute)] mt-2 leading-relaxed">
+                    SmartRent AI hiểu nhu cầu của bạn — gợi ý phòng theo phong cách sống, không chỉ theo giá.
+                </p>
+            </div>
+            <div class="glass p-6 reveal reveal-3">
+                <div class="w-14 h-14 rounded-2xl bg-white shadow-sm grid place-items-center">
+                    <img th:src="${h.fluency('contract.png')}" alt="" class="w-10 h-10" loading="lazy" />
+                </div>
+                <h3 class="font-semibold text-[16px] mt-5">Hồ sơ điện tử</h3>
+                <p class="text-[13px] text-[color:var(--text-mute)] mt-2 leading-relaxed">
+                    Ký online qua OTP. Lưu trữ vĩnh viễn, tải PDF khi cần xuất trình.
+                </p>
+            </div>
+            <div class="glass p-6 reveal reveal-4">
+                <div class="w-14 h-14 rounded-2xl bg-white shadow-sm grid place-items-center">
+                    <img th:src="${h.fluency('security-checked.png')}" alt="" class="w-10 h-10" loading="lazy" />
+                </div>
+                <h3 class="font-semibold text-[16px] mt-5">Thanh toán an toàn</h3>
+                <p class="text-[13px] text-[color:var(--text-mute)] mt-2 leading-relaxed">
+                    Cọc qua VNPay/MoMo, hoàn 100% nếu chủ trọ huỷ hoặc phòng không khớp mô tả.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         HOT DISTRICTS
+         ============================================================ -->
+    <section class="max-w-[1280px] mx-auto px-6 mt-24 sm:mt-32">
+        <div class="section-head mb-12">
+            <span class="eyebrow">Khu vực hot</span>
+            <h2>Khám phá theo quận</h2>
+            <p>Bắt đầu hành trình tìm tổ ấm từ những khu vực được yêu thích nhất.</p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <a href="/?district=Quận+1" class="group relative overflow-hidden rounded-3xl h-[300px] block">
+                <img src="https://images.unsplash.com/photo-1551038247-3d9af20df552?w=800&q=80" alt="Quận 1"
+                     class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(15,23,42,0.05) 0%, rgba(15,23,42,0.10) 50%, rgba(15,23,42,0.78) 100%);"></div>
+                <div class="relative h-full flex flex-col justify-between p-5 text-white">
+                    <span class="self-start backdrop-blur bg-white/25 border border-white/40 rounded-full px-3 py-1 text-[11px] font-semibold inline-flex items-center gap-1">
+                        <i data-lucide="flame" class="w-3 h-3"></i> Hot
+                    </span>
+                    <div>
+                        <h3 class="text-[26px] font-extrabold tracking-tight drop-shadow-md">Quận 1</h3>
+                        <p class="text-[12px] opacity-95 mt-1 inline-flex items-center gap-1.5 drop-shadow">
+                            <i data-lucide="building-2" class="w-3.5 h-3.5"></i> 124 phòng · từ 6.5 triệu
+                        </p>
+                    </div>
+                </div>
+            </a>
+            <a href="/?district=Quận+3" class="group relative overflow-hidden rounded-3xl h-[300px] block">
+                <img src="https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=800&q=80" alt="Quận 3"
+                     class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(15,23,42,0.05) 0%, rgba(15,23,42,0.10) 50%, rgba(15,23,42,0.78) 100%);"></div>
+                <div class="relative h-full flex flex-col justify-end p-5 text-white">
+                    <h3 class="text-[26px] font-extrabold tracking-tight drop-shadow-md">Quận 3</h3>
+                    <p class="text-[12px] opacity-95 mt-1 inline-flex items-center gap-1.5 drop-shadow">
+                        <i data-lucide="building-2" class="w-3.5 h-3.5"></i> 88 phòng · từ 5.8 triệu
+                    </p>
+                </div>
+            </a>
+            <a href="/?district=Quận+7" class="group relative overflow-hidden rounded-3xl h-[300px] block">
+                <img src="https://images.unsplash.com/photo-1444723121867-7a241cacace9?w=800&q=80" alt="Quận 7"
+                     class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(15,23,42,0.05) 0%, rgba(15,23,42,0.10) 50%, rgba(15,23,42,0.78) 100%);"></div>
+                <div class="relative h-full flex flex-col justify-end p-5 text-white">
+                    <h3 class="text-[26px] font-extrabold tracking-tight drop-shadow-md">Quận 7</h3>
+                    <p class="text-[12px] opacity-95 mt-1 inline-flex items-center gap-1.5 drop-shadow">
+                        <i data-lucide="building-2" class="w-3.5 h-3.5"></i> 52 phòng · từ 7.0 triệu
+                    </p>
+                </div>
+            </a>
+            <a href="/?district=Thủ+Đức" class="group relative overflow-hidden rounded-3xl h-[300px] block">
+                <img src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80" alt="Thủ Đức"
+                     class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(15,23,42,0.05) 0%, rgba(15,23,42,0.10) 50%, rgba(15,23,42,0.78) 100%);"></div>
+                <div class="relative h-full flex flex-col justify-end p-5 text-white">
+                    <h3 class="text-[26px] font-extrabold tracking-tight drop-shadow-md">Thủ Đức</h3>
+                    <p class="text-[12px] opacity-95 mt-1 inline-flex items-center gap-1.5 drop-shadow">
+                        <i data-lucide="building-2" class="w-3.5 h-3.5"></i> 41 phòng · từ 4.5 triệu
+                    </p>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         STATS
+         ============================================================ -->
+    <section class="max-w-[1280px] mx-auto px-6 mt-24 sm:mt-32">
+        <div class="panel-gradient p-10 sm:p-14 grid grid-cols-2 lg:grid-cols-4 gap-8 text-center relative overflow-hidden">
+            <div class="absolute -top-32 -right-20 w-80 h-80 rounded-full opacity-30 pointer-events-none"
+                 style="background: radial-gradient(circle, #6366f1, transparent 70%); filter: blur(60px);"></div>
+            <div class="absolute -bottom-32 -left-20 w-80 h-80 rounded-full opacity-30 pointer-events-none"
+                 style="background: radial-gradient(circle, #06b6d4, transparent 70%); filter: blur(60px);"></div>
+
+            <div class="relative">
+                <div class="text-[42px] sm:text-[56px] font-extrabold tracking-tighter leading-none tnum"
+                     style="color:#4f46e5;">24K+</div>
+                <div class="text-[12px] font-semibold text-[color:var(--text-soft)] mt-3 uppercase tracking-[0.10em]">Phòng đã đăng</div>
+            </div>
+            <div class="relative">
+                <div class="text-[42px] sm:text-[56px] font-extrabold tracking-tighter leading-none tnum"
+                     style="color:#7c3aed;">12K+</div>
+                <div class="text-[12px] font-semibold text-[color:var(--text-soft)] mt-3 uppercase tracking-[0.10em]">Chủ trọ uy tín</div>
+            </div>
+            <div class="relative">
+                <div class="text-[42px] sm:text-[56px] font-extrabold tracking-tighter leading-none tnum"
+                     style="color:#06b6d4;">50K+</div>
+                <div class="text-[12px] font-semibold text-[color:var(--text-soft)] mt-3 uppercase tracking-[0.10em]">Khách đã thuê</div>
+            </div>
+            <div class="relative">
+                <div class="text-[42px] sm:text-[56px] font-extrabold tracking-tighter leading-none tnum inline-flex items-baseline gap-1"
+                     style="color:#4f46e5;">
+                    4.9<span class="text-amber-400 text-[28px] sm:text-[36px]">★</span>
+                </div>
+                <div class="text-[12px] font-semibold text-[color:var(--text-soft)] mt-3 uppercase tracking-[0.10em]">Đánh giá trung bình</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         TESTIMONIALS
+         ============================================================ -->
+    <section class="max-w-[1280px] mx-auto px-6 mt-24 sm:mt-32">
+        <div class="section-head mb-12">
+            <span class="eyebrow">Khách của chúng tôi</span>
+            <h2>Hành trình tìm tổ ấm</h2>
+            <p>Chia sẻ thật từ những người đã tin SmartRent làm bạn đồng hành.</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="glass p-6 flex flex-col">
+                <div class="flex items-center gap-1 text-amber-400 mb-3">
+                    <i data-lucide="star" class="w-4 h-4 fill-current" th:each="i : ${#numbers.sequence(1,5)}"></i>
+                </div>
+                <p class="text-[15px] leading-relaxed text-[color:var(--text-soft)] flex-1 italic">
+                    "Trước đây tìm phòng cực mệt vì chủ trọ không minh bạch. SmartRent có ảnh thật, giá thật, phí rõ ràng — tiết kiệm cả tuần đi xem phòng."
+                </p>
+                <div class="mt-5 flex items-center gap-3 pt-4 border-t border-[color:var(--line-soft)]">
+                    <div class="avatar avatar-md avatar-violet">M</div>
+                    <div>
+                        <div class="text-[13px] font-semibold">Minh Hoàng</div>
+                        <div class="text-[12px] text-[color:var(--text-mute)]">Lập trình viên · Quận 1</div>
+                    </div>
+                </div>
+            </div>
+            <div class="glass p-6 flex flex-col">
+                <div class="flex items-center gap-1 text-amber-400 mb-3">
+                    <i data-lucide="star" class="w-4 h-4 fill-current" th:each="i : ${#numbers.sequence(1,5)}"></i>
+                </div>
+                <p class="text-[15px] leading-relaxed text-[color:var(--text-soft)] flex-1 italic">
+                    "AI gợi ý đúng nhu cầu — phòng có ban công, gần Vincom, cho thú cưng. Đặt phòng 5 phút xong, chủ trọ liên hệ ngay trong ngày."
+                </p>
+                <div class="mt-5 flex items-center gap-3 pt-4 border-t border-[color:var(--line-soft)]">
+                    <div class="avatar avatar-md avatar-cyan">L</div>
+                    <div>
+                        <div class="text-[13px] font-semibold">Linh Trần</div>
+                        <div class="text-[12px] text-[color:var(--text-mute)]">Designer · Quận 3</div>
+                    </div>
+                </div>
+            </div>
+            <div class="glass p-6 flex flex-col">
+                <div class="flex items-center gap-1 text-amber-400 mb-3">
+                    <i data-lucide="star" class="w-4 h-4 fill-current" th:each="i : ${#numbers.sequence(1,5)}"></i>
+                </div>
+                <p class="text-[15px] leading-relaxed text-[color:var(--text-soft)] flex-1 italic">
+                    "Chủ trọ hỗ trợ qua Zalo/Gmail, hoá đơn điện tử tự động — không phải lo nhớ ngày trả tiền nhà nữa. Quá tiện lợi!"
+                </p>
+                <div class="mt-5 flex items-center gap-3 pt-4 border-t border-[color:var(--line-soft)]">
+                    <div class="avatar avatar-md avatar-rose">A</div>
+                    <div>
+                        <div class="text-[13px] font-semibold">An Nguyễn</div>
+                        <div class="text-[12px] text-[color:var(--text-mute)]">Marketing · Quận 7</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         CTA FOR OWNERS
+         ============================================================ -->
+    <section class="max-w-[1280px] mx-auto px-6 mt-24 sm:mt-32 mb-12">
+        <div class="panel-cta p-8 sm:p-12 lg:p-16">
+            <div class="absolute -top-32 -right-20 w-96 h-96 rounded-full opacity-25 pointer-events-none"
+                 style="background: radial-gradient(circle, white, transparent 70%); filter: blur(60px);"></div>
+            <div class="absolute -bottom-32 -left-20 w-96 h-96 rounded-full opacity-20 pointer-events-none"
+                 style="background: radial-gradient(circle, #c4b5fd, transparent 70%); filter: blur(60px);"></div>
+
+            <div class="relative grid lg:grid-cols-[1fr_auto] gap-8 items-center">
+                <div class="text-white">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 border border-white/30 text-[11px] font-semibold uppercase tracking-[0.10em]">
+                        Dành cho chủ trọ
+                    </span>
+                    <h2 class="text-[28px] sm:text-[40px] font-extrabold tracking-tight mt-4 leading-[1.1] text-white">
+                        Đăng phòng miễn phí<br class="hidden sm:block" /> — quản lý chuyên nghiệp.
+                    </h2>
+                    <p class="mt-4 text-[15px] text-white/90 max-w-[560px] leading-relaxed">
+                        Tự động tạo hoá đơn, quản lý hồ sơ khách, AI viết tin tuyển khách, dashboard doanh thu real-time.
+                    </p>
+                    <ul class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-white/95">
+                        <li class="inline-flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Không phí đăng tin</li>
+                        <li class="inline-flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Hỗ trợ AI tư vấn</li>
+                        <li class="inline-flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Báo cáo tự động</li>
+                    </ul>
+                </div>
+                <div class="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
+                    <a href="/register" class="btn h-12 !rounded-2xl px-7 bg-white text-[color:var(--accent-hover)] font-semibold hover:scale-[1.02] hover:shadow-2xl transition whitespace-nowrap">
+                        <i data-lucide="key-round" class="w-4 h-4"></i>
+                        Đăng ký chủ trọ
+                    </a>
+                    <a href="/admin" class="btn h-12 !rounded-2xl px-7 bg-white/15 text-white font-semibold border border-white/30 hover:bg-white/25 transition whitespace-nowrap backdrop-blur">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        Xem demo dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Tự động hóa - SmartRent</title></head>
+<body>
+<div layout:fragment="content">
+    <style>
+        .auto-shell {
+            position: relative;
+            overflow: hidden;
+        }
+        .auto-shell::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 10% 0%, rgba(79,70,229,.10), transparent 34%),
+                radial-gradient(circle at 92% 12%, rgba(6,182,212,.10), transparent 34%);
+        }
+        .auto-shell > * { position: relative; }
+        .auto-option {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 14px;
+            align-items: center;
+            padding: 14px;
+            border-radius: 18px;
+            background: rgba(255,255,255,.66);
+            border: 1px solid rgba(15,23,42,.07);
+            transition: background .18s ease-out, border-color .18s ease-out, transform .18s ease-out;
+        }
+        .auto-option:hover {
+            background: rgba(255,255,255,.86);
+            border-color: rgba(79,70,229,.18);
+            transform: translateY(-1px);
+        }
+        .auto-switch input { position: absolute; opacity: 0; pointer-events: none; }
+        .auto-switch span {
+            width: 46px;
+            height: 26px;
+            border-radius: 999px;
+            background: #cbd5e1;
+            display: inline-flex;
+            align-items: center;
+            padding: 3px;
+            transition: background .18s ease-out;
+        }
+        .auto-switch span::after {
+            content: "";
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            background: #fff;
+            box-shadow: 0 2px 6px rgba(15,23,42,.18);
+            transition: transform .18s ease-out;
+        }
+        .auto-switch input:checked + span { background: var(--accent); }
+        .auto-switch input:checked + span::after { transform: translateX(20px); }
+        .auto-secret-note {
+            border: 1px dashed rgba(79,70,229,.30);
+            background: rgba(238,240,255,.55);
+            border-radius: 16px;
+        }
+        .auto-check-card {
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(15,23,42,.08);
+            background: rgba(255,255,255,.68);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
+            transition: background .18s ease-out, border-color .18s ease-out;
+        }
+        .auto-check-card:hover {
+            background: rgba(255,255,255,.88);
+            border-color: rgba(79,70,229,.18);
+        }
+        .auto-check-card input[type="checkbox"],
+        .auto-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+        }
+        .auto-channel-card {
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(79,70,229,.16);
+            background: rgba(238,240,255,.62);
+        }
+        .auto-channel-card input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+        }
+        .auto-flow-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        @media (max-width: 1180px) {
+            .auto-flow-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
+        <div>
+            <span class="eyebrow">Email automation</span>
+            <h1 class="text-[28px] sm:text-[32px] font-bold mt-2">Tự động hóa gửi email</h1>
+            <p class="text-[13px] text-[color:var(--text-mute)] mt-1 max-w-3xl">
+                Cấu hình SMTP riêng của chủ trọ để SmartRent tự gửi hóa đơn, nhắc thanh toán và nhắc hợp đồng sắp hết hạn cho khách thuê.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <form method="post" th:action="@{/admin/automations/run-contract-reminders}">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <button type="submit" class="btn btn-glass btn-sm">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    Gửi nhắc hợp đồng ngay
+                </button>
+            </form>
+            <button type="submit" form="automation-save" class="btn btn-primary btn-sm">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                Lưu cấu hình
+            </button>
+        </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
+        <div class="kpi auto-shell">
+            <div class="kpi-icon" th:style="${mailReady} ? 'background:#ecfdf5;color:#047857' : 'background:#fffbeb;color:#b45309'">
+                <i data-lucide="mail-check" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">SMTP</div>
+            <div class="kpi-value text-[24px]" th:text="${mailReady ? 'Sẵn sàng' : 'Chưa sẵn sàng'}">Sẵn sàng</div>
+            <div class="kpi-trend flat" th:text="${setting.smtpHost != null ? setting.smtpHost : 'Chưa nhập host'}">smtp.gmail.com</div>
+        </div>
+        <div class="kpi auto-shell">
+            <div class="kpi-icon" style="background:var(--accent-soft);color:var(--accent)">
+                <i data-lucide="receipt-text" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Email hóa đơn</div>
+            <div class="kpi-value text-[24px]" th:text="${setting.invoiceEmailEnabled ? 'Đang bật' : 'Đang tắt'}">Đang bật</div>
+            <div class="kpi-trend flat">Gửi khi phát hành hóa đơn mới</div>
+        </div>
+        <div class="kpi auto-shell">
+            <div class="kpi-icon" style="background:#fffbeb;color:#b45309">
+                <i data-lucide="bell-ring" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Nhắc thanh toán</div>
+            <div class="kpi-value tnum text-[24px]" th:text="${paymentReminderCandidateCount}">0</div>
+            <div class="kpi-trend flat">hóa đơn tới hạn trong 14 ngày</div>
+        </div>
+        <div class="kpi auto-shell">
+            <div class="kpi-icon" style="background:#fef2f2;color:#dc2626">
+                <i data-lucide="file-clock" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Hợp đồng sắp hết hạn</div>
+            <div class="kpi-value tnum text-[24px]" th:text="${expiringContractCount}">0</div>
+            <div class="kpi-trend flat">
+                trong <span th:text="${setting.contractRenewAlertDays}">30</span> ngày tới
+            </div>
+        </div>
+    </div>
+
+    <div class="grid xl:grid-cols-[1fr_.45fr] gap-5">
+        <form id="automation-save" method="post" th:action="@{/admin/automations}" class="space-y-5">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+            <section class="glass p-5 auto-shell">
+                <div class="flex items-start justify-between gap-4 mb-5">
+                    <div>
+                        <span class="eyebrow no-line">SMTP</span>
+                        <h2 class="text-[21px] font-bold mt-1">Máy chủ gửi email</h2>
+                        <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                            Dùng SMTP Gmail, Zoho, Outlook, Mailgun hoặc SMTP doanh nghiệp. Mỗi chủ trọ có cấu hình riêng.
+                        </p>
+                    </div>
+                    <label class="auto-switch shrink-0" title="Bật SMTP">
+                        <input type="checkbox" name="smtpEnabled" th:checked="${setting.smtpEnabled}" />
+                        <span></span>
+                    </label>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">SMTP host</label>
+                        <div class="input-glass">
+                            <i data-lucide="server" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="text" name="smtpHost" maxlength="180" th:value="${setting.smtpHost}" placeholder="smtp.gmail.com" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Port</label>
+                        <div class="input-glass">
+                            <i data-lucide="network" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="number" name="smtpPort" min="1" max="65535" th:value="${setting.smtpPort}" placeholder="587" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Username</label>
+                        <div class="input-glass">
+                            <i data-lucide="user" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="text" name="smtpUsername" maxlength="180" th:value="${setting.smtpUsername}" placeholder="owner@example.com" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Mật khẩu / app password</label>
+                        <div class="input-glass">
+                            <i data-lucide="key-round" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="password" name="smtpPassword" autocomplete="new-password"
+                                   th:placeholder="${#strings.isEmpty(setting.smtpPassword) ? 'Nhập mật khẩu SMTP' : 'Đã lưu - để trống nếu không đổi'}" />
+                        </div>
+                        <label class="mt-2 inline-flex items-center gap-2 text-[12px] text-[color:var(--text-mute)]">
+                            <input type="checkbox" name="clearSmtpPassword" class="rounded text-[color:var(--accent)]" />
+                            Xóa mật khẩu SMTP đã lưu
+                        </label>
+                    </div>
+                    <div>
+                        <label class="form-label">Email người gửi</label>
+                        <div class="input-glass">
+                            <i data-lucide="mail" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="email" name="smtpFromEmail" maxlength="180" th:value="${setting.smtpFromEmail}" placeholder="billing@example.com" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Tên người gửi</label>
+                        <div class="input-glass">
+                            <i data-lucide="signature" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="text" name="smtpFromName" maxlength="120" th:value="${setting.smtpFromName}" placeholder="SmartRent" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid sm:grid-cols-3 gap-3 mt-4">
+                    <label class="auto-option cursor-pointer">
+                        <span class="w-10 h-10 rounded-xl bg-white grid place-items-center shadow-sm">
+                            <i data-lucide="lock-keyhole" class="w-4 h-4 text-[color:var(--accent)]"></i>
+                        </span>
+                        <span>
+                            <span class="block text-[13px] font-semibold">SMTP Auth</span>
+                            <span class="block text-[11px] text-[color:var(--text-mute)]">Đa số nhà cung cấp cần bật</span>
+                        </span>
+                        <input type="checkbox" name="smtpAuth" th:checked="${setting.smtpAuth}" class="rounded text-[color:var(--accent)]" />
+                    </label>
+                    <label class="auto-option cursor-pointer">
+                        <span class="w-10 h-10 rounded-xl bg-white grid place-items-center shadow-sm">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-[color:var(--ok)]"></i>
+                        </span>
+                        <span>
+                            <span class="block text-[13px] font-semibold">STARTTLS</span>
+                            <span class="block text-[11px] text-[color:var(--text-mute)]">Khuyến nghị port 587</span>
+                        </span>
+                        <input type="checkbox" name="smtpStartTls" th:checked="${setting.smtpStartTls}" class="rounded text-[color:var(--accent)]" />
+                    </label>
+                    <label class="auto-option cursor-pointer">
+                        <span class="w-10 h-10 rounded-xl bg-white grid place-items-center shadow-sm">
+                            <i data-lucide="badge-check" class="w-4 h-4 text-[color:var(--accent)]"></i>
+                        </span>
+                        <span>
+                            <span class="block text-[13px] font-semibold">Trust SSL host</span>
+                            <span class="block text-[11px] text-[color:var(--text-mute)]">Dùng khi SMTP yêu cầu</span>
+                        </span>
+                        <input type="checkbox" name="smtpSslTrust" th:checked="${setting.smtpSslTrust}" class="rounded text-[color:var(--accent)]" />
+                    </label>
+                </div>
+
+                <div class="auto-secret-note p-3 mt-4 text-[12px] text-[color:var(--text-soft)]">
+                    Với Gmail, hãy dùng <strong>App Password</strong> thay cho mật khẩu đăng nhập. Nếu cần bảo mật production, nên mã hóa cột mật khẩu SMTP hoặc chuyển sang secret vault.
+                </div>
+            </section>
+
+            <section class="glass p-5 auto-shell">
+                <div class="mb-5">
+                    <span class="eyebrow no-line">Liên hệ khách thuê</span>
+                    <h2 class="text-[21px] font-bold mt-1">Thông tin hỗ trợ hiển thị ở khu vực khách</h2>
+                    <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                        Khách thuê sẽ thấy các nút liên hệ này trên trang /me theo phòng đang ở.
+                    </p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Gmail hỗ trợ</label>
+                        <div class="input-glass">
+                            <i data-lucide="mail" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="email" name="contactEmail" maxlength="180"
+                                   th:value="${setting.contactEmail}" placeholder="hotro@example.com" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Số Zalo hỗ trợ</label>
+                        <div class="input-glass">
+                            <i data-lucide="phone" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="tel" name="contactZalo" maxlength="32"
+                                   th:value="${setting.contactZalo}" placeholder="0901234567" />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="glass p-5 auto-shell">
+                <div class="mb-5">
+                    <span class="eyebrow no-line">Luồng email</span>
+                    <h2 class="text-[21px] font-bold mt-1">Email tự động gửi cho khách thuê</h2>
+                    <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                        Các luồng dưới đây chỉ gửi khi SMTP đã sẵn sàng và kênh Email được bật.
+                    </p>
+                </div>
+
+                <div class="grid auto-flow-grid gap-3">
+                    <label class="auto-option cursor-pointer">
+                        <span class="w-10 h-10 rounded-xl bg-[color:var(--accent-soft)] text-[color:var(--accent)] grid place-items-center">
+                            <i data-lucide="receipt" class="w-5 h-5"></i>
+                        </span>
+                        <span>
+                            <span class="block text-[13px] font-semibold">Gửi hóa đơn mới</span>
+                            <span class="block text-[11px] text-[color:var(--text-mute)]">Khi phát hành hóa đơn</span>
+                        </span>
+                        <input type="checkbox" name="invoiceEmailEnabled" th:checked="${setting.invoiceEmailEnabled}" class="rounded text-[color:var(--accent)]" />
+                    </label>
+                    <label class="auto-option cursor-pointer">
+                        <span class="w-10 h-10 rounded-xl bg-[#fffbeb] text-[#b45309] grid place-items-center">
+                            <i data-lucide="bell-ring" class="w-5 h-5"></i>
+                        </span>
+                        <span>
+                            <span class="block text-[13px] font-semibold">Nhắc thanh toán</span>
+                            <span class="block text-[11px] text-[color:var(--text-mute)]">Trước và sau hạn</span>
+                        </span>
+                        <input type="checkbox" name="paymentReminderEmailEnabled" th:checked="${setting.paymentReminderEmailEnabled}" class="rounded text-[color:var(--accent)]" />
+                    </label>
+                    <label class="auto-option cursor-pointer">
+                        <span class="w-10 h-10 rounded-xl bg-[#fef2f2] text-[#dc2626] grid place-items-center">
+                            <i data-lucide="file-clock" class="w-5 h-5"></i>
+                        </span>
+                        <span>
+                            <span class="block text-[13px] font-semibold">Nhắc hợp đồng</span>
+                            <span class="block text-[11px] text-[color:var(--text-mute)]">Sắp hết hạn</span>
+                        </span>
+                        <input type="checkbox" name="contractExpiryEmailEnabled" th:checked="${setting.contractExpiryEmailEnabled}" class="rounded text-[color:var(--accent)]" />
+                    </label>
+                </div>
+
+                <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-4 mt-5">
+                    <div>
+                        <label class="form-label">Tự phát hành hóa đơn</label>
+                        <label class="auto-check-card cursor-pointer">
+                            <span class="inline-flex items-center gap-3 min-w-0">
+                                <span class="w-9 h-9 rounded-xl bg-white text-[color:var(--accent)] grid place-items-center shrink-0 shadow-sm">
+                                    <i data-lucide="calendar-check" class="w-4 h-4"></i>
+                                </span>
+                                <span class="min-w-0">
+                                    <span class="block text-[13px] font-semibold leading-snug">Bật lịch hóa đơn</span>
+                                    <span class="block text-[11px] text-[color:var(--text-mute)]">Theo ngày phát hành</span>
+                                </span>
+                            </span>
+                            <input type="checkbox" name="invoiceAutoCreate" th:checked="${setting.invoiceAutoCreate}" class="rounded text-[color:var(--accent)]" />
+                        </label>
+                    </div>
+                    <div>
+                        <label class="form-label">Ngày phát hành</label>
+                        <div class="input-glass">
+                            <i data-lucide="calendar" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="number" name="invoiceCreateDay" min="1" max="28" th:value="${setting.invoiceCreateDay}" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Nhắc trước hạn</label>
+                        <div class="input-glass">
+                            <i data-lucide="alarm-clock" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="text" name="reminderPreDueDays" th:value="${setting.reminderPreDueDays}" placeholder="7,3,1" />
+                        </div>
+                        <p class="form-help">VD: 7,3,1 nghĩa là trước hạn 7 ngày, 3 ngày, 1 ngày.</p>
+                    </div>
+                    <div>
+                        <label class="form-label">Nhắc sau hạn</label>
+                        <div class="input-glass">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-[color:var(--err)]"></i>
+                            <input type="text" name="reminderOverdueDays" th:value="${setting.reminderOverdueDays}" placeholder="1,3,7,14" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4 mt-5">
+                    <div>
+                        <label class="form-label">Nhắc hợp đồng trước ngày hết hạn</label>
+                        <div class="input-glass">
+                            <i data-lucide="file-clock" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="number" name="contractRenewAlertDays" min="1" max="180" th:value="${setting.contractRenewAlertDays}" />
+                            <span class="text-[12px] text-[color:var(--text-mute)]">ngày</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Kênh gửi</label>
+                        <div class="grid gap-2">
+                            <label class="auto-channel-card cursor-pointer">
+                                <input type="checkbox" name="reminderChannelEmail" th:checked="${setting.reminderChannelEmail}" class="rounded text-[color:var(--accent)]" />
+                                <span class="w-9 h-9 rounded-xl bg-white text-[color:var(--accent)] grid place-items-center shrink-0 shadow-sm">
+                                    <i data-lucide="mail" class="w-4 h-4"></i>
+                                </span>
+                                <span class="min-w-0">
+                                    <span class="block text-[13px] font-semibold leading-snug">Email qua SMTP</span>
+                                    <span class="block text-[11px] text-[color:var(--text-mute)]">Áp dụng cho hóa đơn, nhắc thanh toán và hợp đồng</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-[12px] text-[color:var(--text-mute)] inline-flex items-center gap-1.5">
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[color:var(--ok)]"></i>
+                    Cập nhật cuối:
+                    <span class="font-medium text-[color:var(--text-soft)] tnum"
+                          th:text="${setting.updatedAt != null ? #temporals.format(setting.updatedAt, 'dd/MM/yyyy HH:mm') : 'Chưa lưu'}">Chưa lưu</span>
+                </p>
+                <button type="submit" class="btn btn-primary">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    Lưu cấu hình
+                </button>
+            </div>
+        </form>
+
+        <aside class="space-y-5">
+            <section class="glass p-5 auto-shell">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <span class="eyebrow no-line">Kiểm tra</span>
+                        <h2 class="text-[20px] font-bold mt-1">Gửi email thử</h2>
+                        <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                            Dùng cấu hình SMTP đã lưu để gửi một email kiểm tra.
+                        </p>
+                    </div>
+                    <span class="badge" th:classappend="${mailReady} ? 'badge-emerald' : 'badge-amber'"
+                          th:text="${mailReady ? 'SMTP OK' : 'Chưa sẵn sàng'}">SMTP OK</span>
+                </div>
+                <form method="post" th:action="@{/admin/automations/test-email}" class="mt-4 space-y-3">
+                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <div>
+                        <label class="form-label">Email nhận thử</label>
+                        <div class="input-glass">
+                            <i data-lucide="mail" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="email" name="testEmail" th:value="${testEmailDefault}" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-soft w-full">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        Gửi email test
+                    </button>
+                </form>
+            </section>
+
+            <section class="glass p-5 auto-shell">
+                <span class="eyebrow no-line">Lịch chạy</span>
+                <h2 class="text-[20px] font-bold mt-1">Tự động mỗi ngày</h2>
+                <div class="mt-4 space-y-3">
+                    <div class="rounded-[16px] bg-white/70 border border-[color:var(--line-soft)] p-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-[13px] font-semibold">08:00 mỗi ngày</span>
+                            <span class="badge badge-violet">Asia/Saigon</span>
+                        </div>
+                        <p class="text-[12px] text-[color:var(--text-mute)] mt-2">
+                            Hệ thống quét hóa đơn tới hạn/quá hạn và hợp đồng kết thúc đúng mốc nhắc đã cấu hình.
+                        </p>
+                    </div>
+                    <div class="rounded-[16px] bg-white/70 border border-[color:var(--line-soft)] p-3">
+                        <div class="text-[12px] text-[color:var(--text-mute)]">Luồng đang hỗ trợ</div>
+                        <ul class="mt-2 space-y-2 text-[13px]">
+                            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-[color:var(--ok)]"></i> Gửi email khi phát hành hóa đơn</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-[color:var(--ok)]"></i> Nhắc thanh toán theo ngày trước/sau hạn</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-[color:var(--ok)]"></i> Nhắc hợp đồng sắp hết hạn</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+</body>
+</html>

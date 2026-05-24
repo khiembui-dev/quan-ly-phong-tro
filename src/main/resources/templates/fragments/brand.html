@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<a th:fragment="brand(href)" th:href="${href} ?: '/'" class="brand-link inline-flex items-center gap-2.5 group min-w-0">
+    <span class="brand-mark relative w-8 h-8 grid place-items-center shrink-0">
+        <span class="absolute inset-0 rounded-xl"
+              style="background: linear-gradient(135deg, #4f46e5, #7c3aed, #06b6d4); opacity:.92"></span>
+        <svg viewBox="0 0 24 24" class="relative w-5 h-5 text-white" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2 3 7v10l9 5 9-5V7l-9-5z"></path>
+            <path d="M3 7l9 5 9-5"></path>
+            <path d="M12 22V12"></path>
+        </svg>
+    </span>
+    <span class="brand-name font-extrabold tracking-tight text-[18px] truncate" style="color:var(--text)">
+        SmartRent
+    </span>
+</a>
+</body>
+</html>

@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Phòng — SmartRent</title></head>
+<body>
+<div layout:fragment="content"
+     th:with="ef=${editForm}, fm=${formMode}, fa=${formAction}"
+     th:data-init-fm="${fm}"
+     th:data-init-inherit="${ef != null and !ef.inheritTariff} ? 'false' : 'true'"
+     th:data-init-status="${ef != null ? ef.status : 'AVAILABLE'}"
+     th:data-init-tenant="${ef != null and ef.currentTenantId != null ? ef.currentTenantId : ''}"
+     x-data="{
+        createOpen: $el.dataset.initFm !== 'create',
+        bulkOpen: false,
+        showAdvanced: $el.dataset.initFm !== 'create',
+        inheritTariff: $el.dataset.initInherit !== 'false',
+        statusVal: $el.dataset.initStatus,
+        _uid: 0,
+        fees: (JSON.parse(document.getElementById('roomFeesInit')?.textContent || '[]')).map((f, k) => ({ ...f, uid: 'f' + k })),
+        addFee() { this.fees.push({ name: '', amount: 0, uid: 'f' + (++this._uid + 1000) }); this.$nextTick(() => window.lucide?.createIcons?.()) },
+        removeFee(i) { this.fees.splice(i, 1) },
+        customAmenities: (JSON.parse(document.getElementById('roomCustomAmenitiesInit')?.textContent || '[]')).map((c, k) => ({ ...c, uid: 'c' + k })),
+        addCustomAmenity(category) { this.customAmenities.push({ name: '', category: category, uid: 'c' + (++this._uid + 1000) }); this.$nextTick(() => window.lucide?.createIcons?.()) },
+        removeCustomAmenity(i) { this.customAmenities.splice(i, 1) },
+        customsByCategory(category) { return this.customAmenities.filter(a => a.category === category) },
+        indexOfCustom(item) { return this.customAmenities.indexOf(item) },
+        tenants: JSON.parse(document.getElementById('tenantsInit')?.textContent || '[]'),
+        selectedTenantId: $el.dataset.initTenant || '',
+        tenantOpen: false,
+        tenantSearch: '',
+        tenantHi: 0,
+        _normVi(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d'); },
+        get selectedTenant() { return this.tenants.find(t => t.id === this.selectedTenantId) || null },
+        get filteredTenants() {
+            const q = this.tenantSearch.trim();
+            if (!q) return this.tenants;
+            const nq = this._normVi(q);
+            return this.tenants.filter(t =>
+                this._normVi(t.fullName).includes(nq) ||
+                this._normVi(t.email).includes(nq) ||
+                this._normVi(t.phone).includes(nq)
+            );
+        },
+        openTenantPicker() {
+            this.tenantOpen = true; this.tenantHi = 0;
+            this.$nextTick(() => { this.$refs.tenantSearchInput?.focus(); window.lucide?.createIcons?.(); });
+        },
+         selectTenant(id) { this.selectedTenantId = id; this.statusVal = 'OCCUPIED'; this.tenantOpen = false; this.tenantSearch = ''; },
+         clearTenant() { this.selectedTenantId = ''; this.tenantSearch = ''; this.tenantHi = 0; if (this.statusVal === 'OCCUPIED') this.statusVal = 'AVAILABLE'; },
+        tenantInitial(t) { return t && t.fullName ? t.fullName.trim().charAt(0).toUpperCase() : '?'; },
+        moveTenantHi(delta) {
+            const n = this.filteredTenants.length;
+            if (n === 0) { this.tenantHi = 0; return; }
+            this.tenantHi = ((this.tenantHi + delta) % n + n) % n;
+            this.$nextTick(() => {
+                const el = this.$refs['tenantOpt' + this.tenantHi];
+                el?.scrollIntoView({ block: 'nearest' });
+            });
+        },
+        commitTenantHi() {
+            const t = this.filteredTenants[this.tenantHi];
+            if (t) this.selectTenant(t.id);
+        }
+     }">
+
+    <!-- JSON state for Alpine init (edit/clone pre-fill of dynamic fee rows + custom amenities + tenant list) -->
+    <script id="roomFeesInit" type="application/json" th:utext="${h.json(editFeesJson)}">[]</script>
+    <script id="roomCustomAmenitiesInit" type="application/json" th:utext="${h.json(editCustomAmenitiesJson)}">[]</script>
+    <script id="tenantsInit" type="application/json" th:utext="${h.json(tenantsJson)}">[]</script>
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+        <div>
+            <span class="eyebrow">Quản lý phòng</span>
+            <h1 class="text-[28px] sm:text-[32px] font-bold tracking-tight mt-2">
+                Phòng &amp; Cơ sở
+                <span class="text-[16px] font-medium px-2.5 py-1 rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)] tnum align-middle ml-1"
+                      th:text="${countAll}">12</span>
+            </h1>
+            <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Quản lý chi tiết từng phòng theo cơ sở.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/admin/properties" class="btn btn-glass btn-sm">
+                <i data-lucide="building-2" class="w-4 h-4"></i> Quản lý cơ sở
+            </a>
+            <button @click="bulkOpen = true" class="btn btn-soft btn-sm">
+                <i data-lucide="copy-plus" class="w-4 h-4"></i> Tạo nhiều phòng
+            </button>
+            <!-- When in edit/clone mode, "Thêm phòng" must navigate to a clean URL to avoid leaking pre-filled state -->
+            <a th:if="${fm != 'create' and currentProperty != null}" th:href="@{/admin/rooms(propertyId=${currentProperty.id})}"
+               class="btn btn-primary btn-sm">
+                <i data-lucide="plus" class="w-4 h-4"></i> Thêm phòng
+            </a>
+            <a th:if="${fm != 'create' and currentProperty == null}" href="/admin/rooms"
+               class="btn btn-primary btn-sm">
+                <i data-lucide="plus" class="w-4 h-4"></i> Thêm phòng
+            </a>
+            <button th:if="${fm == 'create'}" @click="createOpen = true" class="btn btn-primary btn-sm">
+                <i data-lucide="plus" class="w-4 h-4"></i> Thêm phòng
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <a th:href="@{/admin/rooms}"
+           class="surface p-4 hover:scale-[1.01] transition cursor-pointer"
+           th:classappend="${(filterStatus == null or filterStatus == '')} ? 'ring-2 ring-[color:var(--accent)]' : ''">
+            <div class="kpi-label">Tất cả</div>
+            <div class="text-[24px] font-extrabold tnum mt-1" th:text="${countAll}">12</div>
+        </a>
+        <a th:href="@{/admin/rooms(status='AVAILABLE')}"
+           class="surface p-4 hover:scale-[1.01] transition cursor-pointer"
+           th:classappend="${filterStatus == 'AVAILABLE'} ? 'ring-2 ring-[color:var(--ok)]' : ''">
+            <div class="kpi-label inline-flex items-center gap-1.5"><span class="status-dot ok"></span>Còn trống</div>
+            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--ok)]" th:text="${countAvailable}">3</div>
+        </a>
+        <a th:href="@{/admin/rooms(status='OCCUPIED')}"
+           class="surface p-4 hover:scale-[1.01] transition cursor-pointer"
+           th:classappend="${filterStatus == 'OCCUPIED'} ? 'ring-2 ring-[color:var(--warn)]' : ''">
+            <div class="kpi-label inline-flex items-center gap-1.5"><span class="status-dot warn"></span>Đang ở</div>
+            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--warn)]" th:text="${countOccupied}">8</div>
+        </a>
+        <a th:href="@{/admin/rooms(status='MAINTENANCE')}"
+           class="surface p-4 hover:scale-[1.01] transition cursor-pointer"
+           th:classappend="${filterStatus == 'MAINTENANCE'} ? 'ring-2 ring-[color:var(--err)]' : ''">
+            <div class="kpi-label inline-flex items-center gap-1.5"><span class="status-dot err"></span>Bảo trì</div>
+            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--err)]" th:text="${countMaintenance}">1</div>
+        </a>
+    </div>
+
+    <!-- Property tabs -->
+    <div class="flex flex-wrap gap-2 mb-4">
+        <a th:href="@{/admin/rooms}" class="pill"
+           th:classappend="${currentProperty == null} ? 'pill-active' : ''">
+            <i data-lucide="layers" class="w-3.5 h-3.5"></i> Tất cả cơ sở
+        </a>
+        <a th:each="p : ${properties}" th:href="@{/admin/rooms(propertyId=${p.id})}"
+           th:class="${'pill ' + (currentProperty != null and currentProperty.id == p.id ? 'pill-active' : '')}">
+            <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+            <span th:text="${p.name}">Glass Tower</span>
+        </a>
+        <a href="/admin/properties" class="pill"
+           style="border-style: dashed; color: var(--accent);">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Cơ sở mới
+        </a>
+    </div>
+
+    <!-- Search + filters -->
+    <form method="get" action="/admin/rooms" class="mb-5 flex gap-2 flex-wrap items-center">
+        <input type="hidden" name="propertyId" th:if="${currentProperty != null}" th:value="${currentProperty.id}" />
+        <input type="hidden" name="status" th:if="${filterStatus != null}" th:value="${filterStatus}" />
+        <div class="input-glass h-11 max-w-[420px] flex-1 min-w-[220px]">
+            <i data-lucide="search" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+            <input type="text" name="q" th:value="${filterQ}" placeholder="Tìm theo mã, tên phòng…" />
+        </div>
+        <select name="type" class="input-glass h-11 px-4 text-[14px] cursor-pointer min-w-[160px]">
+            <option value="">Tất cả loại</option>
+            <option value="STUDIO"   th:selected="${filterType == 'STUDIO'}">Studio</option>
+            <option value="SINGLE"   th:selected="${filterType == 'SINGLE'}">Phòng đơn</option>
+            <option value="DOUBLE"   th:selected="${filterType == 'DOUBLE'}">Phòng đôi</option>
+            <option value="PENTHOUSE" th:selected="${filterType == 'PENTHOUSE'}">Penthouse</option>
+            <option value="APARTMENT" th:selected="${filterType == 'APARTMENT'}">Căn hộ</option>
+        </select>
+        <button type="submit" class="btn btn-soft btn-sm h-11">
+            <i data-lucide="filter" class="w-4 h-4"></i> Lọc
+        </button>
+    </form>
+
+    <!-- Room grid -->
+    <div th:if="${rooms != null and !rooms.isEmpty()}"
+         class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+        <div th:each="r, iter : ${rooms}"
+             th:class="${'glass overflow-hidden flex flex-col reveal reveal-' + (iter.index % 5 + 1)}">
+            <!-- Cover -->
+            <div class="relative aspect-[4/3]"
+                 style="background: linear-gradient(135deg,#a5b4fc,#c4b5fd,#67e8f9);">
+                <img th:if="${r.coverUrl != null}" th:src="${r.coverUrl}" alt=""
+                     class="absolute inset-0 w-full h-full object-cover" />
+                <div th:unless="${r.coverUrl != null}" class="absolute inset-0 grid place-items-center text-white/85 font-extrabold text-[36px] tnum"
+                     th:text="${r.code}">P1</div>
+
+                <!-- Status -->
+                <span class="absolute top-3 left-3 badge"
+                      th:classappend="|
+                          ${r.status.name() == 'AVAILABLE'  ? 'badge-emerald' : ''}
+                          ${r.status.name() == 'OCCUPIED'   ? 'badge-amber'   : ''}
+                          ${r.status.name() == 'MAINTENANCE'? 'badge-rose'    : ''}
+                          ${r.status.name() == 'HIDDEN'     ? 'badge-mute'    : ''}|"
+                      style="backdrop-filter: blur(8px);">
+                    <span th:if="${r.status.name() == 'AVAILABLE'}" class="dot dot-pulse" style="background: currentColor"></span>
+                    <span th:switch="${r.status.name()}">
+                        <span th:case="'AVAILABLE'">Trống</span>
+                        <span th:case="'OCCUPIED'">Đang ở</span>
+                        <span th:case="'MAINTENANCE'">Sửa chữa</span>
+                        <span th:case="'HIDDEN'">Ẩn</span>
+                    </span>
+                </span>
+                <span class="absolute top-3 right-3 chip" style="background: rgba(255,255,255,0.92);">
+                    <span th:switch="${r.type.name()}">
+                        <span th:case="'STUDIO'">Studio</span>
+                        <span th:case="'SINGLE'">Phòng đơn</span>
+                        <span th:case="'DOUBLE'">Phòng đôi</span>
+                        <span th:case="'PENTHOUSE'">Penthouse</span>
+                        <span th:case="'APARTMENT'">Căn hộ</span>
+                        <span th:case="*">Phòng</span>
+                    </span>
+                </span>
+                <span class="absolute bottom-3 left-3 mono text-[11px] font-semibold px-2 py-1 rounded-md text-white"
+                      style="background: rgba(15,23,42,0.7); backdrop-filter: blur(8px);"
+                      th:text="${r.code}">GT-A-301</span>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 flex-1 flex flex-col gap-2">
+                <h3 class="font-semibold text-[15px] leading-snug line-clamp-1 tracking-tight" th:text="${r.title}">Studio</h3>
+                <div class="flex items-center gap-3 text-[12px] text-[color:var(--text-mute)] flex-wrap">
+                    <span class="inline-flex items-center gap-1">
+                        <i data-lucide="ruler" class="w-3 h-3"></i>
+                        <span class="tnum"><span th:text="${r.areaSqm}">28</span>m²</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1" th:if="${r.bedrooms != null}">
+                        <i data-lucide="bed-double" class="w-3 h-3"></i>
+                        <span th:text="${r.bedrooms}">1</span>PN
+                    </span>
+                    <span class="inline-flex items-center gap-1" th:if="${r.floor != null}">
+                        <i data-lucide="layers" class="w-3 h-3"></i>
+                        Tầng <span class="tnum" th:text="${r.floor}">3</span>
+                    </span>
+                </div>
+
+                <!-- Current tenant block (visible whenever there is one assigned, or warning when OCCUPIED missing tenant) -->
+                <th:block th:with="tu=${tenantByRoomId.get(r.id)}">
+                    <a th:if="${tu != null}"
+                       th:href="@{'/admin/tenants/' + ${tu.id}}"
+                       class="group flex items-center gap-2 rounded-lg p-2 bg-[color:var(--warn-soft)]/40 border border-[color:var(--warn-soft)] hover:bg-[color:var(--warn-soft)]/70 transition"
+                       th:title="|Xem chi tiết: ${tu.fullName}|">
+                        <span class="w-7 h-7 shrink-0 rounded-full grid place-items-center text-[12px] font-bold bg-[color:var(--warn)] text-white"
+                              th:text="${tu.fullName != null and !tu.fullName.isEmpty() ? tu.fullName.substring(0,1).toUpperCase() : '?'}">K</span>
+                        <span class="flex-1 min-w-0">
+                            <span class="block text-[12px] font-semibold text-[color:var(--warn)] truncate inline-flex items-center gap-1">
+                                <i data-lucide="user-round" class="w-3 h-3"></i>
+                                <span th:text="${tu.fullName}">Khách</span>
+                            </span>
+                            <span class="block text-[10px] text-[color:var(--text-mute)] truncate"
+                                  th:text="${(tu.email != null ? tu.email : '') + (tu.phone != null and !tu.phone.isEmpty() ? ' · ' + tu.phone : '')}">email · phone</span>
+                            <span class="block text-[10px] font-semibold truncate"
+                                  th:classappend="${h.roomUsageTextClass(r.currentTenantPaidUntil)}">
+                                <i data-lucide="calendar-clock" class="w-3 h-3 inline-block align-[-2px] mr-0.5"></i>
+                                <span th:text="${h.roomUsageLabel(r.currentTenantPaidUntil)}">Còn 12 ngày</span>
+                                <span th:if="${r.currentTenantPaidUntil != null}" class="font-normal text-[color:var(--text-mute)]"
+                                      th:text="${' · đến ' + #temporals.format(r.currentTenantPaidUntil, 'dd/MM/yyyy')}"> · đến 09/06/2026</span>
+                            </span>
+                        </span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-[color:var(--warn)] group-hover:translate-x-0.5 transition"></i>
+                    </a>
+                    <div th:if="${tu == null and r.status.name() == 'OCCUPIED'}"
+                         class="rounded-lg p-2 bg-[color:var(--err-soft)]/40 border border-[color:var(--err-soft)] flex items-center gap-2 text-[11px] text-[color:var(--err)]">
+                        <i data-lucide="user-x" class="w-3.5 h-3.5"></i>
+                        <span>Đang ở nhưng chưa gán khách —
+                            <a th:href="@{/admin/rooms(edit=${r.id}, propertyId=${r.propertyId})}"
+                               class="underline font-medium">gán ngay</a>
+                        </span>
+                    </div>
+                    <div th:if="${tu == null and r.currentTenantId != null}"
+                         class="rounded-lg p-2 bg-[color:var(--warn-soft)]/40 border border-[color:var(--warn-soft)] flex items-center gap-2 text-[11px] text-[color:var(--warn)]">
+                        <i data-lucide="user-round" class="w-3.5 h-3.5"></i>
+                        <span>Khách thuê đã bị xóa khỏi hệ thống</span>
+                    </div>
+                </th:block>
+
+                <p class="text-[12px] text-[color:var(--text-mute)] inline-flex items-center gap-1 line-clamp-1">
+                    <i data-lucide="map-pin" class="w-3 h-3 shrink-0"></i>
+                    <span th:text="${r.district + ', ' + r.city}">Quận 1, TP.HCM</span>
+                </p>
+
+                <!-- Extra fees as inline chips -->
+                <div th:if="${r.extraFees != null and !r.extraFees.isEmpty()}" class="flex flex-wrap gap-1 mt-1">
+                    <span th:each="fee : ${r.extraFees}"
+                          class="text-[10px] tnum px-2 py-0.5 rounded-full bg-[color:var(--accent-soft)]/50 text-[color:var(--accent)]"
+                          th:text="${fee.name + ': ' + h.vnd(fee.amount)}">Phí: 50.000₫</span>
+                </div>
+
+                <!-- Custom amenities chips on card -->
+                <div th:if="${r.customAmenities != null and !r.customAmenities.isEmpty()}" class="flex flex-wrap gap-1 mt-1">
+                    <span th:each="ca : ${r.customAmenities}"
+                          class="text-[10px] px-2 py-0.5 rounded-full bg-[color:var(--ok-soft)]/60 text-[color:var(--ok)] inline-flex items-center gap-1">
+                        <i data-lucide="sparkles" class="w-2.5 h-2.5"></i>
+                        <span th:text="${ca.name}">Tiện nghi</span>
+                    </span>
+                </div>
+
+                <div class="divider mt-1"></div>
+
+                <!-- Tariff inheritance label -->
+                <div class="grid grid-cols-2 gap-1 text-[11px] text-[color:var(--text-mute)]">
+                    <div class="flex items-center justify-between gap-1">
+                        <span>Điện</span>
+                        <span class="font-medium tnum text-[color:var(--text-soft)]"><span th:text="${h.vnd(r.electricUnit)}">4k</span>/kWh</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-1">
+                        <span>Nước</span>
+                        <span class="font-medium tnum text-[color:var(--text-soft)]"><span th:text="${h.vnd(r.waterUnit)}">25k</span>/m³</span>
+                    </div>
+                </div>
+                <div th:if="${r.inheritTariff}" class="text-[10px] text-[color:var(--text-faint)] italic">
+                    <i data-lucide="link" class="w-2.5 h-2.5 inline"></i> Kế thừa từ cơ sở
+                </div>
+                <div th:unless="${r.inheritTariff}" class="text-[10px] text-[color:var(--accent)] italic">
+                    <i data-lucide="edit-3" class="w-2.5 h-2.5 inline"></i> Đã ghi đè
+                </div>
+
+                <!-- Price + actions -->
+                <div class="mt-auto pt-3 flex items-end justify-between gap-2">
+                    <div>
+                        <div class="text-[18px] font-extrabold text-[color:var(--accent)] tnum tracking-tight"
+                             th:text="${h.vnd(r.priceMonthly)}">8.5tr</div>
+                        <div class="text-[10px] text-[color:var(--text-mute)] -mt-0.5 uppercase tracking-[0.06em]">/ tháng</div>
+                    </div>
+                    <div class="flex items-center gap-1 relative" x-data="{ open: false }">
+                        <a th:href="@{'/rooms/' + ${r.slug}}" target="_blank"
+                           class="w-9 h-9 grid place-items-center rounded-lg hover:bg-black/[0.05] transition" title="Xem trên trang khách">
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        </a>
+                        <a th:href="@{/admin/rooms(edit=${r.id}, propertyId=${r.propertyId})}"
+                           class="w-9 h-9 grid place-items-center rounded-lg hover:bg-[color:var(--accent-soft)] text-[color:var(--accent)] transition" title="Sửa">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        </a>
+                        <button type="button" @click.stop="open = !open"
+                                class="w-9 h-9 grid place-items-center rounded-lg hover:bg-black/[0.05] transition" title="Khác">
+                            <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <div x-show="open" x-cloak @click.outside="open = false"
+                             class="absolute right-0 bottom-full mb-1 w-[210px] glass-strong rounded-xl p-1 z-30">
+                            <a th:href="@{/admin/rooms(clone=${r.id}, propertyId=${r.propertyId})}"
+                               class="w-full text-left px-3 py-2 rounded-lg text-[13px] hover:bg-black/[0.04] inline-flex items-center gap-2">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Sao chép
+                            </a>
+                            <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[color:var(--text-faint)]">Đổi trạng thái</div>
+                            <form th:action="@{'/admin/rooms/' + ${r.id} + '/status'}" method="post" class="contents">
+                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button type="submit" name="status" value="AVAILABLE"
+                                        class="w-full text-left px-3 py-2 rounded-lg text-[13px] hover:bg-black/[0.04] inline-flex items-center gap-2">
+                                    <span class="status-dot ok"></span> Còn trống
+                                </button>
+                                <button type="submit" name="status" value="MAINTENANCE"
+                                        class="w-full text-left px-3 py-2 rounded-lg text-[13px] hover:bg-black/[0.04] inline-flex items-center gap-2">
+                                    <span class="status-dot err"></span> Bảo trì
+                                </button>
+                                <button type="submit" name="status" value="HIDDEN"
+                                        class="w-full text-left px-3 py-2 rounded-lg text-[13px] hover:bg-black/[0.04] inline-flex items-center gap-2">
+                                    <span class="status-dot mute"></span> Ẩn
+                                </button>
+                            </form>
+                            <div class="border-t border-[color:var(--line-soft)] my-1"></div>
+                            <form th:action="@{'/admin/rooms/' + ${r.id} + '/delete'}" method="post"
+                                  onsubmit="return confirm('Xóa phòng này? Hành động không thể hoàn tác.');">
+                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button type="submit"
+                                        class="w-full text-left px-3 py-2 rounded-lg text-[13px] hover:bg-[color:var(--err-soft)] text-[color:var(--err)] inline-flex items-center gap-2">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Xóa phòng
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty -->
+    <div th:if="${rooms == null or rooms.isEmpty()}" class="empty">
+        <div class="empty-icon">
+            <i data-lucide="bed" class="w-7 h-7"></i>
+        </div>
+        <h3 class="text-[16px] font-semibold">Chưa có phòng nào</h3>
+        <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5">
+            <span th:if="${(filterQ != null and !filterQ.isEmpty()) or (filterType != null and !filterType.isEmpty()) or (filterStatus != null and !filterStatus.isEmpty())}">Không tìm thấy phòng phù hợp với bộ lọc.</span>
+            <span th:unless="${(filterQ != null and !filterQ.isEmpty()) or (filterType != null and !filterType.isEmpty()) or (filterStatus != null and !filterStatus.isEmpty())}">Tạo phòng đầu tiên để bắt đầu.</span>
+        </p>
+        <button @click="createOpen = true" class="btn btn-primary mt-5">
+            <i data-lucide="plus" class="w-4 h-4"></i> Thêm phòng
+        </button>
+    </div>
+
+    <!-- ===== CREATE / EDIT / CLONE ROOM MODAL ===== -->
+    <div x-show="createOpen" x-cloak x-transition.opacity
+         class="modal-backdrop"
+         @keydown.escape.window="createOpen = false">
+        <form @click.outside="createOpen = false"
+              th:action="${fa}" method="post"
+              style="max-height: calc(100vh - 2rem);"
+              class="modal-card flex flex-col w-full max-w-[760px]">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+            <!-- Fixed header -->
+            <div class="px-7 pt-7 pb-4 shrink-0 border-b border-[color:var(--line-soft)] flex items-start justify-between gap-4">
+                <div>
+                    <span class="eyebrow" th:switch="${fm}">
+                        <span th:case="'edit'">Sửa</span>
+                        <span th:case="'clone'">Sao chép</span>
+                        <span th:case="*">Mới</span>
+                    </span>
+                    <h2 class="text-[22px] font-bold tracking-tight mt-1" th:switch="${fm}">
+                        <span th:case="'edit'">Sửa phòng</span>
+                        <span th:case="'clone'">Sao chép phòng</span>
+                        <span th:case="*">Thêm phòng mới</span>
+                    </h2>
+                    <p class="text-[12px] text-[color:var(--text-mute)] mt-1" th:switch="${fm}">
+                        <span th:case="'edit'">Cập nhật thông tin phòng. Chỉ Diện tích là bắt buộc.</span>
+                        <span th:case="'clone'">Tạo phòng mới với mọi thiết lập của phòng nguồn. Hãy đặt mã mới.</span>
+                        <span th:case="*">Chỉ cần Diện tích là bắt buộc. Bấm "Thêm thông tin chi tiết" để mở rộng.</span>
+                    </p>
+                </div>
+                <a href="/admin/rooms"
+                   class="w-8 h-8 grid place-items-center rounded-md hover:bg-black/[0.05] shrink-0"
+                   title="Đóng">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </a>
+            </div>
+
+            <!-- Scrollable content -->
+            <div class="flex-1 overflow-y-auto px-7 py-5">
+
+            <!-- Core fields -->
+            <div class="grid sm:grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="form-label">Cơ sở <span class="text-[color:var(--err)]">*</span></label>
+                    <div class="input-glass">
+                        <i data-lucide="building-2" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <select name="propertyId" required>
+                            <option value="">-- Chọn cơ sở --</option>
+                            <option th:each="p : ${properties}" th:value="${p.id}"
+                                    th:text="${p.name}"
+                                    th:selected="${(ef != null and ef.propertyId == p.id.toString()) or (ef == null and currentProperty != null and currentProperty.id == p.id)}">Glass Tower</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Diện tích (m²) <span class="text-[color:var(--err)]">*</span></label>
+                    <div class="input-glass">
+                        <i data-lucide="ruler" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="number" step="0.01" name="areaSqm" required min="1"
+                               th:value="${ef != null ? ef.areaSqm : ''}" placeholder="VD: 25" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="form-label">Mã phòng <span class="text-[color:var(--text-mute)] font-normal text-[11px]">(để trống → tự sinh; phải duy nhất trong cơ sở)</span></label>
+                    <div class="input-glass">
+                        <i data-lucide="hash" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="text" name="code" maxlength="32"
+                               th:value="${ef != null ? ef.code : ''}" placeholder="VD: GT-A-301" />
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Giá thuê (₫/tháng)</label>
+                    <div class="input-glass">
+                        <i data-lucide="banknote" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="number" name="priceMonthly" min="0"
+                               th:value="${ef != null ? ef.priceMonthly : ''}" placeholder="VD: 8500000" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toggle advanced -->
+            <button type="button" @click="showAdvanced = !showAdvanced"
+                    class="text-[12px] text-[color:var(--accent)] hover:underline inline-flex items-center gap-1.5 mb-3 mt-1">
+                <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+                <span x-text="showAdvanced ? 'Ẩn thông tin chi tiết' : '+ Thêm thông tin chi tiết'">+ Thêm thông tin chi tiết</span>
+            </button>
+
+            <!-- Advanced fields -->
+            <div x-show="showAdvanced" x-cloak class="space-y-3 mb-4 pb-4 border-b border-[color:var(--line-soft)]">
+                <div>
+                    <label class="form-label">Tên phòng</label>
+                    <div class="input-glass">
+                        <i data-lucide="bed" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="text" name="title" maxlength="200"
+                               th:value="${ef != null ? ef.title : ''}" placeholder="VD: Studio Glass Tower 302 (để trống → 'Phòng + mã')" />
+                    </div>
+                </div>
+                <div class="grid sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="form-label">Loại</label>
+                        <div class="input-glass">
+                            <select name="type">
+                                <option value="STUDIO"   th:selected="${ef == null or ef.type == 'STUDIO'}">Studio</option>
+                                <option value="SINGLE"   th:selected="${ef != null and ef.type == 'SINGLE'}">Phòng đơn</option>
+                                <option value="DOUBLE"   th:selected="${ef != null and ef.type == 'DOUBLE'}">Phòng đôi</option>
+                                <option value="PENTHOUSE" th:selected="${ef != null and ef.type == 'PENTHOUSE'}">Penthouse</option>
+                                <option value="APARTMENT" th:selected="${ef != null and ef.type == 'APARTMENT'}">Căn hộ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Tầng</label>
+                        <div class="input-glass">
+                            <input type="number" name="floor" th:value="${ef != null ? ef.floor : ''}" placeholder="1" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Tiền cọc (₫)</label>
+                        <div class="input-glass">
+                            <input type="number" name="depositAmount" min="0"
+                                   th:value="${ef != null ? ef.depositAmount : ''}" placeholder="Mặc định = 1 tháng" />
+                        </div>
+                    </div>
+                </div>
+                <div class="grid sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="form-label">Phòng ngủ</label>
+                        <div class="input-glass">
+                            <input type="number" name="bedrooms" min="0"
+                                   th:value="${ef != null ? ef.bedrooms : 1}" placeholder="1" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Phòng tắm</label>
+                        <div class="input-glass">
+                            <input type="number" name="bathrooms" min="0"
+                                   th:value="${ef != null ? ef.bathrooms : 1}" placeholder="1" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Tối đa người</label>
+                        <div class="input-glass">
+                            <input type="number" name="maxOccupants" min="1"
+                                   th:value="${ef != null ? ef.maxOccupants : 2}" placeholder="2" />
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Mô tả</label>
+                    <div class="input-glass !h-auto !py-3">
+                        <textarea name="description" rows="2"
+                                  placeholder="Mô tả ngắn về phòng…" th:text="${ef != null ? ef.description : ''}"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status + tenant link -->
+            <div class="grid sm:grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="form-label">Trạng thái</label>
+                    <div class="input-glass">
+                        <i data-lucide="circle" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <select name="status" x-model="statusVal" @change="if (statusVal !== 'OCCUPIED') clearTenant()">
+                            <option value="AVAILABLE">Còn trống (hiện trên trang khách)</option>
+                            <option value="OCCUPIED">Đã thuê</option>
+                            <option value="MAINTENANCE">Bảo trì</option>
+                            <option value="HIDDEN">Tạm ẩn</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Người đang ở</label>
+                    <div class="relative" @keydown.escape.stop="tenantOpen = false" @keydown.down.prevent="tenantOpen ? moveTenantHi(1) : openTenantPicker()" @keydown.up.prevent="moveTenantHi(-1)" @keydown.enter.prevent="if (tenantOpen) commitTenantHi()">
+                        <!-- Hidden input that the form actually submits -->
+                        <input type="hidden" name="currentTenantId" :value="selectedTenantId" />
+
+                        <!-- Trigger: shows selected tenant or placeholder -->
+                        <button type="button"
+                                @click="tenantOpen ? (tenantOpen = false) : openTenantPicker()"
+                                class="input-glass w-full text-left flex items-center gap-2 cursor-pointer pr-3"
+                                :class="selectedTenantId ? 'ring-2 ring-[color:var(--warn)]/25 border-[color:var(--warn)]' : ''">
+                            <template x-if="selectedTenant">
+                                <span class="flex items-center gap-2 flex-1 min-w-0">
+                                    <span class="w-7 h-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold bg-[color:var(--accent-soft)] text-[color:var(--accent)]"
+                                          x-text="tenantInitial(selectedTenant)">A</span>
+                                    <span class="flex-1 min-w-0">
+                                        <span class="block text-[13px] font-semibold truncate" x-text="selectedTenant.fullName">Tên</span>
+                                        <span class="block text-[11px] text-[color:var(--text-mute)] truncate" x-text="selectedTenant.email + (selectedTenant.phone ? ' · ' + selectedTenant.phone : '')">email</span>
+                                    </span>
+                                </span>
+                            </template>
+                            <template x-if="!selectedTenant">
+                                <span class="flex items-center gap-2 flex-1">
+                                    <i data-lucide="user-round" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                    <span class="text-[13px] text-[color:var(--text-mute)]">Đang trống</span>
+                                </span>
+                            </template>
+                            <span class="ml-2 shrink-0 grid place-items-center transition" :class="tenantOpen ? 'rotate-180' : ''">
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            </span>
+                        </button>
+
+                        <p class="mt-1 text-[11px] text-[color:var(--text-mute)]">
+                            Chọn khách thuê sẽ tự chuyển phòng sang trạng thái đang ở.
+                        </p>
+
+                        <!-- Dropdown panel -->
+                        <div x-show="tenantOpen" x-cloak x-transition.opacity.duration.150ms
+                             @click.outside="tenantOpen = false"
+                             class="absolute left-0 right-0 top-full mt-1 z-30 bg-white rounded-xl shadow-[0_8px_32px_rgba(15,23,42,0.12)] border border-[color:var(--line)] overflow-hidden">
+                            <!-- Search -->
+                            <div class="p-2 border-b border-[color:var(--line-soft)]">
+                                <div class="input-glass h-9">
+                                    <i data-lucide="search" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                    <input x-ref="tenantSearchInput" type="text" x-model="tenantSearch"
+                                           @input="tenantHi = 0"
+                                           placeholder="Tìm theo tên, email, số điện thoại…"
+                                           class="bg-transparent !border-0 !ring-0 outline-none !p-0 !m-0 text-[13px] flex-1 focus:!ring-0 focus:!border-0" />
+                                    <span class="text-[11px] text-[color:var(--text-faint)] tnum"
+                                          x-text="filteredTenants.length + '/' + tenants.length"></span>
+                                </div>
+                            </div>
+                            <!-- List -->
+                            <div class="max-h-[280px] overflow-y-auto py-1">
+                                <button type="button"
+                                        @click="clearTenant(); tenantOpen = false"
+                                        class="w-full flex items-center gap-2.5 px-3 py-2 text-left transition"
+                                        :class="!selectedTenantId ? 'bg-[color:var(--accent-soft)]/80' : 'hover:bg-[color:var(--accent-soft)]/40'">
+                                    <span class="w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold bg-[color:var(--ok-soft)] text-[color:var(--ok)]">
+                                        <i data-lucide="door-open" class="w-4 h-4"></i>
+                                    </span>
+                                    <span class="flex-1 min-w-0">
+                                        <span class="block text-[13px] font-semibold truncate">Đang trống</span>
+                                        <span class="block text-[11px] text-[color:var(--text-mute)] truncate">Không gán khách thuê cho phòng này</span>
+                                    </span>
+                                    <i x-show="!selectedTenantId" data-lucide="check"
+                                       class="w-4 h-4 text-[color:var(--accent)] shrink-0"></i>
+                                </button>
+                                <template x-for="(t, i) in filteredTenants" :key="t.id">
+                                    <button type="button"
+                                            :ref="'tenantOpt' + i"
+                                            @click="selectTenant(t.id)"
+                                            @mouseenter="tenantHi = i"
+                                            class="w-full flex items-center gap-2.5 px-3 py-2 text-left transition"
+                                            :class="[
+                                                t.id === selectedTenantId ? 'bg-[color:var(--accent-soft)]/80' : '',
+                                                tenantHi === i && t.id !== selectedTenantId ? 'bg-[color:var(--accent-soft)]/40' : ''
+                                            ]">
+                                        <span class="w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold bg-[color:var(--accent-soft)] text-[color:var(--accent)]"
+                                              x-text="tenantInitial(t)">A</span>
+                                        <span class="flex-1 min-w-0">
+                                            <span class="block text-[13px] font-semibold truncate" x-text="t.fullName">Tên</span>
+                                            <span class="block text-[11px] text-[color:var(--text-mute)] truncate flex items-center gap-2">
+                                                <span class="inline-flex items-center gap-1" x-show="t.email">
+                                                    <i data-lucide="at-sign" class="w-3 h-3"></i>
+                                                    <span x-text="t.email"></span>
+                                                </span>
+                                                <span class="inline-flex items-center gap-1" x-show="t.phone">
+                                                    <i data-lucide="phone" class="w-3 h-3"></i>
+                                                    <span x-text="t.phone"></span>
+                                                </span>
+                                            </span>
+                                        </span>
+                                        <i x-show="t.id === selectedTenantId" data-lucide="check"
+                                           class="w-4 h-4 text-[color:var(--accent)] shrink-0"></i>
+                                    </button>
+                                </template>
+                                <div x-show="filteredTenants.length === 0"
+                                     class="px-4 py-8 text-center">
+                                    <i data-lucide="user-x" class="w-8 h-8 text-[color:var(--text-faint)] mx-auto mb-2 block"></i>
+                                    <p class="text-[12px] text-[color:var(--text-mute)]">Không tìm thấy khách thuê khớp</p>
+                                    <p class="text-[11px] text-[color:var(--text-faint)] mt-1">Thử từ khóa khác hoặc tạo khách mới ở mục "Khách thuê".</p>
+                                </div>
+                            </div>
+                            <!-- Footer with Clear -->
+                            <div x-show="selectedTenantId"
+                                 class="p-2 border-t border-[color:var(--line-soft)] flex items-center justify-between">
+                                <span class="text-[11px] text-[color:var(--text-mute)]">Đã chọn 1 khách</span>
+                                <button type="button"
+                                        @click="clearTenant(); tenantOpen = false"
+                                        class="text-[11px] text-[color:var(--err)] hover:underline inline-flex items-center gap-1">
+                                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Đặt trống
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div x-show="selectedTenantId" x-cloak>
+                    <label class="form-label">Đã thanh toán đến</label>
+                    <div class="input-glass">
+                        <i data-lucide="calendar-clock" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="date" name="currentTenantPaidUntil"
+                               th:value="${ef != null and ef.currentTenantPaidUntil != null ? ef.currentTenantPaidUntil : ''}" />
+                    </div>
+                    <p class="mt-1 text-[11px] text-[color:var(--text-mute)]">
+                        Để trống sẽ tự đặt hạn 1 tháng kể từ hôm nay khi gán khách mới.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tariff section -->
+            <div class="pt-4 border-t border-[color:var(--line-soft)] mb-4">
+                <label class="inline-flex items-center gap-2 mb-3 cursor-pointer">
+                    <input type="hidden" name="inheritTariff" value="false" />
+                    <input type="checkbox" name="inheritTariff" value="true" x-model="inheritTariff"
+                           class="rounded border-[color:var(--line)]" />
+                    <span class="text-[13px] font-medium">Kế thừa đơn giá điện/nước từ cơ sở</span>
+                    <span class="text-[11px] text-[color:var(--text-mute)]">(bỏ tích để ghi đè)</span>
+                </label>
+                <div x-show="!inheritTariff" x-cloak class="grid sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label">Điện riêng (₫/kWh)</label>
+                        <div class="input-glass">
+                            <i data-lucide="zap" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="number" name="electricUnit" min="0"
+                                   th:value="${ef != null ? ef.electricUnit : ''}" placeholder="VD: 4500" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Nước riêng (₫/m³)</label>
+                        <div class="input-glass">
+                            <i data-lucide="droplets" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="number" name="waterUnit" min="0"
+                                   th:value="${ef != null ? ef.waterUnit : ''}" placeholder="VD: 28000" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extra fees -->
+            <div class="pt-3 mb-4">
+                <div class="flex items-center justify-between mb-2.5">
+                    <div>
+                        <span class="form-label !mb-0">Chi phí khác</span>
+                        <p class="text-[11px] text-[color:var(--text-mute)] mt-0.5">VD: Phí gửi xe máy, Phí thang máy, Internet riêng…</p>
+                    </div>
+                    <button type="button" @click="addFee()" class="btn btn-soft btn-sm">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm chi phí
+                    </button>
+                </div>
+                <template x-for="(fee, i) in fees" :key="fee.uid">
+                    <div class="grid grid-cols-[1fr_160px_auto] gap-2 mb-2 items-center">
+                        <div class="input-glass">
+                            <i data-lucide="tag" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="text" :name="'extraFeeNames[' + i + ']'" x-model="fee.name"
+                                   maxlength="60" placeholder="VD: Phí gửi xe máy" />
+                        </div>
+                        <div class="input-glass">
+                            <i data-lucide="banknote" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <input type="number" :name="'extraFeeAmounts[' + i + ']'" x-model="fee.amount"
+                                   min="0" placeholder="100000" />
+                        </div>
+                        <button type="button" @click="removeFee(i)"
+                                class="w-10 h-10 grid place-items-center rounded-lg text-[color:var(--err)] hover:bg-[color:var(--err-soft)]"
+                                title="Xóa">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Amenities chip groups -->
+            <div class="pt-4 border-t border-[color:var(--line-soft)] mb-4">
+                <span class="eyebrow">Tiện nghi</span>
+                <div class="space-y-4 mt-3">
+                    <div th:each="grp : ${amenityGroups}" th:if="${grp.value != null and !grp.value.isEmpty()}">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-bold uppercase tracking-[0.10em] text-[color:var(--text-faint)]"
+                                  th:switch="${grp.key}">
+                                <span th:case="'FURNITURE'">Nội thất</span>
+                                <span th:case="'UTILITY'">Tiện ích phòng</span>
+                                <span th:case="'RULE'">Quy định</span>
+                                <span th:case="*">Khác</span>
+                            </span>
+                            <button type="button"
+                                    th:data-category="${grp.key}"
+                                    @click="addCustomAmenity($el.dataset.category)"
+                                    class="text-[11px] text-[color:var(--accent)] hover:underline inline-flex items-center gap-1">
+                                <i data-lucide="plus" class="w-3 h-3"></i> Thêm
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <!-- Predefined amenity chips (toggle via checkbox) -->
+                            <label th:each="a : ${grp.value}"
+                                   class="cursor-pointer select-none">
+                                <input type="checkbox" name="amenityCodes" th:value="${a.code}"
+                                       th:checked="${ef != null and ef.amenityCodes != null and ef.amenityCodes.contains(a.code)}"
+                                       class="peer sr-only" />
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium border transition
+                                             bg-white border-[color:var(--line)] text-[color:var(--text-soft)] hover:border-[color:var(--accent)]
+                                             peer-checked:bg-[color:var(--accent)] peer-checked:text-white peer-checked:border-[color:var(--accent)]"
+                                      th:text="${a.name}">Tiện nghi</span>
+                            </label>
+
+                            <!-- Custom amenity chips (Alpine-managed input + remove) -->
+                            <template th:attr="x-for=|item in customsByCategory('${grp.key}')|" :key="item.uid">
+                                <span class="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-full text-[12px] font-medium border bg-[color:var(--accent-soft)]/60 border-[color:var(--accent)] text-[color:var(--accent)]">
+                                    <input type="text"
+                                           :name="'customAmenityNames[' + indexOfCustom(item) + ']'"
+                                           x-model="item.name"
+                                           maxlength="40"
+                                           placeholder="Tên tiện nghi"
+                                           class="bg-transparent !border-0 !ring-0 outline-none !p-0 !m-0 leading-none text-[12px] font-medium text-[color:var(--accent)] placeholder:text-[color:var(--accent)]/50 w-[110px] focus:!ring-0 focus:!border-0" />
+                                    <input type="hidden"
+                                           :name="'customAmenityCategories[' + indexOfCustom(item) + ']'"
+                                           :value="item.category" />
+                                    <button type="button"
+                                            @click="removeCustomAmenity(indexOfCustom(item))"
+                                            class="w-4 h-4 grid place-items-center rounded-full hover:bg-[color:var(--err)] hover:text-white text-[color:var(--err)] transition shrink-0"
+                                            title="Xóa">
+                                        <i data-lucide="x" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            </div><!-- end scrollable content -->
+
+            <!-- Fixed footer (always visible, never scrolls) -->
+            <div class="px-7 py-4 shrink-0 border-t border-[color:var(--line-soft)] bg-white flex items-center justify-end gap-2 rounded-b-3xl">
+                <a href="/admin/rooms" class="btn btn-ghost">Hủy</a>
+                <button type="submit" class="btn btn-primary">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span th:switch="${fm}">
+                        <span th:case="'edit'">Cập nhật phòng</span>
+                        <span th:case="'clone'">Tạo bản sao</span>
+                        <span th:case="*">Tạo phòng</span>
+                    </span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ===== BULK CREATE MODAL ===== -->
+    <div x-show="bulkOpen" x-cloak x-transition.opacity
+         class="modal-backdrop"
+         @keydown.escape.window="bulkOpen = false">
+        <form @click.outside="bulkOpen = false"
+              th:action="@{/admin/rooms/bulk}" method="post"
+              class="modal-card p-7 w-full max-w-[560px]">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <span class="eyebrow">Tạo hàng loạt</span>
+                    <h2 class="text-[20px] font-bold tracking-tight mt-1">Tạo nhiều phòng cùng lúc</h2>
+                    <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                        VD: prefix "GT-A-" từ 301 đến 310 → tạo 10 phòng <code class="mono">GT-A-301</code>...<code class="mono">GT-A-310</code>. Tối đa 100 phòng/lần.
+                    </p>
+                </div>
+                <button type="button" @click="bulkOpen = false"
+                        class="w-8 h-8 grid place-items-center rounded-md hover:bg-black/[0.05]">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="form-label">Cơ sở <span class="text-[color:var(--err)]">*</span></label>
+                    <div class="input-glass">
+                        <i data-lucide="building-2" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <select name="propertyId" required>
+                            <option value="">-- Chọn cơ sở --</option>
+                            <option th:each="p : ${properties}" th:value="${p.id}"
+                                    th:text="${p.name}"
+                                    th:selected="${currentProperty != null and currentProperty.id == p.id}">Glass Tower</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label">Prefix mã</label>
+                        <div class="input-glass">
+                            <input type="text" name="prefix" placeholder="VD: GT-A-" maxlength="20" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Padding (chữ số)</label>
+                        <div class="input-glass">
+                            <input type="number" name="padding" min="0" max="6" value="3" />
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label">Số bắt đầu <span class="text-[color:var(--err)]">*</span></label>
+                        <div class="input-glass">
+                            <input type="number" name="fromNumber" required min="0" value="301" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Số kết thúc <span class="text-[color:var(--err)]">*</span></label>
+                        <div class="input-glass">
+                            <input type="number" name="toNumber" required min="0" value="310" />
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label">Diện tích chung (m²) <span class="text-[color:var(--err)]">*</span></label>
+                        <div class="input-glass">
+                            <input type="number" name="areaSqm" required step="0.01" min="1" value="20" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Loại</label>
+                        <div class="input-glass">
+                            <select name="type">
+                                <option value="STUDIO" selected>Studio</option>
+                                <option value="SINGLE">Phòng đơn</option>
+                                <option value="DOUBLE">Phòng đôi</option>
+                                <option value="APARTMENT">Căn hộ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label">Giá thuê chung (₫)</label>
+                        <div class="input-glass">
+                            <input type="number" name="priceMonthly" min="0" value="0" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Cọc chung (₫)</label>
+                        <div class="input-glass">
+                            <input type="number" name="depositAmount" min="0" value="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-xl bg-[color:var(--accent-soft)] p-3 mt-4 text-[12px] text-[color:var(--accent-hover)] flex items-start gap-2">
+                <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                <span>Phòng tạo hàng loạt sẽ có cùng diện tích, giá, loại. Bạn có thể chỉnh sửa từng phòng sau khi tạo.</span>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 mt-5">
+                <button type="button" @click="bulkOpen = false" class="btn btn-ghost">Hủy</button>
+                <button type="submit" class="btn btn-primary">
+                    <i data-lucide="copy-plus" class="w-4 h-4"></i> Tạo hàng loạt
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

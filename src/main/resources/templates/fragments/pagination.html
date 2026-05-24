@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Pagination fragment.
+  Pass page state explicitly. Works with Spring Page<?> by reading .number, .totalPages, etc.
+  Usage:
+    <div th:replace="~{fragments/pagination :: pager(
+        currentPage=${roomPage.number},
+        totalPages=${roomPage.totalPages},
+        totalElements=${roomPage.totalElements},
+        pageSize=${roomPage.size},
+        baseUrl='/admin/rooms?status=' + (filterStatus ?: '') + '&'
+    )}"></div>
+-->
+<nav th:fragment="pager(currentPage, totalPages, totalElements, pageSize, baseUrl)"
+     th:with="
+        firstIdx = ${(currentPage * pageSize) + (totalElements > 0 ? 1 : 0)},
+        lastIdx  = ${(currentPage + 1) * pageSize > totalElements ? totalElements : (currentPage + 1) * pageSize}
+     "
+     class="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 sm:px-6 py-3.5 border-t border-[color:var(--line-soft)]">
+
+    <!-- Range info -->
+    <div class="text-[12px] text-[color:var(--text-mute)] tnum">
+        Hiển thị <span class="font-semibold text-[color:var(--text)]" th:text="${firstIdx}">1</span>
+        – <span class="font-semibold text-[color:var(--text)]" th:text="${lastIdx}">10</span>
+        / <span class="font-semibold text-[color:var(--text)]" th:text="${totalElements}">0</span>
+        kết quả
+    </div>
+
+    <!-- Pages -->
+    <div th:if="${totalPages > 1}" class="flex items-center gap-1">
+        <!-- Prev -->
+        <a th:if="${currentPage > 0}"
+           th:href="${baseUrl + 'page=' + (currentPage - 1) + '&size=' + pageSize}"
+           class="w-9 h-9 grid place-items-center rounded-lg hover:bg-black/[0.05] transition text-[color:var(--text-soft)]"
+           aria-label="Trang trước">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </a>
+        <span th:unless="${currentPage > 0}"
+              class="w-9 h-9 grid place-items-center rounded-lg text-[color:var(--text-faint)] cursor-not-allowed">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </span>
+
+        <!-- Page numbers (compact: first, around current, last) -->
+        <th:block th:with="
+            start = ${currentPage - 2 < 0 ? 0 : currentPage - 2},
+            end   = ${currentPage + 2 >= totalPages ? totalPages - 1 : currentPage + 2}">
+            <!-- First + ellipsis -->
+            <a th:if="${start > 0}"
+               th:href="${baseUrl + 'page=0&size=' + pageSize}"
+               class="min-w-[36px] h-9 px-2 grid place-items-center rounded-lg text-[13px] font-medium hover:bg-black/[0.05] transition tnum">1</a>
+            <span th:if="${start > 1}" class="px-1 text-[color:var(--text-faint)]">…</span>
+
+            <!-- Range -->
+            <th:block th:each="i : ${#numbers.sequence(start, end)}">
+                <a th:href="${baseUrl + 'page=' + i + '&size=' + pageSize}"
+                   th:text="${i + 1}"
+                   th:classappend="${i == currentPage}
+                       ? 'bg-[color:var(--accent)] text-white shadow-[0_4px_10px_rgba(79,70,229,0.28)]'
+                       : 'hover:bg-black/[0.05] text-[color:var(--text-soft)]'"
+                   class="min-w-[36px] h-9 px-2 grid place-items-center rounded-lg text-[13px] font-medium transition tnum">1</a>
+            </th:block>
+
+            <!-- Last + ellipsis -->
+            <span th:if="${end < totalPages - 2}" class="px-1 text-[color:var(--text-faint)]">…</span>
+            <a th:if="${end < totalPages - 1}"
+               th:href="${baseUrl + 'page=' + (totalPages - 1) + '&size=' + pageSize}"
+               th:text="${totalPages}"
+               class="min-w-[36px] h-9 px-2 grid place-items-center rounded-lg text-[13px] font-medium hover:bg-black/[0.05] transition tnum">10</a>
+        </th:block>
+
+        <!-- Next -->
+        <a th:if="${currentPage < totalPages - 1}"
+           th:href="${baseUrl + 'page=' + (currentPage + 1) + '&size=' + pageSize}"
+           class="w-9 h-9 grid place-items-center rounded-lg hover:bg-black/[0.05] transition text-[color:var(--text-soft)]"
+           aria-label="Trang sau">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+        <span th:unless="${currentPage < totalPages - 1}"
+              class="w-9 h-9 grid place-items-center rounded-lg text-[color:var(--text-faint)] cursor-not-allowed">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </span>
+    </div>
+
+    <!-- Page size hint -->
+    <div class="text-[12px] text-[color:var(--text-mute)]">
+        Trang <span class="font-semibold text-[color:var(--text)] tnum" th:text="${currentPage + 1}">1</span>
+        / <span class="font-semibold text-[color:var(--text)] tnum" th:text="${totalPages > 0 ? totalPages : 1}">1</span>
+    </div>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/customer-layout}"
+      lang="vi">
+<head><title th:text="${'Hóa đơn ' + invoice.code + ' - SmartRent'}">Chi tiết hóa đơn</title></head>
+<body>
+<div layout:fragment="content" class="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-16">
+
+    <div class="mb-5 flex items-center justify-between gap-3 flex-wrap">
+        <a href="/me/invoices"
+           class="text-[13px] text-[color:var(--text-mute)] inline-flex items-center gap-1.5 hover:text-[color:var(--accent)]">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+            Hóa đơn
+        </a>
+        <button type="button" onclick="window.print()" class="btn btn-glass btn-sm">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            In hóa đơn
+        </button>
+    </div>
+
+    <section class="glass p-5 sm:p-7 mb-5">
+        <div class="flex items-start justify-between gap-5 flex-wrap">
+            <div class="min-w-0">
+                <span class="eyebrow">Chi tiết hóa đơn</span>
+                <h1 class="mt-2 text-[28px] sm:text-[34px] font-bold tracking-tight mono" th:text="${invoice.code}">INV</h1>
+                <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-[color:var(--text-soft)]">
+                    <span class="inline-flex items-center gap-1.5">
+                        <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
+                        Kỳ <span class="tnum" th:text="${invoice.periodMonth + '/' + invoice.periodYear}">5/2026</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <i data-lucide="file-clock" class="w-3.5 h-3.5"></i>
+                        Phát hành <span class="tnum" th:text="${#temporals.format(invoice.issueDate, 'dd/MM/yyyy')}">01/05/2026</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i>
+                        Hạn <span class="tnum" th:text="${#temporals.format(invoice.dueDate, 'dd/MM/yyyy')}">10/05/2026</span>
+                    </span>
+                </div>
+                <div class="mt-4">
+                    <span class="badge"
+                          th:classappend="${invoice.status.name() == 'PAID' ? 'badge-emerald' : (invoice.status.name() == 'OVERDUE' ? 'badge-rose' : (invoice.status.name() == 'CANCELLED' ? 'badge-mute' : 'badge-amber'))}">
+                        <span th:switch="${invoice.status.name()}">
+                            <span th:case="'PAID'">Đã thanh toán</span>
+                            <span th:case="'PENDING'">Chờ thanh toán</span>
+                            <span th:case="'PARTIALLY_PAID'">Đã trả một phần</span>
+                            <span th:case="'OVERDUE'">Quá hạn</span>
+                            <span th:case="'CANCELLED'">Đã hủy</span>
+                        </span>
+                    </span>
+                </div>
+            </div>
+            <div class="min-w-[260px] text-right">
+                <div class="text-[12px] text-[color:var(--text-mute)] uppercase tracking-[0.12em]">Tổng hóa đơn</div>
+                <div class="mt-1 text-[34px] font-bold tnum text-[color:var(--accent)]" th:text="${h.vnd(invoice.totalAmount)}">0đ</div>
+                <div class="mt-1 text-[12px] text-[color:var(--text-mute)]">
+                    Còn phải trả:
+                    <span class="font-semibold tnum text-[color:var(--text)]" th:text="${h.vnd(remainingAmount)}">0đ</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid lg:grid-cols-[1fr_360px] gap-5">
+        <div class="space-y-5">
+            <section class="glass p-5">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                        <span class="eyebrow no-line">Khoản phí</span>
+                        <h2 class="text-[20px] font-bold mt-1">Bảng chi tiết</h2>
+                    </div>
+                    <span class="badge badge-violet tnum" th:text="${invoice.periodMonth + '/' + invoice.periodYear}">5/2026</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th>Khoản mục</th>
+                            <th>Diễn giải</th>
+                            <th class="text-right">Số tiền</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td class="font-semibold">Tiền thuê phòng</td>
+                            <td class="text-[color:var(--text-mute)]">
+                                <span th:if="${room != null}" th:text="${room.code + ' · ' + room.title}">Phòng</span>
+                                <span th:unless="${room != null}">Theo hợp đồng thuê</span>
+                            </td>
+                            <td class="text-right font-semibold tnum" th:text="${h.vnd(invoice.rentAmount)}">0đ</td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold">Phí dịch vụ</td>
+                            <td class="text-[color:var(--text-mute)]">Dịch vụ cố định của kỳ</td>
+                            <td class="text-right font-semibold tnum" th:text="${h.vnd(invoice.serviceAmount)}">0đ</td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold">Điện</td>
+                            <td class="text-[color:var(--text-mute)] tnum">
+                                <span th:if="${invoice.electricPrev != null and invoice.electricCurr != null}"
+                                      th:text="${invoice.electricPrev + ' → ' + invoice.electricCurr}">0 → 0</span>
+                                <span th:unless="${invoice.electricPrev != null and invoice.electricCurr != null}">Chưa có chỉ số</span>
+                            </td>
+                            <td class="text-right font-semibold tnum" th:text="${h.vnd(invoice.electricAmount)}">0đ</td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold">Nước</td>
+                            <td class="text-[color:var(--text-mute)] tnum">
+                                <span th:if="${invoice.waterPrev != null and invoice.waterCurr != null}"
+                                      th:text="${invoice.waterPrev + ' → ' + invoice.waterCurr}">0 → 0</span>
+                                <span th:unless="${invoice.waterPrev != null and invoice.waterCurr != null}">Chưa có chỉ số</span>
+                            </td>
+                            <td class="text-right font-semibold tnum" th:text="${h.vnd(invoice.waterAmount)}">0đ</td>
+                        </tr>
+                        <tr th:each="item : ${lineItems}">
+                            <td class="font-semibold" th:text="${item.name}">Phí khác</td>
+                            <td class="text-[color:var(--text-mute)]">Khoản phí bổ sung</td>
+                            <td class="text-right font-semibold tnum" th:text="${h.vnd(item.amount)}">0đ</td>
+                        </tr>
+                        <tr th:if="${invoice.lateFeeAmount != null and invoice.lateFeeAmount.signum() > 0}">
+                            <td class="font-semibold">Phí trễ hạn</td>
+                            <td class="text-[color:var(--text-mute)]">Phát sinh do quá hạn</td>
+                            <td class="text-right font-semibold tnum text-[color:var(--err)]" th:text="${h.vnd(invoice.lateFeeAmount)}">0đ</td>
+                        </tr>
+                        <tr th:if="${invoice.discountAmount != null and invoice.discountAmount.signum() > 0}">
+                            <td class="font-semibold">Giảm trừ</td>
+                            <td class="text-[color:var(--text-mute)]">Ưu đãi hoặc điều chỉnh</td>
+                            <td class="text-right font-semibold tnum text-[color:var(--ok)]" th:text="${'-' + h.vnd(invoice.discountAmount)}">-0đ</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="glass p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-[18px] font-semibold">Thông tin phòng</h2>
+                    <i data-lucide="home" class="w-4 h-4 text-[color:var(--accent)]"></i>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <div class="rounded-2xl border border-[color:var(--line-soft)] bg-white/55 p-4">
+                        <div class="text-[11px] uppercase tracking-[0.12em] text-[color:var(--text-mute)] font-semibold">Phòng</div>
+                        <div class="mt-2 font-semibold" th:text="${room != null ? room.code + ' · ' + room.title : 'Chưa có dữ liệu'}">P101</div>
+                    </div>
+                    <div class="rounded-2xl border border-[color:var(--line-soft)] bg-white/55 p-4">
+                        <div class="text-[11px] uppercase tracking-[0.12em] text-[color:var(--text-mute)] font-semibold">Cơ sở</div>
+                        <div class="mt-2 font-semibold" th:text="${property != null ? property.name : 'Chưa có dữ liệu'}">Cơ sở</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <aside class="space-y-4">
+            <section class="glass p-5">
+                <span class="eyebrow no-line">Thanh toán</span>
+                <h2 class="text-[20px] font-bold mt-1">Tổng kết</h2>
+                <div class="mt-4 space-y-3 text-[14px]">
+                    <div class="flex justify-between gap-3">
+                        <span class="text-[color:var(--text-mute)]">Tổng hóa đơn</span>
+                        <span class="font-semibold tnum" th:text="${h.vnd(invoice.totalAmount)}">0đ</span>
+                    </div>
+                    <div class="flex justify-between gap-3">
+                        <span class="text-[color:var(--text-mute)]">Đã thanh toán</span>
+                        <span class="font-semibold tnum text-[color:var(--ok)]" th:text="${h.vnd(invoice.paidAmount)}">0đ</span>
+                    </div>
+                    <div class="border-t border-[color:var(--line-soft)] pt-3 flex justify-between gap-3">
+                        <span class="font-semibold">Cần thanh toán</span>
+                        <span class="font-extrabold tnum text-[color:var(--accent)]" th:text="${h.vnd(remainingAmount)}">0đ</span>
+                    </div>
+                </div>
+
+                <form th:if="${payable}" th:action="@{'/me/invoices/' + ${invoice.id} + '/pay'}" method="post" class="mt-5 space-y-3">
+                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <label class="form-label">Cổng thanh toán</label>
+                    <div class="input-glass">
+                        <i data-lucide="credit-card" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <select name="method">
+                            <option value="VNPAY">VNPAY tự động</option>
+                            <option value="MOMO">MoMo tự động</option>
+                            <option value="BANK_TRANSFER">Chuyển khoản tự động</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">
+                        <i data-lucide="credit-card" class="w-4 h-4"></i>
+                        Thanh toán tự động
+                    </button>
+                </form>
+
+                <div th:unless="${payable}" class="mt-5 rounded-2xl border border-[color:var(--line-soft)] bg-white/60 p-4 text-[13px] text-[color:var(--text-mute)]">
+                    <div th:if="${invoice.status.name() == 'PAID'}" class="flex items-center gap-2 text-[color:var(--ok)] font-semibold">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                        Hóa đơn đã được thanh toán.
+                    </div>
+                    <div th:if="${invoice.status.name() == 'CANCELLED'}" class="flex items-center gap-2">
+                        <i data-lucide="ban" class="w-4 h-4"></i>
+                        Hóa đơn đã hủy.
+                    </div>
+                </div>
+            </section>
+
+            <section th:if="${payments != null and !payments.isEmpty()}" class="glass p-5">
+                <h3 class="font-semibold text-[15px]">Lịch sử thanh toán</h3>
+                <div class="mt-3 space-y-2">
+                    <a th:each="p : ${payments}" th:href="@{'/me/payments/' + ${p.id}}"
+                       class="rounded-2xl border border-[color:var(--line-soft)] bg-white/55 p-3 flex items-center justify-between gap-3 hover:bg-white/80">
+                        <span>
+                            <span class="block mono text-[12px]" th:text="${p.code}">PAY</span>
+                            <span class="block text-[11px] text-[color:var(--text-mute)]" th:text="${p.method.name()}">VNPAY</span>
+                        </span>
+                        <span class="text-right">
+                            <span class="block font-semibold tnum" th:text="${h.vnd(p.amount)}">0đ</span>
+                            <span class="badge" th:classappend="${p.status.name() == 'SUCCESS' ? 'badge-emerald' : (p.status.name() == 'FAILED' ? 'badge-rose' : 'badge-amber')}"
+                                  th:text="${p.status.name() == 'SUCCESS' ? 'Thành công' : (p.status.name() == 'FAILED' ? 'Lỗi' : 'Đang chờ')}">Đang chờ</span>
+                        </span>
+                    </a>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+</body>
+</html>

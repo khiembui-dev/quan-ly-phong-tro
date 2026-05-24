@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/customer-layout}"
+      lang="vi">
+<head><title>Thông báo — SmartRent</title></head>
+<body>
+<div layout:fragment="content" class="max-w-[840px] mx-auto px-4 sm:px-6 pt-8 pb-16">
+
+    <!-- Header -->
+    <div class="flex items-end justify-between gap-4 mb-8">
+        <div>
+            <span class="eyebrow">Tất cả cập nhật</span>
+            <h1 class="text-[28px] sm:text-[34px] font-bold tracking-tight mt-2">Thông báo</h1>
+            <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5">Cập nhật mới nhất về tài khoản và phòng của bạn.</p>
+        </div>
+        <button hx-put="/api/v1/me/notifications/read-all"
+                hx-swap="none"
+                class="btn btn-glass btn-sm">
+            <i data-lucide="check-check" class="w-4 h-4"></i>
+            Đánh dấu đã đọc
+        </button>
+    </div>
+
+    <div class="card-pad-0">
+        <div th:replace="~{fragments/notification-list :: list}"></div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Hợp đồng - SmartRent</title></head>
+<body>
+<div layout:fragment="content">
+
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+        <div>
+            <span class="eyebrow">Quản lý thuê phòng</span>
+            <h1 class="text-[28px] sm:text-[32px] font-bold tracking-tight mt-2">Hợp đồng</h1>
+            <p class="text-[13px] text-[color:var(--text-mute)] mt-1">
+                Theo dõi khách đã có hợp đồng hay chưa, ngày hết hạn và thiết lập nhanh thời hạn thuê.
+            </p>
+        </div>
+        <a href="/admin/tenants" class="btn btn-glass btn-sm">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            Khách thuê
+        </a>
+    </div>
+
+    <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
+        <div class="glass p-4">
+            <div class="flex items-center justify-between gap-3">
+                <span class="text-[12px] text-[color:var(--text-mute)]">Đã có hợp đồng</span>
+                <i data-lucide="file-check-2" class="w-4 h-4 text-[color:var(--ok)]"></i>
+            </div>
+            <div class="text-[24px] font-bold tnum mt-1" th:text="${signedContracts}">0</div>
+        </div>
+        <div class="glass p-4">
+            <div class="flex items-center justify-between gap-3">
+                <span class="text-[12px] text-[color:var(--text-mute)]">Chưa có hợp đồng</span>
+                <i data-lucide="file-question" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+            </div>
+            <div class="text-[24px] font-bold tnum mt-1" th:text="${missingContracts}">0</div>
+        </div>
+        <div class="glass p-4">
+            <div class="flex items-center justify-between gap-3">
+                <span class="text-[12px] text-[color:var(--text-mute)]">Sắp hết hạn</span>
+                <i data-lucide="calendar-clock" class="w-4 h-4 text-[color:var(--warn)]"></i>
+            </div>
+            <div class="text-[24px] font-bold tnum mt-1" th:text="${expiringContracts}">0</div>
+            <div class="text-[11px] text-[color:var(--text-mute)] mt-1">Trong vòng 30 ngày</div>
+        </div>
+        <div class="glass p-4">
+            <div class="flex items-center justify-between gap-3">
+                <span class="text-[12px] text-[color:var(--text-mute)]">Đã hết hạn</span>
+                <i data-lucide="triangle-alert" class="w-4 h-4 text-[color:var(--err)]"></i>
+            </div>
+            <div class="text-[24px] font-bold tnum mt-1" th:text="${expiredContracts}">0</div>
+        </div>
+    </div>
+
+    <form method="get" action="/admin/contracts" class="mb-5 flex gap-3 flex-wrap">
+        <div class="input-glass h-11 max-w-[560px] flex-1 min-w-[240px]">
+            <i data-lucide="search" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+            <input type="text" name="q" th:value="${filterQ}"
+                   placeholder="Tìm theo tên, email, SĐT, mã phòng, mã hợp đồng..." />
+        </div>
+        <button type="submit" class="btn btn-soft btn-sm h-11">
+            <i data-lucide="search" class="w-4 h-4"></i> Tìm
+        </button>
+        <a href="/admin/contracts" class="btn btn-ghost btn-sm h-11"
+           th:if="${filterQ != null and !filterQ.isEmpty()}">
+            <i data-lucide="x" class="w-4 h-4"></i> Xóa
+        </a>
+    </form>
+
+    <div class="card-pad-0">
+        <div class="px-5 sm:px-6 py-4 border-b border-[color:var(--line-soft)] flex items-center justify-between gap-3 flex-wrap">
+            <div>
+                <h2 class="font-semibold text-[15px]">Danh sách khách thuê</h2>
+                <p class="text-[12px] text-[color:var(--text-mute)] mt-0.5">
+                    Bấm vào một dòng để xem và chỉnh thời hạn hợp đồng.
+                </p>
+            </div>
+            <span class="badge badge-violet tnum" th:text="${rows != null ? #lists.size(rows) : 0}">0</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>Khách thuê</th>
+                    <th>Phòng</th>
+                    <th>Trạng thái</th>
+                    <th>Bắt đầu</th>
+                    <th>Hết hạn</th>
+                    <th>Thời hạn</th>
+                    <th class="text-right">Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${rows}"
+                    th:data-url="@{'/admin/contracts/' + ${row.tenant.id}}"
+                    onclick="if (!event.target.closest('a,button')) window.location.href = this.dataset.url"
+                    class="cursor-pointer hover:bg-[color:var(--accent-soft)]/40 transition">
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="avatar avatar-sm avatar-violet"
+                                 th:text="${row.tenant.fullName != null and !row.tenant.fullName.isEmpty() ? #strings.substring(row.tenant.fullName, 0, 1) : '?'}">N</div>
+                            <div class="min-w-0">
+                                <div class="font-semibold text-[13px] truncate" th:text="${row.tenant.fullName}">Nguyễn Văn A</div>
+                                <div class="text-[11px] text-[color:var(--text-mute)] truncate" th:text="${row.tenant.email}">email</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div th:if="${row.room != null}" class="min-w-[150px]">
+                            <div class="font-semibold text-[13px]" th:text="${row.room.code + ' · ' + row.room.title}">P101</div>
+                            <div class="text-[11px] text-[color:var(--text-mute)]" th:text="${row.room.district + ', ' + row.room.city}">Q1</div>
+                        </div>
+                        <span th:unless="${row.room != null}" class="text-[12px] text-[color:var(--text-mute)]">Chưa gán phòng</span>
+                    </td>
+                    <td>
+                        <span class="badge" th:classappend="${row.statusClass}" th:text="${row.statusLabel}">Đang hiệu lực</span>
+                        <div class="text-[11px] text-[color:var(--text-mute)] mt-1" th:text="${row.daysLeftLabel}">Còn 20 ngày</div>
+                    </td>
+                    <td class="tnum text-[12px]"
+                        th:text="${row.contract != null ? #temporals.format(row.contract.startDate, 'dd/MM/yyyy') : '—'}">—</td>
+                    <td class="tnum text-[12px] font-semibold"
+                        th:text="${row.contract != null ? #temporals.format(row.contract.endDate, 'dd/MM/yyyy') : '—'}">—</td>
+                    <td class="tnum text-[12px]"
+                        th:text="${row.contract != null ? row.contract.durationMonths + ' tháng' : '—'}">12 tháng</td>
+                    <td class="text-right">
+                        <a th:href="@{'/admin/contracts/' + ${row.tenant.id}}" class="btn btn-soft btn-sm">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                            Chi tiết
+                        </a>
+                    </td>
+                </tr>
+                <tr th:if="${rows == null or rows.isEmpty()}">
+                    <td colspan="7" class="text-center py-12">
+                        <div class="empty-icon mx-auto mb-3">
+                            <i data-lucide="file-search" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-[15px] font-semibold">Không có khách phù hợp</h3>
+                        <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Thử tìm bằng tên, email, SĐT hoặc mã phòng.</p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Chi tiết tính tiền phòng - SmartRent</title></head>
+<body>
+<div layout:fragment="content"
+     th:with="invoice=${row.invoice}, invoiceClosed=${row.invoice != null and (row.invoice.status.name() == 'PAID' or row.invoice.status.name() == 'CANCELLED')}">
+
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
+        <div>
+            <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth})}"
+               class="inline-flex items-center gap-1 text-[13px] text-[color:var(--text-mute)] hover:text-[color:var(--accent)] mb-3">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Quay lại danh sách
+            </a>
+            <span class="eyebrow">Chi tiết phòng</span>
+            <h1 class="text-[28px] sm:text-[32px] font-bold tracking-tight mt-2">
+                <span th:text="${row.room.code}">A101</span>
+                <span class="text-[color:var(--text-mute)]"> · </span>
+                <span th:text="${row.room.title}">Studio</span>
+            </h1>
+            <p class="text-[13px] text-[color:var(--text-mute)] mt-1">
+                Kỳ <span class="tnum" th:text="${periodMonth + '/' + periodYear}">5/2026</span>
+                · <span th:text="${row.property.name}">Glass Tower</span>
+            </p>
+        </div>
+        <div class="flex items-end gap-3 flex-wrap justify-start lg:justify-end">
+            <a th:href="@{/admin/utilities/rooms/{id}/export.xlsx(id=${row.room.id},year=${periodYear},month=${periodMonth})}"
+               class="btn btn-glass h-11"
+               download>
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                Xuất Excel
+            </a>
+            <div class="glass-thin rounded-2xl px-3 py-3 flex items-end gap-2 flex-wrap">
+            <a th:href="@{/admin/utilities/rooms/{id}(id=${row.room.id},year=${prevPeriodYear},month=${prevPeriodMonth})}"
+               class="w-10 h-10 grid place-items-center rounded-xl hover:bg-black/[0.05] transition"
+               title="Kỳ trước">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </a>
+            <form method="get" th:action="@{/admin/utilities/rooms/{id}(id=${row.room.id})}"
+                  class="flex flex-wrap items-end gap-2">
+                <div>
+                    <label class="form-label">Tháng</label>
+                    <div class="input-glass h-10 w-[120px]">
+                        <select name="month" onchange="this.form.submit()">
+                            <option th:each="m : ${#numbers.sequence(1,12)}"
+                                    th:value="${m}"
+                                    th:selected="${m == periodMonth}"
+                                    th:text="${'Tháng ' + m}">Tháng 5</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Năm</label>
+                    <div class="input-glass h-10 w-[120px]">
+                        <select name="year" onchange="this.form.submit()">
+                            <option th:each="y : ${periodYears}"
+                                    th:value="${y}"
+                                    th:selected="${y == periodYear}"
+                                    th:text="${y}">2026</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+            <a th:href="@{/admin/utilities/rooms/{id}(id=${row.room.id},year=${nextPeriodYear},month=${nextPeriodMonth})}"
+               class="w-10 h-10 grid place-items-center rounded-xl hover:bg-black/[0.05] transition"
+               title="Kỳ sau">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </a>
+            <div class="text-[11px] text-[color:var(--text-mute)] px-1 pb-2">
+                Tự chuyển kỳ khi chọn tháng/năm
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <div class="grid lg:grid-cols-[1.05fr_1.15fr_1fr] gap-4 mb-6">
+        <section class="glass p-5">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <span class="eyebrow">Thông tin</span>
+                    <h2 class="text-[18px] font-bold mt-1">Phòng & khách thuê</h2>
+                </div>
+                <span class="badge" th:classappend="${row.statusBadge}" th:text="${row.statusLabel}">Sẵn sàng</span>
+            </div>
+
+            <div class="mt-5 space-y-3 text-[13px]">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-[color:var(--text-mute)]">Tiền phòng</span>
+                    <span class="font-semibold tnum" th:text="${h.vnd(row.rentAmount)}">0đ</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-[color:var(--text-mute)]">Phí cố định</span>
+                    <span class="font-semibold tnum" th:text="${h.vnd(row.fixedFeeTotal)}">0đ</span>
+                </div>
+                <div class="border-t border-[color:var(--line-soft)] pt-3" th:if="${row.tenant != null}">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-full grid place-items-center font-bold text-white bg-[color:var(--accent)]"
+                              th:text="${row.tenant.fullName != null and !row.tenant.fullName.isEmpty() ? row.tenant.fullName.substring(0,1).toUpperCase() : '?'}">A</span>
+                        <span class="min-w-0">
+                            <span class="block font-semibold truncate" th:text="${row.tenant.fullName}">Nguyễn Văn A</span>
+                            <span class="block text-[12px] text-[color:var(--text-mute)] truncate"
+                                  th:text="${(row.tenant.email ?: '') + (row.tenant.phone != null and !row.tenant.phone.isEmpty() ? ' · ' + row.tenant.phone : '')}">
+                                tenant@glass.living
+                            </span>
+                        </span>
+                    </div>
+                </div>
+                <div th:unless="${row.tenant != null}" class="rounded-lg bg-[color:var(--warn-soft)] p-3 text-[color:var(--warn)]">
+                    Phòng đang trống nên không thể xuất hóa đơn.
+                </div>
+                <div th:if="${row.tenant != null and row.contract == null}" class="rounded-lg bg-[color:var(--warn-soft)] p-3 text-[color:var(--warn)]">
+                    Khách đang ở nhưng chưa có hồ sơ thu tiền. Khi xuất hóa đơn, hệ thống sẽ tự tạo theo thông tin phòng hiện tại.
+                </div>
+            </div>
+        </section>
+
+        <section class="glass p-5">
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div>
+                    <span class="eyebrow">Chỉ số tháng</span>
+                    <h2 class="text-[18px] font-bold mt-1">Điện & nước</h2>
+                    <p class="text-[12px] text-[color:var(--text-mute)] mt-1">Số cũ tự kế thừa từ số mới của tháng liền trước.</p>
+                </div>
+                <span th:if="${row.hasReading}" class="badge badge-emerald">Đã cập nhật</span>
+                <span th:unless="${row.hasReading}" class="badge badge-amber">Chưa cập nhật</span>
+            </div>
+
+            <form th:action="@{/admin/utilities/rooms/{id}/readings(id=${row.room.id})}" method="post" class="space-y-4">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <input type="hidden" name="year" th:value="${periodYear}" />
+                <input type="hidden" name="month" th:value="${periodMonth}" />
+                <input type="hidden" name="readingDate" th:value="${today}" />
+
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="form-label">Điện cũ</label>
+                            <span class="text-[11px] text-[color:var(--text-mute)]">kWh</span>
+                        </div>
+                        <div class="input-glass h-11">
+                            <input class="tnum text-[color:var(--text-mute)]" type="number" step="1" min="0" name="electricPrev"
+                                   th:value="${row.electricPrev}" readonly tabindex="-1"
+                                   title="Tự kế thừa từ chỉ số điện mới của tháng liền trước" />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="form-label">Điện mới</label>
+                            <span class="text-[11px] text-[color:var(--text-mute)]">kWh</span>
+                        </div>
+                        <div class="input-glass h-11">
+                            <input class="tnum" type="number" step="1" min="0" name="electricCurr"
+                                   th:value="${row.electricCurr}" />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="form-label">Nước cũ</label>
+                            <span class="text-[11px] text-[color:var(--text-mute)]">m³</span>
+                        </div>
+                        <div class="input-glass h-11">
+                            <input class="tnum text-[color:var(--text-mute)]" type="number" step="1" min="0" name="waterPrev"
+                                   th:value="${row.waterPrev}" readonly tabindex="-1"
+                                   title="Tự kế thừa từ chỉ số nước mới của tháng liền trước" />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="form-label">Nước mới</label>
+                            <span class="text-[11px] text-[color:var(--text-mute)]">m³</span>
+                        </div>
+                        <div class="input-glass h-11">
+                            <input class="tnum" type="number" step="1" min="0" name="waterCurr"
+                                   th:value="${row.waterCurr}" />
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Ghi chú nội bộ</label>
+                    <div class="input-glass min-h-[84px] items-start py-3">
+                        <textarea name="note" rows="3" placeholder="Ví dụ: công tơ thay mới, chỉ số cần kiểm tra..."
+                                  th:text="${row.reading != null ? row.reading.note : ''}"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap justify-end gap-2 pt-2">
+                    <button type="submit" class="btn btn-soft btn-sm">
+                        <i data-lucide="save" class="w-4 h-4"></i> Lưu chỉ số
+                    </button>
+                    <button type="submit"
+                            th:formaction="@{/admin/utilities/rooms/{id}/issue(id=${row.room.id})}"
+                            class="btn btn-primary btn-sm"
+                            th:disabled="${not row.occupied}">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span th:text="${row.hasInvoice ? 'Lưu & cập nhật hóa đơn' : 'Lưu & xuất hóa đơn'}">Lưu & xuất hóa đơn</span>
+                    </button>
+                </div>
+                <p class="text-[11px] text-[color:var(--text-mute)] text-right" th:if="${row.hasInvoice and not row.locked}">
+                    Kỳ này đã có hóa đơn. Khi lưu chỉ số, tổng tiền hóa đơn sẽ tự cập nhật theo số mới.
+                </p>
+                <p class="text-[11px] text-[color:var(--text-mute)] text-right" th:if="${row.locked}">
+                    Kỳ này đã chốt trước đó. Khi lưu chỉ số mới, hệ thống sẽ tự mở lại kỳ và cập nhật hóa đơn liên quan.
+                </p>
+            </form>
+        </section>
+
+        <section class="glass p-5">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <span class="eyebrow">Bảng tính</span>
+                    <h2 class="text-[18px] font-bold mt-1">Tổng tiền kỳ này</h2>
+                </div>
+                <span th:if="${invoice != null}" class="badge" th:classappend="${row.statusBadge}" th:text="${row.statusLabel}">Chờ</span>
+            </div>
+
+            <div class="mt-5 space-y-2 text-[13px]">
+                <div class="flex items-center justify-between gap-3">
+                    <span>Tiền phòng</span>
+                    <span class="font-semibold tnum" th:text="${h.vnd(row.rentAmount)}">0đ</span>
+                </div>
+                <div class="flex items-center justify-between gap-3" th:if="${row.serviceFee.signum() > 0}">
+                    <span>Dịch vụ</span>
+                    <span class="font-semibold tnum" th:text="${h.vnd(row.serviceFee)}">0đ</span>
+                </div>
+                <div th:each="item : ${otherItems}" class="flex items-center justify-between gap-3 text-[12px] text-[color:var(--text-mute)]">
+                    <span th:text="${item.name}">Rác</span>
+                    <span class="tnum" th:text="${h.vnd(item.amount)}">0đ</span>
+                </div>
+                <div class="border-t border-[color:var(--line-soft)] pt-2 flex items-center justify-between gap-3">
+                    <span>
+                        Điện
+                        <span class="text-[11px] text-[color:var(--text-mute)] tnum"
+                              th:text="${#numbers.formatDecimal(row.electricPrev, 1, 'POINT', 1, 'POINT') + ' → ' + #numbers.formatDecimal(row.electricCurr, 1, 'POINT', 1, 'POINT') + ' · ' + #numbers.formatDecimal(row.electricUsage, 1, 'POINT', 1, 'POINT') + ' kWh'}">
+                            1 → 10
+                        </span>
+                    </span>
+                    <span class="font-semibold tnum" th:text="${h.vnd(row.electricAmount)}">0đ</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span>
+                        Nước
+                        <span class="text-[11px] text-[color:var(--text-mute)] tnum"
+                              th:text="${#numbers.formatDecimal(row.waterPrev, 1, 'POINT', 1, 'POINT') + ' → ' + #numbers.formatDecimal(row.waterCurr, 1, 'POINT', 1, 'POINT') + ' · ' + #numbers.formatDecimal(row.waterUsage, 1, 'POINT', 1, 'POINT') + ' m³'}">
+                            1 → 10
+                        </span>
+                    </span>
+                    <span class="font-semibold tnum" th:text="${h.vnd(row.waterAmount)}">0đ</span>
+                </div>
+                <div class="border-t border-[color:var(--line-soft)] pt-3 flex items-center justify-between gap-3">
+                    <span class="font-bold">Tổng thanh toán</span>
+                    <span class="text-[22px] font-extrabold tnum text-[color:var(--accent)]" th:text="${h.vnd(row.totalAmount)}">0đ</span>
+                </div>
+            </div>
+
+            <div th:if="${invoice != null}" class="mt-5 rounded-xl border border-[color:var(--line-soft)] p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-[11px] text-[color:var(--text-mute)]">Mã hóa đơn</div>
+                        <div class="font-semibold mono text-[color:var(--accent)]" th:text="${invoice.code}">INV</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[11px] text-[color:var(--text-mute)]">Hạn thanh toán</div>
+                        <div class="font-semibold tnum" th:text="${#temporals.format(invoice.dueDate, 'dd/MM/yyyy')}">10/05/2026</div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap justify-end gap-2 mt-4">
+                    <form th:if="${invoice.status.name() != 'PAID'}"
+                          th:action="@{/admin/utilities/invoices/{id}/status(id=${invoice.id})}" method="post">
+                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <input type="hidden" name="status" value="PAID" />
+                        <input type="hidden" name="roomId" th:value="${row.room.id}" />
+                        <input type="hidden" name="year" th:value="${periodYear}" />
+                        <input type="hidden" name="month" th:value="${periodMonth}" />
+                        <button type="submit" class="btn btn-soft btn-sm">
+                            <i data-lucide="circle-dollar-sign" class="w-4 h-4"></i> Đã thanh toán
+                        </button>
+                    </form>
+                    <form th:if="${invoice.status.name() == 'PAID'}"
+                          th:action="@{/admin/utilities/invoices/{id}/status(id=${invoice.id})}" method="post">
+                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <input type="hidden" name="status" value="PENDING" />
+                        <input type="hidden" name="roomId" th:value="${row.room.id}" />
+                        <input type="hidden" name="year" th:value="${periodYear}" />
+                        <input type="hidden" name="month" th:value="${periodMonth}" />
+                        <button type="submit" class="btn btn-glass btn-sm">
+                            <i data-lucide="clock" class="w-4 h-4"></i> Chưa thanh toán
+                        </button>
+                    </form>
+                    <a href="/admin/invoices" class="btn btn-ghost btn-sm">
+                        <i data-lucide="external-link" class="w-4 h-4"></i> Mục hóa đơn
+                    </a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="card-pad-0">
+        <div class="px-5 sm:px-6 py-4 border-b border-[color:var(--line-soft)] flex items-center justify-between flex-wrap gap-3">
+            <div>
+                <h2 class="font-semibold text-[15px]">Lịch sử tính tiền của phòng</h2>
+                <p class="text-[12px] text-[color:var(--text-mute)] mt-0.5">
+                    Mỗi dòng là một hóa đơn đã phát hành, dùng để rà soát điện nước, phí và người thuê theo từng tháng.
+                </p>
+            </div>
+            <span class="badge badge-violet"><span th:text="${history != null ? history.size() : 0}">0</span> kỳ gần nhất</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>Kỳ</th>
+                    <th>Người thuê</th>
+                    <th>Điện</th>
+                    <th>Nước</th>
+                    <th>Phí khác</th>
+                    <th class="text-right">Tổng</th>
+                    <th>Trạng thái</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${history}" th:with="inv=${item.invoice}">
+                    <td>
+                        <div class="font-semibold tnum" th:text="${inv.periodMonth + '/' + inv.periodYear}">1/2026</div>
+                        <div class="mono text-[11px] text-[color:var(--text-mute)]" th:text="${inv.code}">INV</div>
+                    </td>
+                    <td>
+                        <div class="font-medium" th:text="${item.tenant != null ? item.tenant.fullName : 'Khách thuê'}">Nguyễn Văn A</div>
+                        <div class="text-[11px] text-[color:var(--text-mute)]" th:text="${item.tenant != null ? item.tenant.email : ''}">email</div>
+                    </td>
+                    <td>
+                        <div class="tnum">
+                            <span th:text="${inv.electricPrev ?: 0}">12</span>
+                            →
+                            <span th:text="${inv.electricCurr ?: 0}">20</span>
+                        </div>
+                        <div class="text-[11px] text-[color:var(--text-mute)] tnum" th:text="${h.vnd(inv.electricAmount)}">0đ</div>
+                    </td>
+                    <td>
+                        <div class="tnum">
+                            <span th:text="${inv.waterPrev ?: 0}">1</span>
+                            →
+                            <span th:text="${inv.waterCurr ?: 0}">5</span>
+                        </div>
+                        <div class="text-[11px] text-[color:var(--text-mute)] tnum" th:text="${h.vnd(inv.waterAmount)}">0đ</div>
+                    </td>
+                    <td>
+                        <details>
+                            <summary class="cursor-pointer text-[12px] text-[color:var(--accent)]">
+                                <span th:text="${h.vnd(inv.serviceAmount.add(inv.otherAmount))}">0đ</span>
+                            </summary>
+                            <div class="mt-2 space-y-1 text-[11px] text-[color:var(--text-mute)]">
+                                <div class="flex justify-between gap-3" th:if="${inv.serviceAmount.signum() > 0}">
+                                    <span>Dịch vụ</span>
+                                    <span class="tnum" th:text="${h.vnd(inv.serviceAmount)}">0đ</span>
+                                </div>
+                                <div class="flex justify-between gap-3" th:each="line : ${item.otherItems}">
+                                    <span th:text="${line.name}">Rác</span>
+                                    <span class="tnum" th:text="${h.vnd(line.amount)}">0đ</span>
+                                </div>
+                            </div>
+                        </details>
+                    </td>
+                    <td class="text-right font-bold tnum text-[color:var(--accent)]" th:text="${h.vnd(inv.totalAmount)}">0đ</td>
+                    <td>
+                        <span class="badge"
+                              th:classappend="${inv.status.name() == 'PAID' ? 'badge-emerald' : (inv.status.name() == 'OVERDUE' ? 'badge-rose' : 'badge-amber')}">
+                            <span th:switch="${inv.status.name()}">
+                                <span th:case="'PAID'">Đã thanh toán</span>
+                                <span th:case="'PENDING'">Chờ thanh toán</span>
+                                <span th:case="'PARTIALLY_PAID'">Trả 1 phần</span>
+                                <span th:case="'OVERDUE'">Quá hạn</span>
+                                <span th:case="'CANCELLED'">Đã hủy</span>
+                            </span>
+                        </span>
+                    </td>
+                </tr>
+                <tr th:if="${history == null or history.isEmpty()}">
+                    <td colspan="7" class="text-center py-12">
+                        <div class="empty-icon mx-auto mb-3">
+                            <i data-lucide="history" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-[15px] font-semibold">Chưa có lịch sử hóa đơn</h3>
+                        <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Sau khi xuất hóa đơn, lịch sử từng tháng sẽ xuất hiện tại đây.</p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+</body>
+</html>

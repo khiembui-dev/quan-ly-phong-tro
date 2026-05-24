@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<a th:fragment="card(room)"
+   th:href="@{'/rooms/' + ${room.slug}}"
+   class="group glass overflow-hidden flex flex-col">
+
+    <!-- Image -->
+    <div class="relative aspect-[4/3] overflow-hidden"
+         style="background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(124,58,237,0.16), rgba(6,182,212,0.14));">
+        <img th:if="${room.coverUrl != null}" th:src="${room.coverUrl}" alt=""
+             class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+             loading="lazy" />
+        <div th:unless="${room.coverUrl != null}"
+             class="absolute inset-0 grid place-items-center text-white/85 font-extrabold text-[26px] tracking-tight"
+             th:text="${room.district}">
+            Quận
+        </div>
+
+        <!-- Gradient overlay on hover for depth -->
+        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500"
+             style="background: linear-gradient(180deg, transparent 60%, rgba(15,23,42,0.35) 100%);"></div>
+
+        <!-- Status badge -->
+        <span class="absolute top-3 left-3 badge"
+              th:classappend="|${room.status.name() == 'AVAILABLE' ? 'badge-emerald' : ''} ${room.status.name() == 'OCCUPIED' ? 'badge-amber' : ''} ${room.status.name() == 'MAINTENANCE' ? 'badge-rose' : ''}|"
+              style="backdrop-filter: blur(8px);">
+            <span class="dot dot-pulse" th:if="${room.status.name() == 'AVAILABLE'}" style="background:currentColor"></span>
+            <span th:switch="${room.status.name()}">
+                <span th:case="'AVAILABLE'">Còn phòng</span>
+                <span th:case="'OCCUPIED'">Đang ở</span>
+                <span th:case="'MAINTENANCE'">Bảo trì</span>
+                <span th:case="'HIDDEN'">Ẩn</span>
+            </span>
+        </span>
+
+        <!-- Favorite -->
+        <button sec:authorize="isAuthenticated()"
+                type="button"
+                onclick="event.preventDefault(); event.stopPropagation(); glassToggleFavorite(this);"
+                th:data-room-id="${room.id}"
+                aria-label="Yêu thích"
+                class="absolute top-3 right-3 w-9 h-9 grid place-items-center rounded-full glass-strong hover:scale-110 transition">
+            <i data-lucide="heart" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Type tag (bottom-left) -->
+        <span th:if="${room.type != null}" class="absolute bottom-3 left-3 chip" style="background: rgba(255,255,255,0.92);">
+            <i data-lucide="home" class="w-3 h-3"></i>
+            <span th:switch="${room.type.name()}">
+                <span th:case="'STUDIO'">Studio</span>
+                <span th:case="'SINGLE'">Phòng đơn</span>
+                <span th:case="'DOUBLE'">Phòng đôi</span>
+                <span th:case="'PENTHOUSE'">Penthouse</span>
+                <span th:case="*">Phòng</span>
+            </span>
+        </span>
+    </div>
+
+    <!-- Body -->
+    <div class="p-5 flex flex-col gap-2.5 flex-1">
+        <div class="flex items-start justify-between gap-3">
+            <h3 class="text-[16px] font-semibold leading-snug line-clamp-2 group-hover:text-[color:var(--accent)] transition tracking-tight"
+                th:text="${room.title}">Tên phòng</h3>
+        </div>
+
+        <p class="text-[13px] text-[color:var(--text-mute)] inline-flex items-center gap-1.5">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+            <span th:text="${room.district}">Quận 1</span>
+            <span class="text-[color:var(--text-faint)]">·</span>
+            <span><span th:text="${room.areaSqm}">28</span> m²</span>
+        </p>
+
+        <div class="flex items-center gap-3 text-[12px] font-medium text-[color:var(--text-soft)] pt-1 flex-wrap">
+            <span class="inline-flex items-center gap-1">
+                <i data-lucide="bed-double" class="w-3.5 h-3.5"></i>
+                <span th:text="${room.bedrooms}">1</span>
+            </span>
+            <span class="inline-flex items-center gap-1">
+                <i data-lucide="bath" class="w-3.5 h-3.5"></i>
+                <span th:text="${room.bathrooms}">1</span>
+            </span>
+            <span class="inline-flex items-center gap-1" th:if="${room.hasBalcony}">
+                <i data-lucide="trees" class="w-3.5 h-3.5"></i>
+                Ban công
+            </span>
+            <span class="inline-flex items-center gap-1" th:if="${room.petAllowed}">
+                <i data-lucide="paw-print" class="w-3.5 h-3.5"></i>
+                Pet
+            </span>
+        </div>
+
+        <div class="divider mt-auto pt-0"></div>
+
+        <div class="flex items-end justify-between gap-2 pt-2">
+            <div>
+                <div class="flex items-baseline gap-0.5">
+                    <span class="text-[18px] font-extrabold text-[color:var(--text)] tnum tracking-tight"
+                          th:text="${h.vnd(room.priceMonthly)}">8.500.000₫</span>
+                </div>
+                <div class="text-[11px] text-[color:var(--text-mute)] -mt-0.5">/ tháng</div>
+            </div>
+            <div class="flex items-center gap-1 text-[12px] font-medium">
+                <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>
+                <span class="font-semibold tnum" th:text="${#numbers.formatDecimal(room.ratingAvg, 1, 'POINT', 1, 'POINT')}">4.9</span>
+                <span class="text-[color:var(--text-mute)]">·</span>
+                <span class="text-[color:var(--text-mute)] tnum" th:text="${room.ratingCount}">234</span>
+            </div>
+        </div>
+    </div>
+</a>
+</body>
+</html>

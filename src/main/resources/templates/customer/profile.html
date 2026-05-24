@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/customer-layout}"
+      lang="vi">
+<head><title>Hồ sơ khách thuê - SmartRent</title></head>
+<body>
+<div layout:fragment="content"
+     class="max-w-[1120px] mx-auto px-4 sm:px-6 pt-8 pb-16"
+     x-data="{ tab: ['profile','docs','security'].includes(new URLSearchParams(window.location.search).get('tab')) ? new URLSearchParams(window.location.search).get('tab') : 'profile' }">
+
+    <div class="mb-7">
+        <span class="eyebrow">Tài khoản</span>
+        <div class="flex items-start justify-between gap-4 flex-wrap mt-2">
+            <div>
+                <h1 class="text-[28px] sm:text-[34px] font-bold mt-1">Hồ sơ khách thuê</h1>
+                <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5">
+                    Quản lý thông tin cá nhân và hồ sơ CCCD/CMND đang lưu trong hệ thống.
+                </p>
+            </div>
+            <span th:if="${user.identityVerified}" class="badge badge-emerald">
+                <i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Đã xác minh giấy tờ
+            </span>
+            <span th:if="${!user.identityVerified and identityComplete}" class="badge badge-amber">
+                <i data-lucide="clock-3" class="w-3.5 h-3.5"></i> Chờ admin xác minh
+            </span>
+            <span th:if="${!user.identityVerified and !identityComplete}" class="badge badge-rose">
+                <i data-lucide="circle-alert" class="w-3.5 h-3.5"></i> Thiếu hồ sơ giấy tờ
+            </span>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto -mx-4 sm:mx-0 mb-6">
+        <div class="inline-flex items-center gap-1 glass-thin p-1 rounded-2xl mx-4 sm:mx-0">
+            <button type="button" @click="tab='profile'"
+                    :class="tab==='profile' ? 'bg-[color:var(--accent)] text-white shadow-[0_6px_14px_rgba(79,70,229,0.28)]' : 'text-[color:var(--text-soft)] hover:bg-black/[0.04]'"
+                    class="px-4 py-2 rounded-xl text-[13px] font-medium transition inline-flex items-center gap-1.5">
+                <i data-lucide="user-round" class="w-4 h-4"></i>Cá nhân
+            </button>
+            <button type="button" @click="tab='docs'"
+                    :class="tab==='docs' ? 'bg-[color:var(--accent)] text-white shadow-[0_6px_14px_rgba(79,70,229,0.28)]' : 'text-[color:var(--text-soft)] hover:bg-black/[0.04]'"
+                    class="px-4 py-2 rounded-xl text-[13px] font-medium transition inline-flex items-center gap-1.5">
+                <i data-lucide="id-card" class="w-4 h-4"></i>Giấy tờ
+            </button>
+            <button type="button" @click="tab='security'"
+                    :class="tab==='security' ? 'bg-[color:var(--accent)] text-white shadow-[0_6px_14px_rgba(79,70,229,0.28)]' : 'text-[color:var(--text-soft)] hover:bg-black/[0.04]'"
+                    class="px-4 py-2 rounded-xl text-[13px] font-medium transition inline-flex items-center gap-1.5">
+                <i data-lucide="shield" class="w-4 h-4"></i>Bảo mật
+            </button>
+        </div>
+    </div>
+
+    <div x-show="tab==='profile'" class="grid lg:grid-cols-[300px_1fr] gap-6">
+        <aside class="glass p-6">
+            <div class="flex items-center gap-4">
+                <div class="avatar avatar-xl avatar-violet" th:text="${#strings.substring(user.fullName, 0, 1)}">U</div>
+                <div class="min-w-0">
+                    <div class="text-[18px] font-semibold truncate" th:text="${user.fullName}">Nguyễn Văn A</div>
+                    <div class="text-[12px] text-[color:var(--text-mute)] truncate" th:text="${user.email}">tenant@glass.living</div>
+                </div>
+            </div>
+            <div class="divider my-5"></div>
+            <div class="space-y-3 text-[13px]">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-[color:var(--text-mute)]">Số điện thoại</span>
+                    <span class="font-semibold tnum" th:text="${user.phone ?: 'Chưa có'}">090...</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-[color:var(--text-mute)]">Ngày sinh</span>
+                    <span class="font-semibold tnum"
+                          th:text="${user.dob != null ? #temporals.format(user.dob, 'dd/MM/yyyy') : 'Chưa có'}">--</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-[color:var(--text-mute)]">Cập nhật giấy tờ</span>
+                    <span class="font-semibold tnum"
+                          th:text="${user.identityUpdatedAt != null ? #temporals.format(user.identityUpdatedAt, 'dd/MM/yyyy') : 'Chưa có'}">--</span>
+                </div>
+            </div>
+        </aside>
+
+        <form action="/me/profile" method="post" class="glass p-6 space-y-5">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <div>
+                <h2 class="text-[18px] font-semibold">Thông tin cá nhân</h2>
+                <p class="text-[12px] text-[color:var(--text-mute)] mt-1">Thông tin này giúp admin liên hệ và lập hóa đơn chính xác.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="form-label">Họ và tên</label>
+                    <div class="input-glass">
+                        <i data-lucide="user" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input name="fullName" type="text" required maxlength="120" th:value="${user.fullName}" />
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Email</label>
+                    <div class="input-glass opacity-70">
+                        <i data-lucide="mail" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="email" th:value="${user.email}" disabled />
+                    </div>
+                    <p class="form-help">Email đăng nhập không đổi tại màn hình này.</p>
+                </div>
+                <div>
+                    <label class="form-label">Số điện thoại</label>
+                    <div class="input-glass">
+                        <i data-lucide="phone" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input name="phone" type="tel" maxlength="20" placeholder="0901xxxxxx" th:value="${user.phone}" />
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Ngày sinh</label>
+                    <div class="input-glass">
+                        <i data-lucide="cake" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input name="dob" type="date" th:value="${user.dob}" />
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Giới tính</label>
+                    <div class="input-glass">
+                        <i data-lucide="users" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <select name="gender">
+                            <option value="" th:selected="${user.gender == null}">Chưa chọn</option>
+                            <option value="MALE" th:selected="${user.gender != null and user.gender.name() == 'MALE'}">Nam</option>
+                            <option value="FEMALE" th:selected="${user.gender != null and user.gender.name() == 'FEMALE'}">Nữ</option>
+                            <option value="OTHER" th:selected="${user.gender != null and user.gender.name() == 'OTHER'}">Khác</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Địa chỉ thường trú</label>
+                    <div class="input-glass">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input name="permanentAddress" type="text" maxlength="240" th:value="${user.permanentAddress}"
+                               placeholder="Số nhà, đường, phường/xã..." />
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button class="btn btn-primary" type="submit">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    Lưu hồ sơ
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <form x-show="tab==='docs'" x-cloak action="/me/profile/identity" method="post" enctype="multipart/form-data"
+          class="grid lg:grid-cols-[1fr_360px] gap-6">
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+        <section class="glass p-6 space-y-5">
+            <div>
+                <h2 class="text-[18px] font-semibold">CCCD/CMND</h2>
+                <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                    Ảnh chỉ dùng cho hồ sơ thuê phòng. Khi bạn thay đổi thông tin, trạng thái sẽ chuyển về chờ admin xác minh.
+                </p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="form-label">Loại giấy tờ</label>
+                    <div class="input-glass">
+                        <i data-lucide="id-card" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <select name="identityType">
+                            <option value="" th:selected="${user.identityType == null}">Chọn loại giấy tờ</option>
+                            <option value="CCCD" th:selected="${user.identityType != null and user.identityType.name() == 'CCCD'}">CCCD</option>
+                            <option value="CMND" th:selected="${user.identityType != null and user.identityType.name() == 'CMND'}">CMND</option>
+                            <option value="PASSPORT" th:selected="${user.identityType != null and user.identityType.name() == 'PASSPORT'}">Hộ chiếu</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Số giấy tờ</label>
+                    <div class="input-glass">
+                        <i data-lucide="hash" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input name="identityNumber" type="text" maxlength="32" th:value="${user.identityNumber}"
+                               placeholder="Nhập số CCCD/CMND" />
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Ngày cấp</label>
+                    <div class="input-glass">
+                        <i data-lucide="calendar" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input name="identityIssuedDate" type="date" th:value="${user.identityIssuedDate}" />
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Nơi cấp</label>
+                    <div class="input-glass">
+                        <i data-lucide="landmark" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input name="identityIssuedPlace" type="text" maxlength="160" th:value="${user.identityIssuedPlace}"
+                               placeholder="Cục CSQLHC về TTXH..." />
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="form-label">Địa chỉ thường trú</label>
+                <div class="input-glass">
+                    <i data-lucide="map-pinned" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <input name="permanentAddress" type="text" maxlength="240" th:value="${user.permanentAddress}"
+                           placeholder="Địa chỉ theo giấy tờ" />
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="glass-thin p-4 rounded-2xl">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <h3 class="font-semibold text-[14px]">Mặt trước</h3>
+                            <p class="text-[11px] text-[color:var(--text-mute)]">JPG, PNG hoặc WEBP</p>
+                        </div>
+                        <span th:if="${user.identityFrontUrl != null}" class="badge badge-emerald">Đã có</span>
+                        <span th:unless="${user.identityFrontUrl != null}" class="badge badge-mute">Chưa có</span>
+                    </div>
+                    <div class="aspect-[16/10] rounded-2xl overflow-hidden border border-[color:var(--line-soft)] bg-white/70 grid place-items-center relative">
+                        <img th:if="${user.identityFrontUrl != null}" th:src="${user.identityFrontUrl}" alt="CCCD mặt trước"
+                             class="w-full h-full object-contain"
+                             onerror="this.classList.add('hidden'); this.parentElement.querySelector('[data-image-error]').classList.remove('hidden')" />
+                        <div data-image-error class="hidden absolute inset-0 grid place-items-center text-center text-[12px] text-[color:var(--err)] bg-white p-4">
+                            Ảnh không tải được. Hãy chọn lại file JPG/PNG/WEBP.
+                        </div>
+                        <div th:unless="${user.identityFrontUrl != null}" class="text-center text-[12px] text-[color:var(--text-mute)]">
+                            <i data-lucide="image-plus" class="w-8 h-8 mx-auto mb-2"></i>
+                            Chưa tải ảnh
+                        </div>
+                    </div>
+                    <label class="btn btn-glass btn-sm w-full mt-3 cursor-pointer">
+                        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                        Chọn ảnh mặt trước
+                        <input name="identityFront" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
+                    </label>
+                </div>
+
+                <div class="glass-thin p-4 rounded-2xl">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <h3 class="font-semibold text-[14px]">Mặt sau</h3>
+                            <p class="text-[11px] text-[color:var(--text-mute)]">JPG, PNG hoặc WEBP</p>
+                        </div>
+                        <span th:if="${user.identityBackUrl != null}" class="badge badge-emerald">Đã có</span>
+                        <span th:unless="${user.identityBackUrl != null}" class="badge badge-mute">Chưa có</span>
+                    </div>
+                    <div class="aspect-[16/10] rounded-2xl overflow-hidden border border-[color:var(--line-soft)] bg-white/70 grid place-items-center relative">
+                        <img th:if="${user.identityBackUrl != null}" th:src="${user.identityBackUrl}" alt="CCCD mặt sau"
+                             class="w-full h-full object-contain"
+                             onerror="this.classList.add('hidden'); this.parentElement.querySelector('[data-image-error]').classList.remove('hidden')" />
+                        <div data-image-error class="hidden absolute inset-0 grid place-items-center text-center text-[12px] text-[color:var(--err)] bg-white p-4">
+                            Ảnh không tải được. Hãy chọn lại file JPG/PNG/WEBP.
+                        </div>
+                        <div th:unless="${user.identityBackUrl != null}" class="text-center text-[12px] text-[color:var(--text-mute)]">
+                            <i data-lucide="image-plus" class="w-8 h-8 mx-auto mb-2"></i>
+                            Chưa tải ảnh
+                        </div>
+                    </div>
+                    <label class="btn btn-glass btn-sm w-full mt-3 cursor-pointer">
+                        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                        Chọn ảnh mặt sau
+                        <input name="identityBack" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end">
+                <button class="btn btn-primary" type="submit">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    Lưu giấy tờ
+                </button>
+            </div>
+        </section>
+
+        <aside class="glass p-6 h-fit">
+            <h3 class="font-semibold text-[16px]">Trạng thái hồ sơ</h3>
+            <div class="mt-4 space-y-3">
+                <div class="flex items-center justify-between gap-3 text-[13px]">
+                    <span class="text-[color:var(--text-mute)]">Thông tin số giấy tờ</span>
+                    <span th:class="${user.identityNumber != null ? 'badge badge-emerald' : 'badge badge-mute'}"
+                          th:text="${user.identityNumber != null ? 'Đã nhập' : 'Thiếu'}">Thiếu</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 text-[13px]">
+                    <span class="text-[color:var(--text-mute)]">Ảnh mặt trước</span>
+                    <span th:class="${user.identityFrontUrl != null ? 'badge badge-emerald' : 'badge badge-mute'}"
+                          th:text="${user.identityFrontUrl != null ? 'Đã tải' : 'Thiếu'}">Thiếu</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 text-[13px]">
+                    <span class="text-[color:var(--text-mute)]">Ảnh mặt sau</span>
+                    <span th:class="${user.identityBackUrl != null ? 'badge badge-emerald' : 'badge badge-mute'}"
+                          th:text="${user.identityBackUrl != null ? 'Đã tải' : 'Thiếu'}">Thiếu</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 text-[13px]">
+                    <span class="text-[color:var(--text-mute)]">Xác minh</span>
+                    <span th:if="${user.identityVerified}" class="badge badge-emerald">Đã xác minh</span>
+                    <span th:unless="${user.identityVerified}" class="badge badge-amber">Chờ admin</span>
+                </div>
+            </div>
+            <div class="divider my-5"></div>
+            <p class="text-[12px] leading-relaxed text-[color:var(--text-mute)]">
+                Nếu bạn đổi ảnh hoặc số giấy tờ, admin cần xác minh lại trước khi hồ sơ được đánh dấu hoàn tất.
+            </p>
+        </aside>
+    </form>
+
+    <section x-show="tab==='security'" x-cloak class="glass p-6 max-w-2xl">
+        <h2 class="text-[18px] font-semibold">Bảo mật</h2>
+        <p class="text-[13px] text-[color:var(--text-mute)] mt-1">
+            Tài khoản đang dùng email <span class="font-semibold" th:text="${user.email}">email</span>. Chức năng đổi mật khẩu sẽ được xử lý ở màn hình bảo mật riêng.
+        </p>
+        <div class="mt-5 glass-thin rounded-2xl p-4 flex items-start gap-3">
+            <span class="w-10 h-10 rounded-xl bg-[color:var(--accent-soft)] text-[color:var(--accent)] grid place-items-center shrink-0">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </span>
+            <div>
+                <div class="font-semibold text-[14px]">Gợi ý bảo mật</div>
+                <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
+                    Không gửi ảnh CCCD qua kênh công khai. Hãy tải lên trực tiếp tại tab Giấy tờ để hệ thống lưu đúng hồ sơ.
+                </p>
+            </div>
+        </div>
+    </section>
+
+</div>
+</body>
+</html>

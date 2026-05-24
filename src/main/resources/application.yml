@@ -1,0 +1,131 @@
+spring:
+  application:
+    name: smart-rent
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  messages:
+    basename: messages
+    encoding: UTF-8
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: Asia/Ho_Chi_Minh
+          batch_size: 25
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  thymeleaf:
+    cache: false
+    mode: HTML
+    encoding: UTF-8
+    prefix: classpath:/templates/
+    suffix: .html
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 30MB
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+
+server:
+  port: ${APP_PORT:8080}
+  forward-headers-strategy: framework
+  error:
+    whitelabel:
+      enabled: false
+  compression:
+    enabled: true
+    mime-types: text/html,text/css,application/javascript,application/json,image/svg+xml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+logging:
+  level:
+    root: INFO
+    vn.glassliving: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN
+
+# === App-specific ===
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+  mail:
+    from: ${MAIL_FROM:no-reply@smartrent.vn}
+  jwt:
+    secret: ${JWT_SECRET:please-change-this-to-a-256-bit-random-string-for-production-glassliving-2026}
+    access-ttl-minutes: ${JWT_ACCESS_TTL_MINUTES:30}
+    refresh-ttl-days: ${JWT_REFRESH_TTL_DAYS:14}
+  storage:
+    endpoint: ${S3_ENDPOINT:http://localhost:9000}
+    access-key: ${S3_ACCESS_KEY:glass_minio}
+    secret-key: ${S3_SECRET_KEY:glass_minio_dev_pwd}
+    region: ${S3_REGION:ap-southeast-1}
+    bucket-public: ${S3_BUCKET_PUBLIC:glass-public}
+    bucket-private: ${S3_BUCKET_PRIVATE:glass-private}
+    presigned-ttl-minutes: 5
+  vnpay:
+    tmn-code: ${VNPAY_TMN_CODE:}
+    hash-secret: ${VNPAY_HASH_SECRET:}
+    return-url: ${VNPAY_RETURN_URL:}
+    ipn-url: ${VNPAY_IPN_URL:}
+  momo:
+    partner-code: ${MOMO_PARTNER_CODE:}
+    access-key: ${MOMO_ACCESS_KEY:}
+    secret-key: ${MOMO_SECRET_KEY:}
+  ai:
+    enabled: false
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      model-haiku: ${ANTHROPIC_MODEL_HAIKU:claude-haiku-4-5-20251001}
+      model-sonnet: ${ANTHROPIC_MODEL_SONNET:claude-sonnet-4-6}
+    rate-limit-per-day: 30
+    cache-ttl-minutes: 5
+  rate-limit:
+    api-per-minute: 100
+    auth-per-minute: 10
+
+jasypt:
+  encryptor:
+    password: ${JASYPT_PASSWORD:change-me-to-a-strong-passphrase}
+    algorithm: PBEWITHHMACSHA512ANDAES_256
+    iv-generator-classname: org.jasypt.iv.RandomIvGenerator

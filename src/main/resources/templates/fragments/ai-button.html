@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="aiButton"
+     x-data="aiAssistant()"
+     @keydown.escape.window="open = false"
+     class="no-print">
+
+    <button @click="open = !open"
+            class="ai-fab"
+            aria-label="SmartRent AI Assistant">
+        <i data-lucide="sparkles" class="w-6 h-6"></i>
+    </button>
+
+    <div x-show="open" x-cloak x-transition.opacity
+         class="fixed bottom-24 right-6 w-[380px] h-[520px] glass-strong rounded-3xl flex flex-col z-40 overflow-hidden">
+
+        <header class="px-4 py-3 flex items-center gap-3 border-b border-[color:var(--line-soft)]">
+            <div class="w-9 h-9 rounded-full grid place-items-center text-white"
+                 style="background: linear-gradient(135deg,#4f46e5,#7c3aed,#06b6d4)">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+            </div>
+            <div class="flex-1">
+                <div class="text-[14px] font-semibold">SmartRent AI</div>
+                <div class="text-[12px] text-[color:var(--text-mute)]">Trợ lý tư vấn phòng</div>
+            </div>
+            <button @click="open=false" class="w-8 h-8 grid place-items-center rounded-full hover:bg-black/5 transition">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-3 text-[14px]" x-ref="stream">
+            <template x-for="(m, i) in msgs" :key="i">
+                <div class="flex" :class="m.role === 'user' ? 'justify-end' : 'justify-start'">
+                    <div :class="m.role === 'user' ? 'bubble-out' : 'bubble-in'" x-text="m.text"></div>
+                </div>
+            </template>
+            <div x-show="loading" class="flex justify-start">
+                <div class="bubble-in flex gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-pulse"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-pulse" style="animation-delay:.2s"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-pulse" style="animation-delay:.4s"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 pb-2 flex flex-wrap gap-1.5">
+            <button class="pill text-[12px]" @click="quickAsk('Phòng nào ở Q1 dưới 10 triệu?')">Phòng Q1 dưới 10tr</button>
+            <button class="pill text-[12px]" @click="quickAsk('Phòng có cho thú cưng?')">Cho thú cưng</button>
+            <button class="pill text-[12px]" @click="quickAsk('So sánh studio và phòng đôi')">So sánh studio vs phòng đôi</button>
+        </div>
+
+        <form class="px-3 pb-3 pt-1 flex items-center gap-2" @submit.prevent="submit()">
+            <div class="input-glass flex-1 h-11">
+                <i data-lucide="message-circle" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                <input type="text" placeholder="Hỏi gì cũng được…" x-model="q" :disabled="loading" />
+            </div>
+            <button type="submit"
+                    class="w-11 h-11 rounded-full grid place-items-center text-white"
+                    style="background: linear-gradient(135deg,#4f46e5,#6366f1)"
+                    :disabled="loading || !q.trim()">
+                <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

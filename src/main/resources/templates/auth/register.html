@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/auth-layout}"
+      lang="vi">
+<head>
+    <title>Đăng ký — SmartRent</title>
+</head>
+<body>
+<div layout:fragment="content" class="w-full max-w-[520px]">
+    <div class="glass-strong p-10" x-data="{ role: '__ROLE__' }" th:data-default="${form != null ? form.role : 'TENANT'}"
+         x-init="role = $el.dataset.default || 'TENANT'">
+        <h1 class="text-[28px] font-bold tracking-tight mb-1">Tạo tài khoản</h1>
+        <p class="text-[14px] text-[color:var(--text-mute)] mb-6">Bắt đầu hành trình tìm tổ ấm cùng SmartRent.</p>
+
+        <div th:if="${error}" class="mb-4 px-4 py-3 rounded-xl bg-[color:var(--err-soft)] text-[color:var(--err)] text-[13px]">
+            <span th:text="${error}">Lỗi</span>
+        </div>
+
+        <!-- Role tabs -->
+        <div class="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-black/[0.03] mb-6">
+            <button type="button" @click="role='TENANT'"
+                    :class="role==='TENANT' ? 'glass-strong shadow-glass' : ''"
+                    class="rounded-xl py-2.5 text-[13px] font-medium transition">
+                <i data-lucide="user" class="w-4 h-4 inline-block mr-1.5"></i>
+                Tôi là khách thuê
+            </button>
+            <button type="button" @click="role='OWNER'"
+                    :class="role==='OWNER' ? 'glass-strong shadow-glass' : ''"
+                    class="rounded-xl py-2.5 text-[13px] font-medium transition">
+                <i data-lucide="key-round" class="w-4 h-4 inline-block mr-1.5"></i>
+                Tôi là chủ trọ
+            </button>
+        </div>
+
+        <form method="post" action="/register" class="space-y-4" th:object="${form}">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <input type="hidden" name="role" :value="role" />
+
+            <div>
+                <label class="form-label">Họ và tên</label>
+                <div class="input-glass">
+                    <i data-lucide="user" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <input type="text" name="fullName" th:value="*{fullName}" required maxlength="120" placeholder="Nguyễn Văn A" />
+                </div>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="form-label">Email</label>
+                    <div class="input-glass">
+                        <i data-lucide="mail" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="email" name="email" th:value="*{email}" required maxlength="160" placeholder="ban@gmail.com" />
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Số điện thoại</label>
+                    <div class="input-glass">
+                        <i data-lucide="phone" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="tel" name="phone" th:value="*{phone}" required pattern="^(0|\+84)[3-9]\d{8}$" placeholder="0901234567" />
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label class="form-label">Mật khẩu</label>
+                <div class="input-glass" x-data="{ show: false }">
+                    <i data-lucide="lock" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <input :type="show ? 'text' : 'password'" name="password" required minlength="8" maxlength="64" placeholder="Ít nhất 8 ký tự" />
+                    <button type="button" @click="show=!show">
+                        <i data-lucide="eye" class="w-4 h-4 text-[color:var(--text-mute)]" x-show="!show"></i>
+                        <i data-lucide="eye-off" class="w-4 h-4 text-[color:var(--text-mute)]" x-show="show" x-cloak></i>
+                    </button>
+                </div>
+            </div>
+
+            <label class="flex items-start gap-2 text-[13px] cursor-pointer">
+                <input type="checkbox" name="acceptTerms" value="true" required class="mt-1 rounded border-[color:var(--line)] text-[color:var(--accent)]" />
+                <span class="text-[color:var(--text-soft)]">
+                    Tôi đồng ý với
+                    <a href="#" class="text-[color:var(--accent)] hover:underline">Điều khoản dịch vụ</a>
+                    và
+                    <a href="#" class="text-[color:var(--accent)] hover:underline">Chính sách bảo mật</a>.
+                </span>
+            </label>
+
+            <button type="submit" class="btn btn-primary w-full">
+                Tạo tài khoản
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+        </form>
+
+        <p class="mt-6 text-center text-[14px] text-[color:var(--text-mute)]">
+            Đã có tài khoản?
+            <a href="/login" class="text-[color:var(--accent)] font-medium hover:underline">Đăng nhập</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

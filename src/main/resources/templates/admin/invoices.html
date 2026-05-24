@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Hóa đơn — SmartRent</title></head>
+<body>
+<div layout:fragment="content">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+        <div>
+            <span class="eyebrow">Tài chính</span>
+            <h1 class="text-[28px] sm:text-[32px] font-bold tracking-tight mt-2">Hóa đơn</h1>
+            <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Quản lý hóa đơn tiền thuê, điện nước, dịch vụ.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/admin/utilities" class="btn btn-primary btn-sm">
+                <i data-lucide="calculator" class="w-4 h-4"></i> Tính tiền phòng
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <a href="/admin/invoices" class="kpi hover:scale-[1.01] transition cursor-pointer"
+           th:classappend="${(filter == null or filter == '')} ? 'ring-2 ring-[color:var(--accent)]' : ''">
+            <div class="kpi-icon" style="background: var(--accent-soft); color: var(--accent);">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Tất cả</div>
+            <div class="kpi-value tnum"
+                 th:text="${invoicePage != null ? invoicePage.totalElements : 0}">12</div>
+            <div class="kpi-trend flat">tổng số hóa đơn</div>
+        </a>
+        <a href="/admin/invoices?status=PAID" class="kpi hover:scale-[1.01] transition cursor-pointer"
+           th:classappend="${filter == 'PAID'} ? 'ring-2 ring-[color:var(--ok)]' : ''">
+            <div class="kpi-icon" style="background: #ecfdf5; color: #047857;">
+                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Đã thu</div>
+            <div class="kpi-value tnum text-[color:var(--ok)]" th:text="${h.vnd(paid)}">142.500.000₫</div>
+            <div class="kpi-trend up"><span th:text="${paidCount}">10</span> hóa đơn</div>
+        </a>
+        <a href="/admin/invoices?status=PENDING" class="kpi hover:scale-[1.01] transition cursor-pointer"
+           th:classappend="${filter == 'PENDING'} ? 'ring-2 ring-[color:var(--warn)]' : ''">
+            <div class="kpi-icon" style="background: #fffbeb; color: #b45309;">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Chờ thanh toán</div>
+            <div class="kpi-value tnum text-[color:var(--warn)]" th:text="${h.vnd(pending)}">7.260.000₫</div>
+            <div class="kpi-trend flat"><span th:text="${pendingCount}">1</span> hóa đơn</div>
+        </a>
+        <a href="/admin/invoices?status=OVERDUE" class="kpi hover:scale-[1.01] transition cursor-pointer"
+           th:classappend="${filter == 'OVERDUE'} ? 'ring-2 ring-[color:var(--err)]' : ''">
+            <div class="kpi-icon" style="background: #fef2f2; color: #dc2626;">
+                <i data-lucide="alert-circle" class="w-5 h-5"></i>
+            </div>
+            <div class="kpi-label">Quá hạn</div>
+            <div class="kpi-value tnum text-[color:var(--err)]" th:text="${h.vnd(overdue)}">0₫</div>
+            <div class="kpi-trend down"><span th:text="${overdueCount}">0</span> hóa đơn</div>
+        </a>
+    </div>
+
+    <!-- Table -->
+    <div class="card-pad-0">
+        <div class="px-5 sm:px-6 py-4 border-b border-[color:var(--line-soft)] flex items-center justify-between flex-wrap gap-3">
+            <h3 class="font-semibold text-[15px]">Danh sách hóa đơn</h3>
+            <div class="flex items-center gap-1 overflow-x-auto">
+                <a href="/admin/invoices" class="pill text-[12px]"
+                   th:classappend="${filter == null or filter.isEmpty()} ? 'pill-active' : ''">Tất cả</a>
+                <a href="/admin/invoices?status=PAID" class="pill text-[12px]"
+                   th:classappend="${filter == 'PAID'} ? 'pill-active' : ''">Đã trả</a>
+                <a href="/admin/invoices?status=PENDING" class="pill text-[12px]"
+                   th:classappend="${filter == 'PENDING'} ? 'pill-active' : ''">Chờ</a>
+                <a href="/admin/invoices?status=OVERDUE" class="pill text-[12px]"
+                   th:classappend="${filter == 'OVERDUE'} ? 'pill-active' : ''">Quá hạn</a>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>Mã</th>
+                    <th>Kỳ</th>
+                    <th class="text-right">Tiền thuê</th>
+                    <th class="text-right">Điện</th>
+                    <th class="text-right">Nước</th>
+                    <th class="text-right">Tổng</th>
+                    <th>Hạn</th>
+                    <th>Trạng thái</th>
+                    <th class="text-right">Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="i : ${invoices}"
+                    th:data-href="@{'/admin/invoices/' + ${i.id}}"
+                    class="cursor-pointer hover:bg-[color:var(--accent-soft)]/40 transition"
+                    onclick="if (!event.target.closest('a, button, form, input, select, textarea')) window.location.href = this.dataset.href">
+                    <td>
+                        <a th:href="@{'/admin/invoices/' + ${i.id}}"
+                           class="mono text-[12px] font-semibold text-[color:var(--accent)] hover:underline"
+                           th:text="${i.code}">INV-001</a>
+                    </td>
+                    <td class="tnum font-medium" th:text="${i.periodMonth + '/' + i.periodYear}">5/2026</td>
+                    <td class="text-right tnum" th:text="${h.vnd(i.rentAmount)}">6.5tr</td>
+                    <td class="text-right tnum text-[color:var(--text-soft)]" th:text="${i.electricAmount != null ? h.vnd(i.electricAmount) : '—'}">320k</td>
+                    <td class="text-right tnum text-[color:var(--text-soft)]" th:text="${i.waterAmount != null ? h.vnd(i.waterAmount) : '—'}">75k</td>
+                    <td class="text-right">
+                        <span class="font-bold tnum text-[color:var(--accent)]" th:text="${h.vnd(i.totalAmount)}">7.195.000₫</span>
+                    </td>
+                    <td class="tnum text-[12px] text-[color:var(--text-mute)]" th:text="${#temporals.format(i.dueDate, 'dd/MM/yyyy')}">10/05/2026</td>
+                    <td>
+                        <form th:if="${i.status.name() != 'CANCELLED'}"
+                              th:action="@{'/admin/invoices/' + ${i.id} + '/status'}"
+                              method="post"
+                              class="inline-flex items-center gap-2">
+                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                            <div class="input-glass h-9 min-w-[168px] px-2.5"
+                                 th:style="${i.status.name() == 'PAID' ? 'background: var(--ok-soft); border-color: rgba(4,120,87,.18); color: var(--ok);' : (i.status.name() == 'OVERDUE' ? 'background: var(--err-soft); border-color: rgba(220,38,38,.18); color: var(--err);' : 'background: var(--warn-soft); border-color: rgba(180,83,9,.18); color: var(--warn);')}">
+                                <i th:if="${i.status.name() == 'PAID'}" data-lucide="check-circle-2" class="w-3.5 h-3.5 text-[color:var(--ok)]"></i>
+                                <i th:unless="${i.status.name() == 'PAID'}" data-lucide="clock-3" class="w-3.5 h-3.5 text-[color:var(--warn)]"></i>
+                                <select name="status"
+                                        class="text-[12px] font-semibold bg-transparent"
+                                        title="Đổi trạng thái thanh toán"
+                                        onchange="this.form.submit()">
+                                    <option value="PENDING"
+                                            th:selected="${i.status.name() != 'PAID'}"
+                                            th:text="${i.status.name() == 'OVERDUE' ? 'Chưa thanh toán · quá hạn' : 'Chưa thanh toán'}">
+                                        Chưa thanh toán
+                                    </option>
+                                    <option value="PAID" th:selected="${i.status.name() == 'PAID'}">Đã thanh toán</option>
+                                </select>
+                            </div>
+                        </form>
+                        <span th:if="${i.status.name() == 'CANCELLED'}" class="badge badge-mute">Đã hủy</span>
+                    </td>
+                    <td class="text-right">
+                        <div class="flex items-center justify-end gap-0.5" x-data="{ rowOpen: false }">
+                            <form th:if="${i.status.name() == 'PENDING' or i.status.name() == 'OVERDUE'}"
+                                  th:action="@{'/admin/invoices/' + ${i.id} + '/remind'}" method="post" class="contents">
+                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button type="submit" class="w-8 h-8 grid place-items-center rounded-lg hover:bg-black/[0.05] transition" title="Gửi nhắc thanh toán">
+                                    <i data-lucide="bell-ring" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </form>
+                            <div class="relative">
+                                <button type="button" @click.stop="rowOpen = !rowOpen"
+                                        class="w-8 h-8 grid place-items-center rounded-lg hover:bg-black/[0.05] transition" title="Khác">
+                                    <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <div x-show="rowOpen" x-cloak @click.outside="rowOpen = false"
+                                     class="absolute right-0 top-full mt-1 w-[160px] glass-strong rounded-xl p-1 z-30 shadow-glass-lg">
+                                    <button type="button"
+                                            class="w-full text-left px-3 py-2 rounded-lg text-[12px] hover:bg-black/[0.04] inline-flex items-center gap-2">
+                                        <i data-lucide="printer" class="w-3 h-3"></i> In
+                                    </button>
+                                    <form th:if="${i.status.name() != 'PAID'}"
+                                          th:action="@{'/admin/invoices/' + ${i.id} + '/delete'}" method="post"
+                                          onsubmit="return confirm('Xóa hóa đơn này?');">
+                                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                        <button type="submit"
+                                                class="w-full text-left px-3 py-2 rounded-lg text-[12px] hover:bg-[color:var(--err-soft)] text-[color:var(--err)] inline-flex items-center gap-2">
+                                            <i data-lucide="trash-2" class="w-3 h-3"></i> Xóa
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${invoices == null or invoices.isEmpty()}">
+                    <td colspan="9" class="text-center py-12">
+                        <div class="empty-icon mx-auto mb-3">
+                            <i data-lucide="receipt" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-[15px] font-semibold">Chưa có hóa đơn</h3>
+                        <p class="text-[13px] text-[color:var(--text-mute)] mt-1">
+                            <span th:if="${filter != null and !filter.isEmpty()}">Không có hóa đơn thuộc trạng thái này.</span>
+                            <span th:unless="${filter != null and !filter.isEmpty()}">Tạo hóa đơn đầu tiên hoặc bật tự động.</span>
+                        </p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div th:if="${invoicePage != null and invoicePage.totalElements > 0}"
+             th:replace="~{fragments/pagination :: pager(
+                currentPage=${invoicePage.number},
+                totalPages=${invoicePage.totalPages},
+                totalElements=${invoicePage.totalElements},
+                pageSize=${invoicePage.size},
+                baseUrl='/admin/invoices?status=' + (filter ?: '') + '&'
+             )}"></div>
+    </div>
+
+</div>
+</body>
+</html>

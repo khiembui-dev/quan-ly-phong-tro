@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/customer-layout}"
+      lang="vi">
+<head><title>Bảng điều khiển — SmartRent</title></head>
+<body>
+<div layout:fragment="content"
+     id="design"
+     class="max-w-[1440px] mx-auto px-4 sm:px-6 pt-7 pb-16"
+     x-data="{ ticketOpen: false }">
+
+    <section class="glass p-5 sm:p-7 mb-6 overflow-hidden reveal reveal-1">
+        <div class="grid lg:grid-cols-[1.4fr_.9fr] gap-6 items-end">
+            <div class="min-w-0">
+                <span class="eyebrow" th:text="#{customer.dashboard.area}">Khu vực khách thuê</span>
+                <h1 class="mt-2 text-[30px] sm:text-[42px] font-bold tracking-tight">
+                    <span th:text="#{customer.dashboard.greeting}">Xin chào,</span>
+                    <span sec:authentication="principal.fullName"
+                          class="text-[color:var(--accent)]">Bạn</span>
+                </h1>
+                <p class="mt-2 text-[14px] text-[color:var(--text-mute)] max-w-2xl" th:text="#{customer.dashboard.intro}">
+                    Theo dõi phòng đang ở, hóa đơn, yêu cầu hỗ trợ và thông tin liên hệ chủ trọ trong một màn hình.
+                </p>
+                <div class="mt-5 flex flex-wrap gap-2">
+                    <button type="button"
+                            @click="ticketOpen = true"
+                            class="btn btn-primary btn-sm">
+                        <i data-lucide="ticket-plus" class="w-4 h-4"></i>
+                        <span th:text="#{customer.dashboard.openTicket}">Mở ticket</span>
+                    </button>
+                    <a href="/me/invoices" class="btn btn-glass btn-sm">
+                        <i data-lucide="receipt" class="w-4 h-4"></i>
+                        <span th:text="#{nav.invoices}">Hóa đơn</span>
+                    </a>
+                    <a href="/me/profile" class="btn btn-soft btn-sm">
+                        <i data-lucide="user-round" class="w-4 h-4"></i>
+                        <span th:text="#{customer.profileShort}">Hồ sơ</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-[22px] border border-[color:var(--line-soft)] bg-white/60 p-4">
+                    <div class="text-[11px] uppercase tracking-[0.12em] font-semibold text-[color:var(--text-mute)]" th:text="#{customer.dashboard.rooms}">Phòng</div>
+                    <div class="mt-2 text-[30px] font-bold tnum" th:text="${activeRooms}">0</div>
+                    <div class="text-[12px] text-[color:var(--text-mute)]" th:text="#{customer.dashboard.active}">đang ở</div>
+                </div>
+                <div class="rounded-[22px] border border-[color:var(--line-soft)] bg-white/60 p-4">
+                    <div class="text-[11px] uppercase tracking-[0.12em] font-semibold text-[color:var(--text-mute)]" th:text="#{customer.dashboard.amountDue}">Cần trả</div>
+                    <div class="mt-2 text-[24px] font-bold tnum text-[color:var(--warn)]" th:text="${h.vnd(monthlyDue)}">0đ</div>
+                    <div class="text-[12px] text-[color:var(--text-mute)]">
+                        <span th:text="${unpaidCount}">0</span> <span th:text="#{customer.dashboard.invoiceCount}">hóa đơn</span>
+                    </div>
+                </div>
+                <div class="rounded-[22px] border border-[color:var(--line-soft)] bg-white/60 p-4">
+                    <div class="text-[11px] uppercase tracking-[0.12em] font-semibold text-[color:var(--text-mute)]" th:text="#{customer.dashboard.openTickets}">Ticket mở</div>
+                    <div class="mt-2 text-[30px] font-bold tnum text-[color:var(--accent)]" th:text="${openTicketCount}">0</div>
+                    <div class="text-[12px] text-[color:var(--text-mute)]">
+                        <span th:text="${ticketCount}">0</span> <span th:text="#{customer.dashboard.total}">tổng</span>
+                    </div>
+                </div>
+                <div class="rounded-[22px] border border-[color:var(--line-soft)] bg-white/60 p-4">
+                    <div class="text-[11px] uppercase tracking-[0.12em] font-semibold text-[color:var(--text-mute)]" th:text="#{customer.favorites}">Yêu thích</div>
+                    <div class="mt-2 text-[30px] font-bold tnum" th:text="${favoriteCount}">0</div>
+                    <a href="/me/favorites" class="text-[12px] text-[color:var(--accent)] hover:underline" th:text="#{customer.dashboard.viewRooms}">Xem phòng</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid xl:grid-cols-[1.55fr_.75fr] gap-5">
+        <div class="space-y-5">
+            <section id="rooms" class="glass p-5 reveal reveal-2">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                        <span class="eyebrow no-line">Lưu trú</span>
+                        <h2 class="text-[22px] font-bold mt-1">Phòng đang ở</h2>
+                    </div>
+                    <span class="badge badge-violet tnum" th:text="${activeRooms + ' phòng'}">0 phòng</span>
+                </div>
+
+                <div th:if="${currentRooms != null and !currentRooms.isEmpty()}" class="grid lg:grid-cols-2 gap-4">
+                    <article th:each="r : ${currentRooms}"
+                             class="rounded-[24px] border border-[color:var(--line-soft)] bg-white/62 overflow-hidden">
+                        <div class="aspect-[16/8] bg-[color:var(--accent-soft)] relative overflow-hidden">
+                            <img th:if="${r.coverUrl != null}" th:src="${r.coverUrl}" alt="" class="w-full h-full object-cover" />
+                            <div th:unless="${r.coverUrl != null}" class="absolute inset-0 grid place-items-center text-[color:var(--accent)]">
+                                <i data-lucide="home" class="w-12 h-12"></i>
+                            </div>
+                            <div class="absolute left-4 top-4 badge badge-violet tnum" th:text="${r.code}">P101</div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h3 class="text-[17px] font-bold truncate" th:text="${r.title}">Phòng</h3>
+                                    <p class="mt-1 text-[12px] text-[color:var(--text-mute)] truncate">
+                                        <span th:text="${propertyLabels.get(r.propertyId) != null ? propertyLabels.get(r.propertyId) : 'Cơ sở'}">Cơ sở</span>
+                                        <span> · </span>
+                                        <span th:text="${r.district + ', ' + r.city}">Khu vực</span>
+                                    </p>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <div class="text-[11px] text-[color:var(--text-mute)]">Tiền thuê</div>
+                                    <div class="font-bold tnum text-[color:var(--accent)]" th:text="${h.vnd(r.priceMonthly)}">0đ</div>
+                                </div>
+                            </div>
+
+                            <div class="grid sm:grid-cols-2 gap-2 mt-4">
+                                <div class="rounded-2xl bg-white/70 border border-[color:var(--line-soft)] p-3">
+                                    <div class="text-[11px] uppercase tracking-[0.1em] font-semibold text-[color:var(--text-mute)]">Bắt đầu</div>
+                                    <div class="mt-1 font-semibold tnum"
+                                         th:text="${r.currentTenantStartedOn != null ? #temporals.format(r.currentTenantStartedOn, 'dd/MM/yyyy') : 'Chưa đặt'}">
+                                        01/05/2026
+                                    </div>
+                                </div>
+                                <div class="rounded-2xl bg-white/70 border border-[color:var(--line-soft)] p-3">
+                                    <div class="text-[11px] uppercase tracking-[0.1em] font-semibold text-[color:var(--text-mute)]">Đã trả đến</div>
+                                    <div class="mt-1 font-semibold tnum"
+                                         th:text="${r.currentTenantPaidUntil != null ? #temporals.format(r.currentTenantPaidUntil, 'dd/MM/yyyy') : 'Chưa đặt'}">
+                                        31/05/2026
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <button type="button" @click="ticketOpen = true" class="btn btn-soft btn-sm">
+                                    <i data-lucide="ticket-plus" class="w-3.5 h-3.5"></i>
+                                    Báo sự cố
+                                </button>
+                                <a href="/me/invoices" class="btn btn-glass btn-sm">
+                                    <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
+                                    Hóa đơn phòng
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <div th:if="${currentRooms == null or currentRooms.isEmpty()}" class="empty py-12">
+                    <div class="empty-icon"><i data-lucide="bed-double" class="w-7 h-7"></i></div>
+                    <h3 class="text-[16px] font-semibold">Chưa có phòng đang ở</h3>
+                    <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Khi admin gán phòng, thông tin lưu trú sẽ xuất hiện tại đây.</p>
+                    <a href="/" class="btn btn-soft btn-sm mt-4">
+                        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                        Tìm phòng
+                    </a>
+                </div>
+            </section>
+
+            <section id="tickets" class="glass p-5 reveal reveal-3">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                        <span class="eyebrow no-line">Hỗ trợ</span>
+                        <h2 class="text-[22px] font-bold mt-1">Ticket của tôi</h2>
+                    </div>
+                    <button type="button"
+                            @click="ticketOpen = true"
+                            class="btn btn-primary btn-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Tạo ticket
+                    </button>
+                </div>
+
+                <div th:if="${tickets != null and !tickets.isEmpty()}" class="grid md:grid-cols-2 gap-3">
+                    <article th:each="t : ${tickets}"
+                             class="rounded-[20px] border border-[color:var(--line-soft)] bg-white/64 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="mono text-[11px] text-[color:var(--text-mute)]" th:text="${t.code}">MT</div>
+                                <h3 class="mt-1 font-semibold truncate" th:text="${t.title}">Sự cố</h3>
+                            </div>
+                            <span class="badge"
+                                  th:classappend="${t.status.name() == 'RESOLVED' or t.status.name() == 'CLOSED' ? 'badge-emerald' : (t.status.name() == 'CANCELLED' ? 'badge-mute' : 'badge-violet')}">
+                                <span th:switch="${t.status.name()}">
+                                    <span th:case="'OPEN'">Mới</span>
+                                    <span th:case="'ACKNOWLEDGED'">Đã nhận</span>
+                                    <span th:case="'IN_PROGRESS'">Đang xử lý</span>
+                                    <span th:case="'AWAITING_PARTS'">Chờ vật tư</span>
+                                    <span th:case="'RESOLVED'">Hoàn tất</span>
+                                    <span th:case="'CLOSED'">Đã đóng</span>
+                                    <span th:case="'CANCELLED'">Đã hủy</span>
+                                </span>
+                            </span>
+                        </div>
+                        <p class="mt-2 text-[12px] text-[color:var(--text-mute)] line-clamp-2"
+                           th:text="${t.description != null and !t.description.isBlank() ? t.description : 'Không có mô tả'}">Mô tả</p>
+                        <div class="mt-3 flex items-center justify-between gap-2 text-[11px] text-[color:var(--text-mute)]">
+                            <span th:text="${roomLabels.get(t.roomId) != null ? roomLabels.get(t.roomId) : 'Phòng'}">Phòng</span>
+                            <span class="tnum" th:text="${#temporals.format(t.reportedAt, 'dd/MM HH:mm')}">12/05</span>
+                        </div>
+                    </article>
+                </div>
+
+                <div th:if="${tickets == null or tickets.isEmpty()}" class="empty py-10">
+                    <div class="empty-icon"><i data-lucide="ticket-check" class="w-7 h-7"></i></div>
+                    <h3 class="text-[16px] font-semibold">Chưa có ticket</h3>
+                    <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Các yêu cầu sửa chữa, điện nước, internet sẽ được theo dõi tại đây.</p>
+                </div>
+            </section>
+
+            <section class="card-pad-0 reveal reveal-4">
+                <div class="px-5 sm:px-6 py-4 flex items-center justify-between border-b border-[color:var(--line-soft)]">
+                    <div>
+                        <h3 class="font-semibold text-[15px]">Hóa đơn gần đây</h3>
+                        <p class="text-[12px] text-[color:var(--text-mute)] mt-0.5">Các khoản thu mới nhất</p>
+                    </div>
+                    <a href="/me/invoices" class="text-[13px] font-medium text-[color:var(--accent)] hover:underline inline-flex items-center gap-1">
+                        Xem tất cả <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                    </a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Kỳ</th>
+                            <th>Số tiền</th>
+                            <th>Hạn</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="i : ${recentInvoices}">
+                            <td class="mono text-[12px] text-[color:var(--text-mute)]" th:text="${i.code}">INV</td>
+                            <td class="tnum" th:text="${i.periodMonth + '/' + i.periodYear}">5/2026</td>
+                            <td class="font-semibold tnum" th:text="${h.vnd(i.totalAmount)}">0đ</td>
+                            <td class="tnum" th:text="${#temporals.format(i.dueDate, 'dd/MM/yyyy')}">10/05/2026</td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${i.status.name() == 'PAID' ? 'badge-emerald' : (i.status.name() == 'OVERDUE' ? 'badge-rose' : 'badge-amber')}">
+                                    <span th:switch="${i.status.name()}">
+                                        <span th:case="'PAID'">Đã trả</span>
+                                        <span th:case="'PENDING'">Chờ</span>
+                                        <span th:case="'PARTIALLY_PAID'">Một phần</span>
+                                        <span th:case="'OVERDUE'">Quá hạn</span>
+                                        <span th:case="'CANCELLED'">Đã hủy</span>
+                                    </span>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr th:if="${recentInvoices == null or recentInvoices.isEmpty()}">
+                            <td colspan="5" class="text-center text-[color:var(--text-mute)] py-8">
+                                <i data-lucide="receipt" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                                <div class="text-[13px]">Chưa có hóa đơn.</div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <aside class="space-y-5">
+            <section id="contact" class="glass p-5 reveal reveal-2">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                        <span class="eyebrow no-line">Liên hệ</span>
+                        <h2 class="text-[20px] font-bold mt-1">Chủ trọ</h2>
+                    </div>
+                    <i data-lucide="headphones" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                </div>
+
+                <div th:if="${contactCards != null and !contactCards.isEmpty()}" class="space-y-3">
+                    <article th:each="contact : ${contactCards}" class="rounded-[20px] border border-[color:var(--line-soft)] bg-white/64 p-4">
+                        <div class="font-semibold truncate" th:text="${contact.ownerName}">Chủ trọ</div>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <a th:if="${contact.zaloUrl != null}" th:href="${contact.zaloUrl}" target="_blank" rel="noopener"
+                               class="btn btn-soft btn-sm justify-center">
+                                <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                                Zalo
+                            </a>
+                            <span th:unless="${contact.zaloUrl != null}" class="btn btn-glass btn-sm justify-center opacity-50">
+                                <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                                Zalo
+                            </span>
+                            <a th:if="${contact.email != null}" th:href="${'mailto:' + contact.email}"
+                               class="btn btn-glass btn-sm justify-center">
+                                <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                                Gmail
+                            </a>
+                            <span th:unless="${contact.email != null}" class="btn btn-glass btn-sm justify-center opacity-50">
+                                <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                                Gmail
+                            </span>
+                        </div>
+                        <div class="mt-3 text-[11px] text-[color:var(--text-mute)] space-y-1">
+                            <div th:if="${contact.zalo != null}" class="tnum" th:text="${contact.zalo}">090...</div>
+                            <div th:if="${contact.email != null}" class="truncate" th:text="${contact.email}">email</div>
+                            <div th:if="${contact.zalo == null and contact.email == null}">Chưa có thông tin liên hệ.</div>
+                        </div>
+                    </article>
+                </div>
+
+                <div th:if="${contactCards == null or contactCards.isEmpty()}" class="empty py-8">
+                    <div class="empty-icon"><i data-lucide="contact" class="w-7 h-7"></i></div>
+                    <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Chưa có chủ trọ liên kết.</p>
+                </div>
+            </section>
+
+            <section class="glass p-5 reveal reveal-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-[15px]">Hoạt động mới</h3>
+                    <a href="/notifications" class="text-[12px] text-[color:var(--accent)] hover:underline">Tất cả</a>
+                </div>
+                <ul class="space-y-3">
+                    <li th:each="n : ${notifications}" class="flex gap-3">
+                        <span class="w-9 h-9 rounded-full bg-[color:var(--accent-soft)] grid place-items-center shrink-0">
+                            <i data-lucide="bell" class="w-4 h-4 text-[color:var(--accent)]"></i>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[13px] font-medium leading-snug line-clamp-1" th:text="${n.title}">Title</div>
+                            <div class="text-[12px] text-[color:var(--text-mute)] mt-0.5 line-clamp-2 leading-snug" th:text="${n.body}">Body</div>
+                            <div class="text-[11px] text-[color:var(--text-faint)] mt-1 tnum" th:text="${#temporals.format(n.createdAt, 'dd/MM HH:mm')}">06/05</div>
+                        </div>
+                    </li>
+                    <li th:if="${notifications == null or notifications.isEmpty()}" class="text-center py-6">
+                        <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-[color:var(--text-faint)]"></i>
+                        <div class="text-[13px] text-[color:var(--text-mute)]">Chưa có hoạt động.</div>
+                    </li>
+                </ul>
+            </section>
+        </aside>
+    </div>
+
+    <div x-show="ticketOpen" x-cloak x-transition.opacity
+         class="modal-backdrop"
+         @keydown.escape.window="ticketOpen = false">
+        <form @click.outside="ticketOpen = false"
+              th:action="@{/me/tickets}"
+              method="post"
+              class="modal-card p-7 w-full max-w-[640px]">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <span class="eyebrow">Ticket mới</span>
+                    <h2 class="text-[24px] font-bold mt-1">Gửi yêu cầu hỗ trợ</h2>
+                </div>
+                <button type="button" @click="ticketOpen = false"
+                        class="w-8 h-8 grid place-items-center rounded-md hover:bg-black/[0.05]">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div th:if="${currentRooms == null or currentRooms.isEmpty()}" class="rounded-[24px] border border-[color:var(--line-soft)] bg-[color:var(--accent-soft)]/70 p-5">
+                <div class="w-12 h-12 rounded-2xl bg-white text-[color:var(--accent)] grid place-items-center shadow-sm">
+                    <i data-lucide="bed-double" class="w-6 h-6"></i>
+                </div>
+                <h3 class="mt-4 text-[18px] font-bold">Chưa có phòng đang ở</h3>
+                <p class="mt-2 text-[13px] leading-relaxed text-[color:var(--text-mute)]">
+                    Ticket bảo trì cần gắn với một phòng cụ thể. Khi admin gán phòng cho tài khoản này, bạn sẽ tạo ticket được ngay tại đây.
+                </p>
+                <div th:if="${contactCards != null and !contactCards.isEmpty()}" class="mt-4 flex flex-wrap gap-2">
+                    <th:block th:each="contact : ${contactCards}">
+                        <a th:if="${contact.zaloUrl != null}" th:href="${contact.zaloUrl}" target="_blank" rel="noopener"
+                           class="btn btn-soft btn-sm">
+                            <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                            Liên hệ Zalo
+                        </a>
+                        <a th:if="${contact.email != null}" th:href="${'mailto:' + contact.email}" class="btn btn-glass btn-sm">
+                            <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                            Gửi Gmail
+                        </a>
+                    </th:block>
+                </div>
+            </div>
+
+            <div th:if="${currentRooms != null and !currentRooms.isEmpty()}" class="space-y-4">
+                <div>
+                    <label class="form-label">Phòng</label>
+                    <div class="input-glass">
+                        <i data-lucide="bed-double" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <select name="roomId" required>
+                            <option th:each="r : ${currentRooms}" th:value="${r.id}" th:text="${r.code + ' · ' + r.title}">
+                                P101
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Nhóm sự cố</label>
+                        <div class="input-glass">
+                            <i data-lucide="wrench" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <select name="category">
+                                <option value="ELECTRICAL">Điện</option>
+                                <option value="PLUMBING">Nước</option>
+                                <option value="AC_HVAC">Máy lạnh</option>
+                                <option value="APPLIANCE">Thiết bị</option>
+                                <option value="INTERNET">Internet</option>
+                                <option value="FURNITURE">Nội thất</option>
+                                <option value="SECURITY">An ninh</option>
+                                <option value="OTHER" selected>Khác</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Mức độ</label>
+                        <div class="input-glass">
+                            <i data-lucide="gauge" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                            <select name="priority">
+                                <option value="LOW">Thấp</option>
+                                <option value="NORMAL" selected>Bình thường</option>
+                                <option value="HIGH">Cao</option>
+                                <option value="URGENT">Khẩn cấp</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Tiêu đề</label>
+                    <div class="input-glass">
+                        <i data-lucide="type" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="text" name="title" required maxlength="200" placeholder="Ví dụ: Máy lạnh không lạnh" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Mô tả</label>
+                    <div class="input-glass min-h-[130px] items-start py-3">
+                        <i data-lucide="align-left" class="w-4 h-4 text-[color:var(--text-mute)] mt-1"></i>
+                        <textarea name="description" rows="5" placeholder="Mô tả tình trạng, thời điểm phát sinh, vị trí trong phòng..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" @click="ticketOpen = false" class="btn btn-ghost">Hủy</button>
+                <button type="submit" th:if="${currentRooms != null and !currentRooms.isEmpty()}" class="btn btn-primary">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    Gửi ticket
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

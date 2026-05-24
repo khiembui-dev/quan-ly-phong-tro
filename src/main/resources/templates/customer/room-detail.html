@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/customer-layout}"
+      lang="vi">
+<head>
+    <title th:text="${room.title} + ' — SmartRent'">Chi tiết phòng</title>
+</head>
+<body>
+<div layout:fragment="content"
+     class="max-w-[1280px] mx-auto px-4 sm:px-6 pt-4 pb-32 lg:pb-16"
+     x-data="roomDetail()">
+
+    <!-- BREADCRUMB -->
+    <nav class="text-[13px] text-[color:var(--text-mute)] mb-4 flex items-center gap-1.5 flex-wrap">
+        <a href="/" class="hover:text-[color:var(--accent)] transition">Khám phá</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+        <a th:href="@{/(district=${room.district})}" class="hover:text-[color:var(--accent)] transition" th:text="${room.district}">Quận 1</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+        <span class="text-[color:var(--text)] font-medium" th:text="${(property != null ? property.name + ' · ' : '') + room.code}">Cơ sở · Mã</span>
+    </nav>
+
+    <!-- ============================================================
+         GALLERY HERO
+         ============================================================ -->
+    <section class="mb-8">
+        <div class="grid grid-cols-4 grid-rows-2 gap-2 sm:gap-3 h-[280px] sm:h-[420px] lg:h-[540px] rounded-3xl overflow-hidden">
+
+            <!-- Hero photo (2x2) -->
+            <button type="button" @click="openLightbox(0)"
+                    class="col-span-4 sm:col-span-2 row-span-2 relative group overflow-hidden bg-slate-200">
+                <img th:if="${images != null and !images.isEmpty()}"
+                     th:src="${images[0].url}" th:alt="${images[0].alt}"
+                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                     loading="eager" />
+                <div th:unless="${images != null and !images.isEmpty()}"
+                     class="absolute inset-0 grid place-items-center text-white/85 font-extrabold text-[42px] tracking-tighter"
+                     style="background: linear-gradient(135deg, #6366f1, #7c3aed, #06b6d4);"
+                     th:text="${room.district}">Quận</div>
+
+                <span class="absolute top-4 left-4 badge"
+                      th:classappend="|${room.status.name() == 'AVAILABLE' ? 'badge-emerald' : ''}
+                                      ${room.status.name() == 'OCCUPIED' ? 'badge-amber' : ''}
+                                      ${room.status.name() == 'MAINTENANCE' ? 'badge-rose' : ''}|"
+                      style="backdrop-filter: blur(8px);">
+                    <span class="dot dot-pulse" th:if="${room.status.name() == 'AVAILABLE'}" style="background:currentColor"></span>
+                    <span th:switch="${room.status.name()}">
+                        <span th:case="'AVAILABLE'">Còn trống</span>
+                        <span th:case="'OCCUPIED'">Đang ở</span>
+                        <span th:case="'MAINTENANCE'">Đang bảo trì</span>
+                        <span th:case="'HIDDEN'">Tạm ẩn</span>
+                    </span>
+                </span>
+            </button>
+
+            <!-- Thumbnails 2-4 -->
+            <button type="button" @click="openLightbox(1)"
+                    class="hidden sm:block relative overflow-hidden bg-slate-200 group">
+                <img th:if="${images != null and images.size() > 1}"
+                     th:src="${images[1].url}" th:alt="${images[1].alt}"
+                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                     loading="lazy" />
+                <div th:unless="${images != null and images.size() > 1}" class="absolute inset-0"
+                     style="background: linear-gradient(135deg,#a5b4fc,#c4b5fd);"></div>
+            </button>
+            <button type="button" @click="openLightbox(2)"
+                    class="hidden sm:block relative overflow-hidden bg-slate-200 group">
+                <img th:if="${images != null and images.size() > 2}"
+                     th:src="${images[2].url}" th:alt="${images[2].alt}"
+                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                     loading="lazy" />
+                <div th:unless="${images != null and images.size() > 2}" class="absolute inset-0"
+                     style="background: linear-gradient(135deg,#86efac,#67e8f9);"></div>
+            </button>
+            <button type="button" @click="openLightbox(3)"
+                    class="hidden sm:block relative overflow-hidden bg-slate-200 group">
+                <img th:if="${images != null and images.size() > 3}"
+                     th:src="${images[3].url}" th:alt="${images[3].alt}"
+                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                     loading="lazy" />
+                <div th:unless="${images != null and images.size() > 3}" class="absolute inset-0"
+                     style="background: linear-gradient(135deg,#fcd34d,#fb923c);"></div>
+            </button>
+
+            <!-- Video tour -->
+            <button type="button" @click="videoOpen = true"
+                    class="hidden sm:block relative overflow-hidden bg-slate-900 group">
+                <img th:if="${images != null and images.size() > 4}"
+                     th:src="${images[4].url}" th:alt="${images[4].alt}"
+                     class="w-full h-full object-cover opacity-80 transition-transform duration-500 group-hover:scale-105"
+                     loading="lazy" />
+                <div th:unless="${images != null and images.size() > 4}" class="absolute inset-0"
+                     style="background: linear-gradient(135deg,#1e1b4b,#4338ca);"></div>
+
+                <div class="absolute inset-0" style="background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.7) 100%);"></div>
+
+                <div class="absolute inset-0 grid place-items-center">
+                    <div class="w-16 h-16 rounded-full grid place-items-center bg-white/95 shadow-2xl group-hover:scale-110 transition">
+                        <i data-lucide="play" class="w-7 h-7 text-[color:var(--accent)] fill-[color:var(--accent)] ml-1"></i>
+                    </div>
+                </div>
+                <span class="absolute bottom-3 left-3 right-3 text-white text-[12px] font-semibold flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1.5">
+                        <i data-lucide="video" class="w-3.5 h-3.5"></i> Video tour
+                    </span>
+                    <span class="opacity-75 tnum">2:14</span>
+                </span>
+            </button>
+        </div>
+
+        <div class="flex justify-end mt-3">
+            <button type="button" @click="openLightbox(0)" class="btn btn-glass btn-sm">
+                <i data-lucide="grid-3x3" class="w-3.5 h-3.5"></i>
+                Xem tất cả <span class="tnum" th:text="${images != null ? images.size() : 0}">5</span> ảnh
+            </button>
+        </div>
+    </section>
+
+    <!-- ===== LIGHTBOX CAROUSEL ===== -->
+    <div x-show="lightbox" x-cloak x-transition.opacity
+         @keydown.escape.window="lightbox = false"
+         @keydown.left.window="prev()" @keydown.right.window="next()"
+         class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md">
+        <button type="button" @click="lightbox = false"
+                class="absolute top-5 right-5 w-11 h-11 grid place-items-center rounded-full bg-white/15 hover:bg-white/25 text-white z-10">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+        <div class="absolute top-5 left-5 text-white text-[13px] font-medium z-10 tnum">
+            <span x-text="idx + 1"></span> / <span x-text="totalImages"></span>
+        </div>
+        <button type="button" @click="prev()"
+                class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 grid place-items-center rounded-full bg-white/15 hover:bg-white/25 text-white z-10">
+            <i data-lucide="chevron-left" class="w-6 h-6"></i>
+        </button>
+        <button type="button" @click="next()"
+                class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 grid place-items-center rounded-full bg-white/15 hover:bg-white/25 text-white z-10">
+            <i data-lucide="chevron-right" class="w-6 h-6"></i>
+        </button>
+        <div class="absolute inset-0 grid place-items-center p-8" @click.self="lightbox = false">
+            <img :src="currentImage" alt="" class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain" />
+        </div>
+    </div>
+
+    <!-- ===== VIDEO MODAL ===== -->
+    <div x-show="videoOpen" x-cloak x-transition.opacity
+         @keydown.escape.window="closeVideo()"
+         class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md grid place-items-center p-4">
+        <div class="relative w-full max-w-[1100px] aspect-video rounded-3xl overflow-hidden shadow-2xl bg-black"
+             @click.outside="closeVideo()">
+            <button type="button" @click="closeVideo()"
+                    class="absolute top-4 right-4 w-11 h-11 grid place-items-center rounded-full bg-white/15 hover:bg-white/25 text-white z-10">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <video x-ref="player" controls class="w-full h-full"
+                   th:poster="${images != null and images.size() > 4 ? images[4].url : ''}">
+                <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" type="video/mp4" />
+                Trình duyệt của bạn không hỗ trợ video.
+            </video>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         TITLE + ACTIONS
+         ============================================================ -->
+    <div class="flex flex-col lg:flex-row lg:items-start gap-4 lg:gap-8 mb-6">
+        <div class="flex-1 min-w-0">
+            <h1 class="text-[28px] sm:text-[36px] font-extrabold tracking-tight leading-[1.1] text-balance" th:text="${room.title}">Phòng đẹp</h1>
+            <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px] text-[color:var(--text-soft)]">
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="map-pin" class="w-4 h-4 text-[color:var(--accent)]"></i>
+                    <span th:text="${fullAddress}">Địa chỉ</span>
+                </span>
+                <span class="text-[color:var(--text-faint)]">·</span>
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                    <span class="font-semibold text-[color:var(--text)] tnum" th:text="${#numbers.formatDecimal(room.ratingAvg, 1, 'POINT', 1, 'POINT')}">4.9</span>
+                    <span class="text-[color:var(--text-mute)] tnum" th:text="'(' + ${room.ratingCount} + ' đánh giá)'">(234 đánh giá)</span>
+                </span>
+                <span class="text-[color:var(--text-faint)]">·</span>
+                <span class="badge badge-emerald">
+                    <i data-lucide="badge-check" class="w-3 h-3"></i> Đã xác minh
+                </span>
+                <a th:href="${mapSearchUrl}" target="_blank" rel="noopener"
+                   class="text-[color:var(--accent)] font-medium hover:underline inline-flex items-center gap-1">
+                    Xem bản đồ
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button sec:authorize="isAuthenticated()" type="button"
+                    onclick="glassToggleFavorite(this)" th:data-room-id="${room.id}"
+                    class="btn btn-glass btn-sm">
+                <i data-lucide="heart" class="w-4 h-4"></i> Yêu thích
+            </button>
+            <button type="button" class="btn btn-glass btn-sm"
+                    onclick="navigator.share ? navigator.share({title:document.title, url:location.href}).catch(()=>{}) : (navigator.clipboard.writeText(location.href), window.toast && window.toast('Đã copy link'))">
+                <i data-lucide="share-2" class="w-4 h-4"></i> Chia sẻ
+            </button>
+        </div>
+    </div>
+
+    <!-- 4 QUICK STATS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+        <div class="surface p-5">
+            <div class="flex items-center gap-3">
+                <span class="w-11 h-11 grid place-items-center rounded-xl bg-[color:var(--accent-soft)] text-[color:var(--accent)] shrink-0">
+                    <i data-lucide="ruler" class="w-5 h-5"></i>
+                </span>
+                <div>
+                    <div class="kpi-label">Diện tích</div>
+                    <div class="text-[20px] font-bold tracking-tight tnum mt-0.5">
+                        <span th:text="${room.areaSqm}">28</span><span class="text-[13px] font-semibold text-[color:var(--text-mute)] ml-0.5">m²</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="surface p-5">
+            <div class="flex items-center gap-3">
+                <span class="w-11 h-11 grid place-items-center rounded-xl bg-[color:var(--accent-soft)] text-[color:var(--accent)] shrink-0">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                </span>
+                <div>
+                    <div class="kpi-label">Tầng</div>
+                    <div class="text-[20px] font-bold tracking-tight tnum mt-0.5" th:text="${room.floor}">3</div>
+                </div>
+            </div>
+        </div>
+        <div class="surface p-5">
+            <div class="flex items-center gap-3">
+                <span class="w-11 h-11 grid place-items-center rounded-xl bg-[color:var(--accent-soft)] text-[color:var(--accent)] shrink-0">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                </span>
+                <div>
+                    <div class="kpi-label">Tối đa</div>
+                    <div class="text-[20px] font-bold tracking-tight tnum mt-0.5"><span th:text="${room.maxOccupants}">2</span> <span class="text-[13px] font-semibold text-[color:var(--text-mute)]">người</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="surface p-5">
+            <div class="flex items-center gap-3">
+                <span class="w-11 h-11 grid place-items-center rounded-xl bg-[color:var(--ok-soft)] text-[color:var(--ok)] shrink-0">
+                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                </span>
+                <div>
+                    <div class="kpi-label">Trạng thái</div>
+                    <div class="text-[18px] font-bold tracking-tight mt-0.5" th:switch="${room.status.name()}">
+                        <span th:case="'AVAILABLE'" class="text-[color:var(--ok)]">Còn trống</span>
+                        <span th:case="'OCCUPIED'" class="text-[color:var(--warn)]">Đã thuê</span>
+                        <span th:case="'MAINTENANCE'" class="text-[color:var(--err)]">Bảo trì</span>
+                        <span th:case="'HIDDEN'">Tạm ẩn</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OWNER CARD -->
+    <div th:if="${owner != null}" class="glass p-5 flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
+        <div class="avatar avatar-lg avatar-violet"
+             th:text="${#strings.substring(owner.fullName, 0, 1)}">N</div>
+        <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <h3 class="font-semibold text-[16px]" th:text="${owner.fullName}">Tên chủ trọ</h3>
+                <span class="badge badge-emerald"><i data-lucide="badge-check" class="w-3 h-3"></i> Đã xác minh</span>
+            </div>
+            <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-[color:var(--text-mute)]">
+                <span class="inline-flex items-center gap-1"><i data-lucide="headphones" class="w-3.5 h-3.5"></i> Hỗ trợ khách thuê</span>
+                <span class="inline-flex items-center gap-1"><i data-lucide="building" class="w-3.5 h-3.5"></i> Nhiều cơ sở</span>
+                <span class="inline-flex items-center gap-1"><i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i> Chủ trọ uy tín</span>
+            </div>
+        </div>
+        <a sec:authorize="isAuthenticated()" href="/me#contact" class="btn btn-glass btn-sm">
+            <i data-lucide="contact" class="w-4 h-4"></i> Liên hệ
+        </a>
+        <a sec:authorize="!isAuthenticated()" href="/login" class="btn btn-glass btn-sm">
+            <i data-lucide="log-in" class="w-4 h-4"></i> Đăng nhập để liên hệ
+        </a>
+    </div>
+
+    <!-- ============================================================
+         2-COLUMN MAIN
+         ============================================================ -->
+    <div class="grid lg:grid-cols-[1fr_400px] gap-8">
+
+        <div class="space-y-8 min-w-0">
+
+            <section>
+                <h2 class="text-[22px] font-bold tracking-tight mb-3 inline-flex items-center gap-2">
+                    <i data-lucide="info" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                    Giới thiệu phòng
+                </h2>
+                <div class="glass p-6 text-[15px] leading-relaxed text-[color:var(--text-soft)] whitespace-pre-line"
+                     th:text="${room.description}">Mô tả phòng</div>
+            </section>
+
+            <!-- Amenities -->
+            <section th:if="${room.amenities != null and !room.amenities.isEmpty()}">
+                <h2 class="text-[22px] font-bold tracking-tight mb-3 inline-flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                    Tiện nghi đi kèm
+                </h2>
+                <div class="glass p-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div th:each="a : ${room.amenities}"
+                         class="flex items-center gap-3 p-3 rounded-xl bg-white/40 hover:bg-white/80 transition">
+                        <div class="w-12 h-12 rounded-xl bg-white shadow-sm grid place-items-center shrink-0 overflow-hidden">
+                            <img th:if="${h.amenityIcon(a.code) != null}"
+                                 th:src="${h.amenityIcon(a.code)}"
+                                 th:alt="${a.name}"
+                                 class="w-9 h-9 object-contain"
+                                 loading="lazy" />
+                            <i th:unless="${h.amenityIcon(a.code) != null}"
+                               th:attr="data-lucide=${a.icon}" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                        </div>
+                        <span class="text-[14px] font-medium" th:text="${a.name}">Tiện nghi</span>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-[22px] font-bold tracking-tight mb-3 inline-flex items-center gap-2">
+                    <i data-lucide="map" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                    Vị trí
+                </h2>
+                <div class="glass p-6 space-y-4">
+                    <div class="flex items-start gap-3">
+                        <span class="w-10 h-10 grid place-items-center rounded-xl bg-[color:var(--accent-soft)] text-[color:var(--accent)] shrink-0">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                        </span>
+                        <div class="flex-1">
+                            <div class="text-[14px] font-semibold" th:text="${fullAddress}">Địa chỉ</div>
+                            <div class="text-[12px] text-[color:var(--text-mute)]" th:text="${property != null ? property.name : ''}">Cơ sở</div>
+                        </div>
+                    </div>
+                    <div class="relative rounded-2xl overflow-hidden border border-[color:var(--line)]"
+                         style="aspect-ratio: 16/9; background:#e0e7ff;">
+                        <iframe th:src="${mapEmbedUrl}"
+                                class="absolute inset-0 w-full h-full"
+                                style="border:0;"
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"
+                                allowfullscreen></iframe>
+                        <a th:href="${mapSearchUrl}" target="_blank" rel="noopener"
+                           class="absolute top-4 left-4 inline-flex items-center gap-1.5 glass-strong px-3 py-2 rounded-xl text-[13px] font-semibold hover:bg-white">
+                            <i data-lucide="navigation" class="w-3.5 h-3.5 text-[color:var(--accent)]"></i>
+                            Mở trong Google Maps
+                            <i data-lucide="external-link" class="w-3 h-3"></i>
+                        </a>
+                    </div>
+                    <p class="text-[12px] text-[color:var(--text-mute)] flex items-center gap-1.5">
+                        <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                        Bấm "Mở trong Google Maps" để chỉ đường từ vị trí của bạn.
+                    </p>
+                </div>
+            </section>
+
+            <section x-data="{ open: 0 }">
+                <h2 class="text-[22px] font-bold tracking-tight mb-3 inline-flex items-center gap-2">
+                    <i data-lucide="message-circle-question" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                    Câu hỏi thường gặp
+                </h2>
+                <div class="glass divide-y divide-[color:var(--line-soft)] overflow-hidden">
+                    <div class="p-5">
+                        <button type="button" @click="open = open === 1 ? 0 : 1"
+                                class="w-full flex items-center justify-between text-left">
+                            <span class="font-semibold text-[15px]">Có cho thuê ngắn hạn không?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 transition" :class="open===1 ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="open===1" x-collapse class="mt-3 text-[14px] text-[color:var(--text-soft)] leading-relaxed">
+                            Thời gian thuê tối thiểu 6 tháng. Trường hợp đặc biệt vui lòng liên hệ chủ trọ từ khu vực khách thuê.
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <button type="button" @click="open = open === 2 ? 0 : 2"
+                                class="w-full flex items-center justify-between text-left">
+                            <span class="font-semibold text-[15px]">Tiền điện nước tính thế nào?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 transition" :class="open===2 ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="open===2" x-collapse class="mt-3 text-[14px] text-[color:var(--text-soft)] leading-relaxed">
+                            Điện <span class="font-semibold tnum" th:text="${h.vnd(room.electricUnit)}">4.000₫</span>/kWh.
+                            Nước <span class="font-semibold tnum" th:text="${h.vnd(room.waterUnit)}">25.000₫</span>/m³.
+                            Thanh toán theo chỉ số ghi cuối tháng.
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <button type="button" @click="open = open === 3 ? 0 : 3"
+                                class="w-full flex items-center justify-between text-left">
+                            <span class="font-semibold text-[15px]">Cần đặt cọc bao nhiêu?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 transition" :class="open===3 ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="open===3" x-collapse class="mt-3 text-[14px] text-[color:var(--text-soft)] leading-relaxed">
+                            Cọc 1 tháng tiền thuê (<span class="font-semibold tnum" th:text="${h.vnd(room.depositAmount)}">8.500.000₫</span>).
+                            Tiền cọc được hoàn 100% nếu kết thúc thời gian thuê đúng hạn và phòng không hư hại.
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <button type="button" @click="open = open === 4 ? 0 : 4"
+                                class="w-full flex items-center justify-between text-left">
+                            <span class="font-semibold text-[15px]">Có cho phép thú cưng không?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 transition" :class="open===4 ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="open===4" x-collapse class="mt-3 text-[14px] text-[color:var(--text-soft)] leading-relaxed"
+                             th:text="${room.petAllowed} ? 'Có. Phòng cho phép nuôi thú cưng (chó/mèo nhỏ). Vui lòng giữ gìn vệ sinh chung.' : 'Hiện không cho phép nuôi thú cưng tại phòng này.'">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-[22px] font-bold tracking-tight mb-3 inline-flex items-center gap-2">
+                    <i data-lucide="message-square-quote" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                    Đánh giá
+                    <span class="text-[color:var(--text-mute)] font-medium text-[16px] tnum"
+                          th:text="'(' + ${room.ratingCount} + ')'">(0)</span>
+                </h2>
+                <div class="space-y-3">
+                    <div th:each="r : ${reviews}" class="glass p-5">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="avatar avatar-md avatar-violet">U</div>
+                            <div class="flex-1">
+                                <div class="text-[13px] font-semibold">Người dùng</div>
+                                <div class="text-[11px] text-[color:var(--text-mute)] tnum" th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy')}">01/01/2026</div>
+                            </div>
+                            <div class="flex items-center gap-0.5">
+                                <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400" th:each="i : ${#numbers.sequence(1, r.rating)}"></i>
+                            </div>
+                        </div>
+                        <p class="text-[14px] text-[color:var(--text-soft)] leading-relaxed" th:text="${r.body}">Nội dung review</p>
+                    </div>
+                    <div th:if="${reviews == null or reviews.isEmpty()}" class="empty">
+                        <div class="empty-icon">
+                            <i data-lucide="message-square-quote" class="w-7 h-7"></i>
+                        </div>
+                        <div class="text-[14px] text-[color:var(--text-mute)]">Chưa có đánh giá nào — hãy là người đầu tiên!</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ===== STICKY BOOKING SIDEBAR (DESKTOP) ===== -->
+        <aside class="hidden lg:block lg:sticky lg:top-24 self-start">
+            <div class="glass-strong p-6 space-y-5">
+                <div>
+                    <div class="flex items-baseline gap-1.5">
+                        <span class="text-[28px] font-extrabold tracking-tight tnum"
+                              th:text="${h.vnd(room.priceMonthly)}">8.500.000₫</span>
+                        <span class="text-[14px] text-[color:var(--text-mute)]">/ tháng</span>
+                    </div>
+                    <div class="mt-1 text-[13px] flex items-center gap-1.5">
+                        <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>
+                        <span class="font-semibold tnum" th:text="${#numbers.formatDecimal(room.ratingAvg, 1, 'POINT', 1, 'POINT')}">4.9</span>
+                        <span class="text-[color:var(--text-mute)] tnum" th:text="'· ' + ${room.ratingCount} + ' đánh giá'">· 234 đánh giá</span>
+                    </div>
+                </div>
+
+                <form th:action="@{/booking/start}" method="get" class="space-y-3">
+                    <input type="hidden" name="roomId" th:value="${room.id}" />
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="form-label !text-[11px] uppercase tracking-[0.08em] !mb-1">Dọn vào từ</label>
+                            <div class="input-glass !h-11">
+                                <i data-lucide="calendar" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <input type="date" name="moveIn" required />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label !text-[11px] uppercase tracking-[0.08em] !mb-1">Số người</label>
+                            <div class="input-glass !h-11">
+                                <i data-lucide="users" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                                <select name="occupants">
+                                    <option>1 người</option>
+                                    <option selected>2 người</option>
+                                    <option>3 người</option>
+                                    <option>4 người</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-full !h-12 !rounded-2xl text-[15px]"
+                            th:disabled="${room.status.name() != 'AVAILABLE'}">
+                        <i data-lucide="credit-card" class="w-4 h-4"></i>
+                        <span th:if="${room.status.name() == 'AVAILABLE'}">Đặt cọc giữ chỗ</span>
+                        <span th:unless="${room.status.name() == 'AVAILABLE'}">Phòng tạm thời không còn</span>
+                    </button>
+
+                    <button type="button" class="btn btn-glass w-full !h-12 !rounded-2xl text-[15px]">
+                        <i data-lucide="calendar-check" class="w-4 h-4"></i>
+                        Đặt lịch xem phòng
+                    </button>
+                </form>
+
+                <div class="space-y-2 pt-4 border-t border-[color:var(--line-soft)] text-[13px]">
+                    <div class="flex justify-between">
+                        <span class="text-[color:var(--text-mute)]">Tiền thuê / tháng</span>
+                        <span class="font-medium tnum" th:text="${h.vnd(room.priceMonthly)}">8.500.000₫</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[color:var(--text-mute)]">Tiền cọc (1 tháng)</span>
+                        <span class="font-medium tnum" th:text="${h.vnd(room.depositAmount)}">8.500.000₫</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[color:var(--text-mute)]">Phí dịch vụ</span>
+                        <span class="font-medium tnum" th:text="${h.vnd(room.serviceFee)}">500.000₫</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-3 border-t border-[color:var(--line-soft)]">
+                    <span class="text-[16px] font-bold">Tổng</span>
+                    <span class="text-[20px] font-extrabold text-[color:var(--accent)] tnum"
+                          th:text="${h.vnd(room.priceMonthly.add(room.depositAmount).add(room.serviceFee))}">17.500.000₫</span>
+                </div>
+
+                <div class="rounded-xl bg-[color:var(--ok-soft)] p-3 text-[12px] text-[color:var(--ok)] flex items-start gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                    <span><span class="font-semibold">Thanh toán an toàn:</span> tiền cọc hoàn 100% nếu chủ trọ huỷ hoặc phòng không khớp mô tả.</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- ===== MOBILE STICKY CTA ===== -->
+    <div class="mobile-cta">
+        <div class="flex items-center gap-3">
+            <div class="flex-1">
+                <div class="text-[18px] font-extrabold tnum tracking-tight"
+                     th:text="${h.vnd(room.priceMonthly)}">8.500.000₫</div>
+                <div class="text-[11px] text-[color:var(--text-mute)] -mt-0.5">/ tháng</div>
+            </div>
+            <form th:action="@{/booking/start}" method="get" class="shrink-0">
+                <input type="hidden" name="roomId" th:value="${room.id}" />
+                <button type="submit" class="btn btn-primary !h-11 !rounded-xl px-5"
+                        th:disabled="${room.status.name() != 'AVAILABLE'}">
+                    <i data-lucide="credit-card" class="w-4 h-4"></i>
+                    Đặt cọc
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Similar rooms -->
+    <section th:if="${similar != null and !similar.isEmpty()}" class="mt-16">
+        <div class="flex items-end justify-between mb-5">
+            <div>
+                <span class="eyebrow">Có thể bạn thích</span>
+                <h2 class="text-[24px] font-bold tracking-tight mt-2">Phòng tương tự</h2>
+                <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Cùng khu vực, mức giá tương đồng</p>
+            </div>
+            <a th:href="@{/(district=${room.district})}" class="text-[13px] font-medium text-[color:var(--accent)] hover:underline inline-flex items-center gap-1">
+                Xem tất cả
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <th:block th:each="s : ${similar}">
+                <div th:replace="~{fragments/room-card :: card(${s})}"></div>
+            </th:block>
+        </div>
+    </section>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.14.3/dist/cdn.min.js"></script>
+    <script th:inline="javascript">
+        const ROOM_IMAGES = /*[[${images != null ? images.![url] : new java.util.ArrayList()}]]*/ [];
+
+        function roomDetail() {
+            return {
+                lightbox: false,
+                videoOpen: false,
+                idx: 0,
+                get totalImages() { return ROOM_IMAGES.length || 1; },
+                get currentImage() { return ROOM_IMAGES[this.idx] || ''; },
+                openLightbox(i) {
+                    if (!ROOM_IMAGES.length) return;
+                    this.idx = Math.max(0, Math.min(i, ROOM_IMAGES.length - 1));
+                    this.lightbox = true;
+                },
+                next() { if (this.lightbox) this.idx = (this.idx + 1) % ROOM_IMAGES.length; },
+                prev() { if (this.lightbox) this.idx = (this.idx - 1 + ROOM_IMAGES.length) % ROOM_IMAGES.length; },
+                closeVideo() {
+                    this.videoOpen = false;
+                    if (this.$refs.player) {
+                        this.$refs.player.pause();
+                        this.$refs.player.currentTime = 0;
+                    }
+                }
+            };
+        }
+    </script>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<footer th:fragment="footer" class="mt-24 sm:mt-32 relative z-10"
+        style="background: rgba(255,255,255,0.55); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); border-top: 1px solid var(--glass-border);">
+    <div class="max-w-[1280px] mx-auto px-6 py-14 grid md:grid-cols-12 gap-10">
+        <!-- Brand & description -->
+        <div class="md:col-span-5 lg:col-span-4 space-y-4">
+            <div th:replace="~{fragments/brand :: brand('/')}"></div>
+            <p class="text-[14px] leading-relaxed text-[color:var(--text-soft)] max-w-sm" th:text="#{footer.description}">
+                Hệ thống quản lý phòng trọ thông minh — tìm phòng, đặt phòng, quản lý hóa đơn và hồ sơ khách thuê, có AI tư vấn 24/7.
+            </p>
+            <div class="flex items-center gap-2 pt-2">
+                <a href="#" aria-label="Facebook"
+                   class="w-9 h-9 grid place-items-center rounded-full glass-thin hover:bg-white/90 transition">
+                    <i data-lucide="facebook" class="w-4 h-4 text-[color:var(--text-soft)]"></i>
+                </a>
+                <a href="#" aria-label="Instagram"
+                   class="w-9 h-9 grid place-items-center rounded-full glass-thin hover:bg-white/90 transition">
+                    <i data-lucide="instagram" class="w-4 h-4 text-[color:var(--text-soft)]"></i>
+                </a>
+                <a href="#" aria-label="Twitter"
+                   class="w-9 h-9 grid place-items-center rounded-full glass-thin hover:bg-white/90 transition">
+                    <i data-lucide="twitter" class="w-4 h-4 text-[color:var(--text-soft)]"></i>
+                </a>
+                <a href="#" aria-label="YouTube"
+                   class="w-9 h-9 grid place-items-center rounded-full glass-thin hover:bg-white/90 transition">
+                    <i data-lucide="youtube" class="w-4 h-4 text-[color:var(--text-soft)]"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="md:col-span-2 lg:col-span-2">
+            <h4 class="eyebrow no-line mb-4" th:text="#{footer.explore}">Khám phá</h4>
+            <ul class="space-y-2.5 text-[14px]">
+                <li><a href="/" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.allRooms}">Tất cả phòng</a></li>
+                <li><a href="/?district=Quận+1" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.roomsQ1}">Phòng Q1</a></li>
+                <li><a href="/?district=Quận+3" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.roomsQ3}">Phòng Q3</a></li>
+                <li><a href="/?district=Quận+7" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.roomsQ7}">Phòng Q7</a></li>
+            </ul>
+        </div>
+
+        <div class="md:col-span-2 lg:col-span-2">
+            <h4 class="eyebrow no-line mb-4" th:text="#{footer.support}">Hỗ trợ</h4>
+            <ul class="space-y-2.5 text-[14px]">
+                <li><a href="#" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.helpCenter}">Trung tâm trợ giúp</a></li>
+                <li><a href="#" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.contact}">Liên hệ</a></li>
+                <li><a href="/me/profile" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.tenantProfile}">Hồ sơ khách thuê</a></li>
+                <li><a href="#" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.faq}">Câu hỏi thường gặp</a></li>
+            </ul>
+        </div>
+
+        <div class="md:col-span-3 lg:col-span-2">
+            <h4 class="eyebrow no-line mb-4" th:text="#{footer.legal}">Pháp lý</h4>
+            <ul class="space-y-2.5 text-[14px]">
+                <li><a href="#" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.terms}">Điều khoản dịch vụ</a></li>
+                <li><a href="#" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.privacy}">Chính sách bảo mật</a></li>
+                <li><a href="#" class="text-[color:var(--text-soft)] hover:text-[color:var(--accent)] transition" th:text="#{footer.community}">Quy định cộng đồng</a></li>
+            </ul>
+        </div>
+
+        <!-- Newsletter -->
+        <div class="md:col-span-12 lg:col-span-2">
+            <h4 class="eyebrow no-line mb-4" th:text="#{footer.newsletter}">Bản tin</h4>
+            <p class="text-[13px] text-[color:var(--text-mute)] leading-relaxed mb-3" th:text="#{footer.newsletterDesc}">Phòng mới &amp; ưu đãi mỗi tuần.</p>
+            <form class="space-y-2">
+                <div class="input-glass !h-11">
+                    <i data-lucide="mail" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                    <input type="email" th:placeholder="#{footer.emailPlaceholder}" class="text-[13px]" />
+                </div>
+                <button type="button" class="btn btn-primary btn-sm w-full" th:text="#{action.register}">Đăng ký</button>
+            </form>
+        </div>
+    </div>
+
+    <div style="border-top: 1px solid var(--line-soft);">
+        <div class="max-w-[1280px] mx-auto px-6 py-5 text-[12px] text-[color:var(--text-mute)] flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span>© <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2026</span> <span th:text="#{footer.copyright}">SmartRent. Tất cả quyền được bảo lưu.</span></span>
+            <span class="inline-flex items-center gap-1"><span th:text="#{footer.crafted}">Crafted with</span> <span class="text-[color:var(--err)]">♥</span> <span th:text="#{footer.location}">tại Sài Gòn</span></span>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

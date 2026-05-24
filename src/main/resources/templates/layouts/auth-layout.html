@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      th:lang="${currentLang}">
+<head th:replace="~{fragments/head :: head(${pageTitle ?: #messages.msg('app.loginTitle')})}"></head>
+<body class="min-h-screen relative overflow-hidden">
+
+    <div class="mesh-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <header class="relative z-10 max-w-[1200px] mx-auto px-6 py-6 flex items-center justify-between gap-4">
+        <div th:replace="~{fragments/brand :: brand('/')}"></div>
+        <div th:replace="~{fragments/language-switcher :: switcher}"></div>
+    </header>
+
+    <main class="relative z-10 max-w-[1200px] mx-auto px-6 pt-8 pb-16 grid place-items-center">
+        <div layout:fragment="content"></div>
+    </main>
+
+    <script th:src="@{/js/app.js}"></script>
+</body>
+</html>

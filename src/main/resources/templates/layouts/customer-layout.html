@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:lang="${currentLang}">
+<head th:replace="~{fragments/head :: head(${pageTitle ?: 'SmartRent'})}"></head>
+<body class="min-h-screen flex flex-col">
+    <div th:replace="~{fragments/customer-navbar :: navbar}"></div>
+
+    <main layout:fragment="content" class="flex-1 relative">
+        <!-- page content -->
+    </main>
+
+    <div th:replace="~{fragments/customer-footer :: footer}"></div>
+
+    <!-- AI floating button (only when authenticated to avoid spam) -->
+    <div sec:authorize="isAuthenticated()" th:replace="~{fragments/ai-button :: aiButton}"></div>
+
+    <!-- Flash alert (auto-shows when redirect carries a flashMessage) -->
+    <div th:replace="~{fragments/flash :: alert}"></div>
+
+    <!-- Toast container is auto-created by app.js -->
+    <script th:src="@{/js/modules/ai-assistant.js}"></script>
+    <script th:src="@{/js/modules/favorite.js}"></script>
+    <script th:src="@{/js/app.js}"></script>
+    <th:block layout:fragment="extra-scripts"></th:block>
+</body>
+</html>

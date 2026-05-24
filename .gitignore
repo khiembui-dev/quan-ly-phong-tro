@@ -1,0 +1,53 @@
+# Maven
+target/
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties.bak
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Tailwind output is committed so the app boots without npm install.
+# Re-generate with: npm run build:css
+# src/main/resources/static/css/app.css.map  # uncomment if you want to ignore source maps
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+
+# Generated documentation / handoff artifacts
+docs/
+design_handoff_glass_living/
+.github/java-upgrade/
+*.rar
+
+# Local uploaded tenant documents
+uploads/
+
+# Spring Boot
+*.original
+
+# H2 dev DB
+*.mv.db
+*.trace.db
+
+# Build output
+glass-living-*.jar
