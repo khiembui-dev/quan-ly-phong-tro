@@ -1,0 +1,16 @@
+.git
+.idea
+.vscode
+node_modules
+target
+uploads
+logs
+*.log
+*.rar
+*.zip
+.env
+.env.local
+HUONG_DAN_*.md
+BACKEND_SPLIT_GUIDE.md
+design_handoff_glass_living
+docs
