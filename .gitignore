@@ -26,6 +26,8 @@ Thumbs.db
 # Env / secrets
 .env
 .env.local
+.env.prod
+.env.gemini
 *.pem
 *.key
 
@@ -35,6 +37,9 @@ logs/
 
 # Generated documentation / handoff artifacts
 docs/
+!docs/
+docs/*
+!docs/HUONG_DAN_GOP_BACKEND_NHOM.md
 design_handoff_glass_living/
 .github/java-upgrade/
 *.rar

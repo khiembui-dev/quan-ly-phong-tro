@@ -3,23 +3,57 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       th:lang="${currentLang}">
 <head th:replace="~{fragments/head :: head(${pageTitle ?: #messages.msg('app.loginTitle')})}"></head>
-<body class="min-h-screen relative overflow-hidden">
-
-    <div class="mesh-bg">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-    </div>
+<body class="app-shell relative overflow-x-hidden">
 
     <header class="relative z-10 max-w-[1200px] mx-auto px-6 py-6 flex items-center justify-between gap-4">
         <div th:replace="~{fragments/brand :: brand('/')}"></div>
         <div th:replace="~{fragments/language-switcher :: switcher}"></div>
     </header>
 
-    <main class="relative z-10 max-w-[1200px] mx-auto px-6 pt-8 pb-16 grid place-items-center">
+    <main class="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 pb-12 grid lg:grid-cols-[0.95fr_1.05fr] gap-8 min-h-[calc(100vh-96px)] items-center">
+        <section class="hidden lg:block glass-panel p-8 xl:p-10 animate-fade-up">
+            <div class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold"
+                 style="background: var(--accent-soft); color: var(--accent);">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span th:text="#{auth.hero.badge}">Modern rental operations</span>
+            </div>
+            <h1 class="mt-6 text-[42px] leading-tight font-extrabold tracking-normal">
+                SmartRent
+            </h1>
+            <p class="mt-4 text-[15px] leading-7 text-[color:var(--text-mute)] max-w-md">
+                <span th:text="#{auth.hero.copy}">Quản lý phòng, hợp đồng, hóa đơn và trải nghiệm khách thuê trong một hệ thống tinh gọn.</span>
+            </p>
+            <div class="mt-8 grid grid-cols-3 gap-3">
+                <div class="soft-card !p-4">
+                    <i data-lucide="building-2" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                    <div class="mt-3 text-[13px] font-bold" th:text="#{auth.hero.property}">Property</div>
+                    <div class="text-[11px] text-[color:var(--text-mute)]" th:text="#{auth.hero.propertyDesc}">Quản lý cơ sở</div>
+                </div>
+                <div class="soft-card !p-4">
+                    <i data-lucide="receipt" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                    <div class="mt-3 text-[13px] font-bold" th:text="#{auth.hero.billing}">Billing</div>
+                    <div class="text-[11px] text-[color:var(--text-mute)]" th:text="#{auth.hero.billingDesc}">Hóa đơn rõ ràng</div>
+                </div>
+                <div class="soft-card !p-4">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-[color:var(--accent)]"></i>
+                    <div class="mt-3 text-[13px] font-bold" th:text="#{auth.hero.ai}">AI</div>
+                    <div class="text-[11px] text-[color:var(--text-mute)]" th:text="#{auth.hero.aiDesc}">Hỗ trợ nhanh</div>
+                </div>
+            </div>
+        </section>
         <div layout:fragment="content"></div>
     </main>
 
+    <script th:src="@{/js/ui/sidebar.js}"></script>
+    <script th:src="@{/js/ui/dropdown.js}"></script>
+    <script th:src="@{/js/ui/select.js}"></script>
+    <script th:src="@{/js/ui/modal.js}"></script>
+    <script th:src="@{/js/ui/toast.js}"></script>
+    <script th:src="@{/js/ui/search.js}"></script>
+    <script th:src="@{/js/ui/filter.js}"></script>
+    <script th:src="@{/js/ui/theme.js}"></script>
+    <script th:src="@{/js/ui/animations.js}"></script>
+    <script th:src="@{/js/i18n.js}"></script>
     <script th:src="@{/js/app.js}"></script>
 </body>
 </html>

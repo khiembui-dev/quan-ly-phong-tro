@@ -28,10 +28,52 @@ public class NotificationService {
 
     @Transactional
     public Notification create(UUID userId, String type, String title, String body, String linkUrl) {
+        return create(userId, type, title, body, linkUrl, null);
+    }
+
+    @Transactional
+    public Notification create(UUID userId, String type, String title, String body, String linkUrl, String imageUrl) {
         Notification n = Notification.builder()
-                .userId(userId).type(type).title(title).body(body).linkUrl(linkUrl)
+                .userId(userId)
+                .type(type)
+                .title(title)
+                .body(body)
+                .linkUrl(linkUrl)
+                .imageUrl(imageUrl)
                 .build();
         return repository.save(n);
+    }
+
+    @Transactional
+    public int createForUsers(List<UUID> userIds, String type, String title, String body, String linkUrl, String imageUrl) {
+        return createForUsers(userIds, type, title, body, linkUrl, imageUrl, null, null);
+    }
+
+    @Transactional
+    public int createForUsers(List<UUID> userIds,
+                              String type,
+                              String title,
+                              String body,
+                              String linkUrl,
+                              String imageUrl,
+                              UUID senderUserId,
+                              UUID batchId) {
+        if (userIds == null || userIds.isEmpty()) return 0;
+        List<Notification> notifications = userIds.stream()
+                .distinct()
+                .map(userId -> Notification.builder()
+                        .userId(userId)
+                        .batchId(batchId)
+                        .senderUserId(senderUserId)
+                        .type(type)
+                        .title(title)
+                        .body(body)
+                        .linkUrl(linkUrl)
+                        .imageUrl(imageUrl)
+                        .build())
+                .toList();
+        repository.saveAll(notifications);
+        return notifications.size();
     }
 
     @Transactional

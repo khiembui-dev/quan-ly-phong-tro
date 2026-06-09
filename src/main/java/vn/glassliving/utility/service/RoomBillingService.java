@@ -60,6 +60,7 @@ public class RoomBillingService {
         List<Room> rooms = roomRepository.findByOwnerId(ownerId, PageRequest.of(0, 2000)).getContent()
                 .stream()
                 .filter(r -> propertyId == null || propertyId.equals(r.getPropertyId()))
+                .filter(r -> r.getCurrentTenantId() != null)
                 .sorted(Comparator.comparing(r -> Objects.toString(r.getCode(), ""), String.CASE_INSENSITIVE_ORDER))
                 .toList();
 
@@ -166,10 +167,26 @@ public class RoomBillingService {
         BigDecimal defaultElectricPrev = previous != null ? nz(previous.getElectricCurr()) : BigDecimal.ZERO;
         BigDecimal defaultWaterPrev = previous != null ? nz(previous.getWaterCurr()) : BigDecimal.ZERO;
 
-        BigDecimal ePrev = defaultElectricPrev;
-        BigDecimal wPrev = defaultWaterPrev;
-        BigDecimal eCurr = electricCurr != null ? electricCurr : ePrev;
-        BigDecimal wCurr = waterCurr != null ? waterCurr : wPrev;
+        if (electricPrev == null) {
+            electricPrev = defaultElectricPrev;
+        }
+        if (waterPrev == null) {
+            waterPrev = defaultWaterPrev;
+        }
+        if (electricPrev.signum() < 0 || waterPrev.signum() < 0) {
+            throw BusinessException.badRequest("Chỉ số điện nước cũ không được âm.");
+        }
+        if (electricCurr == null || waterCurr == null) {
+            throw BusinessException.badRequest("Vui lòng nhập đầy đủ chỉ số điện mới và nước mới.");
+        }
+        if (electricCurr.signum() < 0 || waterCurr.signum() < 0) {
+            throw BusinessException.badRequest("Chỉ số điện nước không được âm.");
+        }
+
+        BigDecimal ePrev = electricPrev;
+        BigDecimal wPrev = waterPrev;
+        BigDecimal eCurr = electricCurr;
+        BigDecimal wCurr = waterCurr;
 
         if (eCurr.compareTo(ePrev) < 0) {
             throw BusinessException.badRequest("Chỉ số điện mới không được nhỏ hơn chỉ số điện cũ.");
@@ -301,19 +318,7 @@ public class RoomBillingService {
         BigDecimal serviceFee = contract != null ? nz(contract.getServiceFee()) : nz(room.getServiceFee());
         List<FeeLine> feeLines = new ArrayList<>();
         if (serviceFee.signum() > 0) feeLines.add(new FeeLine("Dịch vụ", serviceFee));
-        addFee(feeLines, "Internet", property.getInternetFee());
-        addFee(feeLines, "Rác", property.getGarbageFee());
-        addFee(feeLines, "Quản lý", property.getManagementFee());
-        if (property.getExtraFees() != null) {
-            for (Property.ExtraFee fee : property.getExtraFees()) {
-                addFee(feeLines, fee.getName(), fee.getAmount());
-            }
-        }
-        if (room.getExtraFees() != null) {
-            for (Property.ExtraFee fee : room.getExtraFees()) {
-                addFee(feeLines, fee.getName(), fee.getAmount());
-            }
-        }
+        addNonServiceFeeLines(feeLines, room, property);
 
         BigDecimal fixedFeeTotal = feeLines.stream()
                 .map(FeeLine::getAmount)
@@ -327,7 +332,7 @@ public class RoomBillingService {
         boolean electricAnomaly = isAnomaly(electricUsage, averages.electricAvg(), new BigDecimal("20"));
         boolean waterAnomaly = isAnomaly(waterUsage, averages.waterAvg(), new BigDecimal("5"));
 
-        String status = resolveStatus(occupied, reading, invoice, contract, invalidReading, electricAnomaly || waterAnomaly);
+        String status = resolveStatus(occupied, reading, invoice, contract, invalidReading, false);
         return BillingRow.builder()
                 .room(room)
                 .property(property)
@@ -365,7 +370,7 @@ public class RoomBillingService {
                 .statusBadge(statusBadge(status))
                 .feeLines(feeLines)
                 .invoiceReady(occupied && reading != null && invoice == null && !invalidReading)
-                .warning(warningFor(status, contract, electricAnomaly, waterAnomaly))
+                .warning(warningFor(status, contract))
                 .build();
     }
 
@@ -380,8 +385,11 @@ public class RoomBillingService {
         long anomalies = allRows.stream().filter(r -> r.isElectricAnomaly() || r.isWaterAnomaly() || r.isInvalidReading()).count();
         long ready = allRows.stream().filter(BillingRow::isInvoiceReady).count();
         long invoiced = allRows.stream().filter(BillingRow::isHasInvoice).count();
+        long paid = allRows.stream()
+                .filter(row -> row.getInvoice() != null && row.getInvoice().getStatus() == Invoice.InvoiceStatus.PAID)
+                .count();
         long locked = allRows.stream().filter(BillingRow::isLocked).count();
-        return new Summary(rows.size(), allRows.size(), occupied, missing, anomalies, ready, invoiced, locked,
+        return new Summary(rows.size(), allRows.size(), occupied, missing, anomalies, ready, invoiced, paid, locked,
                 total, rent, fixed, electric, water);
     }
 
@@ -476,20 +484,41 @@ public class RoomBillingService {
 
     private List<InvoiceLineItem> invoiceOtherItems(Room room, Property property) {
         List<InvoiceLineItem> lines = new ArrayList<>();
-        addInvoiceItem(lines, "Internet", property.getInternetFee());
-        addInvoiceItem(lines, "Rác", property.getGarbageFee());
-        addInvoiceItem(lines, "Quản lý", property.getManagementFee());
-        if (property.getExtraFees() != null) {
-            for (Property.ExtraFee fee : property.getExtraFees()) {
-                addInvoiceItem(lines, fee.getName(), fee.getAmount());
+        if (room.isInheritTariff()) {
+            addInvoiceItem(lines, "Internet", property.getInternetFee());
+            addInvoiceItem(lines, "Rác", property.getGarbageFee());
+            addInvoiceItem(lines, "Quản lý", property.getManagementFee());
+            if (property.getExtraFees() != null) {
+                for (Property.ExtraFee fee : property.getExtraFees()) {
+                    addInvoiceItem(lines, fee.getName(), fee.getAmount());
+                }
             }
-        }
-        if (room.getExtraFees() != null) {
+        } else if (room.getExtraFees() != null) {
             for (Property.ExtraFee fee : room.getExtraFees()) {
                 addInvoiceItem(lines, fee.getName(), fee.getAmount());
             }
         }
         return lines;
+    }
+
+    private void addNonServiceFeeLines(List<FeeLine> lines, Room room, Property property) {
+        if (room.isInheritTariff()) {
+            addFee(lines, "Internet", property.getInternetFee());
+            addFee(lines, "Rác", property.getGarbageFee());
+            addFee(lines, "Quản lý", property.getManagementFee());
+            if (property.getExtraFees() != null) {
+                for (Property.ExtraFee fee : property.getExtraFees()) {
+                    addFee(lines, fee.getName(), fee.getAmount());
+                }
+            }
+            return;
+        }
+
+        if (room.getExtraFees() != null) {
+            for (Property.ExtraFee fee : room.getExtraFees()) {
+                addFee(lines, fee.getName(), fee.getAmount());
+            }
+        }
     }
 
     private static void addInvoiceItem(List<InvoiceLineItem> lines, String name, BigDecimal amount) {
@@ -543,13 +572,10 @@ public class RoomBillingService {
         };
     }
 
-    private String warningFor(String status, Contract contract, boolean electricAnomaly, boolean waterAnomaly) {
+    private String warningFor(String status, Contract contract) {
         if ("missing".equals(status)) return "Cần nhập chỉ số điện nước cho kỳ này.";
         if ("no_contract".equals(status)) return "Có khách đang ở nhưng chưa có hồ sơ thu tiền. Khi xuất hóa đơn, hệ thống sẽ tự tạo theo thông tin phòng hiện tại.";
         if ("invalid".equals(status)) return "Chỉ số mới nhỏ hơn chỉ số cũ.";
-        if (electricAnomaly && waterAnomaly) return "Điện và nước tăng cao so với trung bình 3 tháng.";
-        if (electricAnomaly) return "Điện tăng cao so với trung bình 3 tháng.";
-        if (waterAnomaly) return "Nước tăng cao so với trung bình 3 tháng.";
         if (contract == null) return "Khi xuất hóa đơn, hệ thống sẽ tự tạo hồ sơ thu tiền theo thông tin phòng hiện tại.";
         return "";
     }
@@ -739,6 +765,7 @@ public class RoomBillingService {
         private long anomalies;
         private long readyToInvoice;
         private long invoicedRooms;
+        private long paidRooms;
         private long lockedReadings;
         private BigDecimal totalAmount;
         private BigDecimal rentAmount;

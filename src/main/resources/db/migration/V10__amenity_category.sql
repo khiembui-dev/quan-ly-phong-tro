@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - V10 group amenities into 3 categories
+-- SmartRent - V10 group amenities into 3 categories
 -- FURNITURE / UTILITY / RULE — chip groups in admin form
 -- ===================================================================
 ALTER TABLE amenity

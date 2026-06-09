@@ -25,7 +25,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Bean
     public LocaleResolver localeResolver() {
-        CookieLocaleResolver resolver = new CookieLocaleResolver("GLASS_LANG");
+        CookieLocaleResolver resolver = new CookieLocaleResolver("SMARTRENT_LANG");
         resolver.setDefaultLocale(Locale.forLanguageTag("vi"));
         resolver.setCookiePath("/");
         resolver.setCookieMaxAge(Duration.ofDays(365));

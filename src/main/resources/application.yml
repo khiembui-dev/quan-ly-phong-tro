@@ -112,6 +112,23 @@ app:
     partner-code: ${MOMO_PARTNER_CODE:}
     access-key: ${MOMO_ACCESS_KEY:}
     secret-key: ${MOMO_SECRET_KEY:}
+  payment:
+    bank:
+      api-url: ${PAYMENT_BANK_API_URL:${BANK_HISTORY_URL:}}
+      code: ${PAYMENT_BANK_CODE:ACB}
+      account-number: ${PAYMENT_BANK_ACCOUNT_NUMBER:39118057}
+      account-name: ${PAYMENT_BANK_ACCOUNT_NAME:BUI THE KHIEM}
+      display-name: ${PAYMENT_BANK_DISPLAY_NAME:ACB}
+  payments:
+    bank-name: ${BANK_NAME:ACB}
+    bank-account-name: ${BANK_ACCOUNT_NAME:SMARTRENT}
+    bank-account-no: ${BANK_ACCOUNT_NO:}
+    # Keep the provider token in an environment variable, never in static JS or templates.
+    bank-history-url: ${BANK_HISTORY_URL:}
+  customer-support:
+    phone: ${CUSTOMER_SUPPORT_PHONE:}
+    email: ${CUSTOMER_SUPPORT_EMAIL:hotro@smartrent.vn}
+    zalo: ${CUSTOMER_SUPPORT_ZALO:}
   ai:
     enabled: false
     anthropic:
@@ -123,6 +140,12 @@ app:
   rate-limit:
     api-per-minute: 100
     auth-per-minute: 10
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  model: ${GEMINI_MODEL:gemini-2.5-pro}
+  fallback-models: ${GEMINI_FALLBACK_MODELS:gemini-2.5-pro,gemini-2.5-flash,gemini-2.5-flash-lite}
+  api-url: "${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models/${gemini.model}:generateContent}"
 
 jasypt:
   encryptor:

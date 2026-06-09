@@ -3,376 +3,183 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/admin-layout}"
       lang="vi">
-<head><title>Khách thuê - SmartRent</title></head>
+<head><title th:text="#{tenants.title} + ' - SmartRent'">Tenants - SmartRent</title></head>
 <body>
-<div layout:fragment="content" x-data="{ createOpen: false, editOpen: null }">
+<div layout:fragment="content" class="tenants-page tenant-list-page"
+     x-data="{ createOpen: false }"
+     th:attr="x-data=|{ createOpen: ${createTenantOpen == true ? 'true' : 'false'} }|">
 
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
-        <div>
-            <span class="eyebrow">Quan hệ khách hàng</span>
-            <h1 class="text-[28px] sm:text-[32px] font-bold tracking-tight mt-2">
-                Khách thuê
-                <span class="text-[16px] font-medium px-2.5 py-1 rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)] tnum align-middle ml-1"
-                      th:text="${allTenantsCount}">0</span>
-            </h1>
-            <p class="text-[13px] text-[color:var(--text-mute)] mt-1">
-                Quản lý phòng đang ở, thời hạn sử dụng và hóa đơn theo từng khách.
-            </p>
+    <section class="tenant-list-hero">
+        <div class="min-w-0">
+            <h1 th:text="#{tenants.title}">Tenants</h1>
+            <p th:text="#{tenants.subtitle}">Manage tenants and rooms.</p>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <button class="btn btn-glass btn-sm">
-                <i data-lucide="upload" class="w-4 h-4"></i> Nhập Excel
-            </button>
-            <button @click="createOpen = true" class="btn btn-primary btn-sm">
-                <i data-lucide="user-plus" class="w-4 h-4"></i> Tạo khách
-            </button>
-        </div>
-    </div>
-
-    <!-- Smart counters -->
-    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <div class="glass p-4">
-            <div class="flex items-center justify-between gap-3">
-                <span class="text-[12px] text-[color:var(--text-mute)]">Tổng khách</span>
-                <i data-lucide="users" class="w-4 h-4 text-[color:var(--accent)]"></i>
-            </div>
-            <div class="text-[24px] font-bold tnum mt-1" th:text="${allTenantsCount}">0</div>
-            <div class="text-[11px] text-[color:var(--text-mute)] mt-1">
-                <span th:text="${totalTenants}">0</span> kết quả sau lọc
-            </div>
-        </div>
-        <div class="glass p-4">
-            <div class="flex items-center justify-between gap-3">
-                <span class="text-[12px] text-[color:var(--text-mute)]">Đã gán phòng</span>
-                <i data-lucide="bed-double" class="w-4 h-4 text-[color:var(--ok)]"></i>
-            </div>
-            <div class="text-[24px] font-bold tnum mt-1" th:text="${assignedTenants}">0</div>
-            <div class="text-[11px] text-[color:var(--text-mute)] mt-1">
-                <span th:text="${unassignedTenants}">0</span> khách chưa có phòng
-            </div>
-        </div>
-        <div class="glass p-4">
-            <div class="flex items-center justify-between gap-3">
-                <span class="text-[12px] text-[color:var(--text-mute)]">Sắp đến hạn</span>
-                <i data-lucide="calendar-clock" class="w-4 h-4 text-[color:var(--warn)]"></i>
-            </div>
-            <div class="text-[24px] font-bold tnum mt-1" th:text="${dueSoonRooms}">0</div>
-            <div class="text-[11px] text-[color:var(--text-mute)] mt-1">Phòng còn từ hôm nay đến 7 ngày</div>
-        </div>
-        <div class="glass p-4">
-            <div class="flex items-center justify-between gap-3">
-                <span class="text-[12px] text-[color:var(--text-mute)]">Cần xử lý</span>
-                <i data-lucide="triangle-alert" class="w-4 h-4 text-[color:var(--err)]"></i>
-            </div>
-            <div class="text-[24px] font-bold tnum mt-1">
-                <span th:text="${overdueRooms + missingPaidUntilRooms}">0</span>
-            </div>
-            <div class="text-[11px] text-[color:var(--text-mute)] mt-1">
-                <span th:text="${overdueRooms}">0</span> quá hạn · <span th:text="${missingPaidUntilRooms}">0</span> thiếu ngày
-            </div>
-        </div>
-    </div>
-
-    <!-- Search -->
-    <form method="get" action="/admin/tenants" class="mb-5 flex gap-3 flex-wrap">
-        <input type="hidden" name="size" value="8" />
-        <div class="input-glass h-11 max-w-[520px] flex-1 min-w-[220px]">
-            <i data-lucide="search" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-            <input type="text" name="q" th:value="${filterQ}"
-                   placeholder="Tìm chính xác theo tên, email, SĐT, mã phòng..." />
-        </div>
-        <button type="submit" class="btn btn-soft btn-sm h-11">
-            <i data-lucide="search" class="w-4 h-4"></i> Tìm
+        <button type="button" @click="createOpen = true" class="btn btn-primary btn-sm">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span th:text="#{tenants.create}">Create tenant</span>
         </button>
-        <a href="/admin/tenants" class="btn btn-ghost btn-sm h-11" th:if="${filterQ != null and !filterQ.isEmpty()}">
-            <i data-lucide="x" class="w-4 h-4"></i> Xóa
+    </section>
+
+    <section class="tenant-list-metrics">
+        <article>
+            <span th:text="#{tenants.total}">Total tenants</span>
+            <strong class="tnum" th:text="${allTenantsCount}">0</strong>
+            <small><span th:text="${totalTenants}">0</span> <span th:text="#{tenants.currentResults}">current results</span></small>
+        </article>
+        <article>
+            <span th:text="#{tenants.assigned}">Occupied</span>
+            <strong class="tnum" th:text="${assignedTenants}">0</strong>
+            <small><span th:text="${unassignedTenants}">0</span> <span th:text="#{tenants.unassigned}">without room</span></small>
+        </article>
+        <article>
+            <span th:text="#{tenants.dueSoon}">Expiring soon</span>
+            <strong class="tnum" th:text="${dueSoonRooms}">0</strong>
+            <small th:text="#{tenants.dueSoonHint}">From today to the next 7 days</small>
+        </article>
+        <article>
+            <span th:text="#{tenants.needAction}">Needs action</span>
+            <strong class="tnum" th:text="${overdueRooms + missingPaidUntilRooms}">0</strong>
+            <small><span th:text="${overdueRooms}">0</span> <span th:text="#{tenants.overdue}">overdue</span> · <span th:text="${missingPaidUntilRooms}">0</span> <span th:text="#{tenants.missingDate}">missing date</span></small>
+        </article>
+    </section>
+
+    <section class="tenant-list-toolbar" data-tenant-filters>
+        <div class="tenant-list-search">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <input type="search"
+                   name="q"
+                   th:value="${filterQ}"
+                   data-tenant-filter-search
+                   th:placeholder="#{tenants.searchPlaceholder}" />
+        </div>
+        <select data-tenant-filter-property th:attr="aria-label=#{tenants.filterProperty}">
+            <option value="" th:text="#{tenants.allProperties}">All properties</option>
+        </select>
+        <select data-tenant-filter-occupancy th:attr="aria-label=#{tenants.filterOccupancy}">
+            <option value="" th:text="#{tenants.allTenants}">All tenants</option>
+            <option value="occupied" th:text="#{tenants.assigned}">Occupied</option>
+            <option value="vacant" th:text="#{tenants.vacant}">Moved out / no room</option>
+        </select>
+        <select data-tenant-filter-status th:attr="aria-label=#{tenants.filterPaymentDue}">
+            <option value="" th:text="#{common.all}">All</option>
+            <option value="good" th:text="#{tenants.goodDue}">More than 15 days left</option>
+            <option value="warn" th:text="#{tenants.warnDue}">7-15 days left</option>
+            <option value="danger" th:text="#{tenants.dangerDue}">Under 7 days / overdue</option>
+            <option value="none" th:text="#{tenants.noDue}">No due date</option>
+        </select>
+    </section>
+
+    <section class="tenant-table-card" th:if="${tenants != null and !tenants.isEmpty()}">
+        <div class="tenant-table-head">
+            <span th:text="#{tenants.tenant}">Tenant</span>
+            <span th:text="#{tenants.room}">Room</span>
+            <span th:text="#{tenants.property}">Property</span>
+            <span th:text="#{tenants.address}">Address</span>
+            <span th:text="#{tenants.expires}">Expires</span>
+            <span th:text="#{common.status}">Status</span>
+            <span></span>
+        </div>
+
+        <a th:each="t, iter : ${tenants}"
+           th:with="
+                room=${tenantCurrentRoomByTenantId != null ? tenantCurrentRoomByTenantId.get(t.id) : null},
+                property=${tenantCurrentPropertyByTenantId != null ? tenantCurrentPropertyByTenantId.get(t.id) : null},
+                paidUntil=${room != null ? room.currentTenantPaidUntil : null},
+                statusKey=${room == null or paidUntil == null ? 'none' : (paidUntil.isAfter(today.plusDays(15)) ? 'good' : (!paidUntil.isBefore(today.plusDays(7)) ? 'warn' : 'danger'))},
+                propertyName=${property != null ? property.name : ''},
+                addressText=${room == null ? #messages.msg('tenants.noRoom') : (property != null ? property.addressLine + ', ' + property.district + ', ' + property.city : (room.addressLine != null ? room.addressLine + ', ' + room.district + ', ' + room.city : room.district + ', ' + room.city))}
+           "
+           th:href="@{'/admin/tenants/' + ${t.id}}"
+           class="tenant-table-row"
+           th:data-tenant-search="${t.fullName + ' ' + (t.phone != null ? t.phone : '') + ' ' + (t.email != null ? t.email : '') + ' ' + (room != null ? room.code + ' ' + room.title : '') + ' ' + propertyName + ' ' + addressText}"
+           th:data-tenant-property="${propertyName}"
+           th:data-tenant-occupancy="${room != null ? 'occupied' : 'vacant'}"
+           th:data-tenant-status="${statusKey}">
+
+            <div class="tenant-cell tenant-person-cell">
+                <span class="tenant-list-avatar"
+                      th:classappend="${iter.index % 4 == 0 ? ' is-violet' : (iter.index % 4 == 1 ? ' is-cyan' : (iter.index % 4 == 2 ? ' is-rose' : ' is-amber'))}"
+                      th:text="${t.fullName != null and !t.fullName.isEmpty() ? #strings.substring(t.fullName, 0, 1).toUpperCase() : '?'}">K</span>
+                <span class="min-w-0">
+                    <strong th:text="${t.fullName}">Bùi Thế Khiêm</strong>
+                    <small class="tnum" th:text="${t.phone != null and !t.phone.isEmpty() ? t.phone : #messages.msg('tenants.noPhone')}">No phone</small>
+                </span>
+            </div>
+
+            <div class="tenant-cell">
+                <span class="tenant-cell-label" th:text="#{tenants.room}">Room</span>
+                <strong th:if="${room != null}" th:text="${room.code + ' · ' + room.title}">U01</strong>
+                <strong th:unless="${room != null}" class="is-muted" th:text="#{tenants.noRoom}">No room</strong>
+            </div>
+
+            <div class="tenant-cell">
+                <span class="tenant-cell-label" th:text="#{tenants.property}">Property</span>
+                <strong th:if="${property != null}" th:text="${property.name}">GenCloud Q6</strong>
+                <strong th:unless="${property != null}" class="is-muted" th:text="#{tenants.noProperty}">No property</strong>
+            </div>
+
+            <div class="tenant-cell tenant-address-cell">
+                <span class="tenant-cell-label" th:text="#{tenants.address}">Address</span>
+                <strong th:text="${addressText}">D33 Phường 1 Quận 6 TP.HCM</strong>
+            </div>
+
+            <div class="tenant-cell">
+                <span class="tenant-cell-label" th:text="#{tenants.expires}">Expires</span>
+                <strong class="tnum" th:text="${paidUntil != null ? #temporals.format(paidUntil, 'dd/MM/yyyy') : #messages.msg('tenants.notSet')}">Not set</strong>
+            </div>
+
+            <div class="tenant-cell">
+                <span class="tenant-expiry-badge"
+                      th:classappend="${statusKey == 'good' ? ' is-good' : (statusKey == 'warn' ? ' is-warn' : (statusKey == 'danger' ? ' is-danger' : ' is-none'))}"
+                      th:text="${room != null ? h.roomUsageLabel(paidUntil) : #messages.msg('tenants.movedOut')}">Moved out</span>
+            </div>
+
+            <div class="tenant-row-action">
+                <span class="btn btn-glass btn-sm" th:text="#{common.detail}">Details</span>
+            </div>
         </a>
-    </form>
+    </section>
 
-    <!-- Grid -->
-    <div th:if="${tenants != null and !tenants.isEmpty()}"
-         class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div th:each="t, iter : ${tenants}"
-             th:with="
-                room=${tenantCurrentRoomByTenantId != null ? tenantCurrentRoomByTenantId.get(t.id) : null},
-                latestInvoice=${tenantLatestInvoiceByTenantId != null ? tenantLatestInvoiceByTenantId.get(t.id) : null},
-                openCount=${tenantOpenInvoiceCountByTenantId != null and tenantOpenInvoiceCountByTenantId.get(t.id) != null ? tenantOpenInvoiceCountByTenantId.get(t.id) : 0},
-                openAmount=${tenantOpenInvoiceAmountByTenantId != null and tenantOpenInvoiceAmountByTenantId.get(t.id) != null ? tenantOpenInvoiceAmountByTenantId.get(t.id) : zeroAmount}
-             "
-             th:class="${'glass p-5 reveal reveal-' + (iter.index % 5 + 1)}"
-             th:data-detail-url="@{'/admin/tenants/' + ${t.id}}"
-             role="link"
-             tabindex="0"
-             style="cursor:pointer"
-             @click="if (!$event.target.closest('a, button, form, input, select, textarea, label')) window.location.href = $el.dataset.detailUrl"
-             @keydown.enter="if (!$event.target.closest('a, button, form, input, select, textarea, label')) window.location.href = $el.dataset.detailUrl">
-
-            <div class="flex items-start gap-3 mb-4">
-                <div class="avatar avatar-lg"
-                     th:classappend="${iter.index % 4 == 0 ? 'avatar-violet' : (iter.index % 4 == 1 ? 'avatar-cyan' : (iter.index % 4 == 2 ? 'avatar-rose' : 'avatar-amber'))}"
-                     th:text="${t.fullName != null and !t.fullName.isEmpty() ? #strings.substring(t.fullName, 0, 1) : '?'}">U</div>
-                <div class="flex-1 min-w-0">
-                    <div class="font-semibold text-[15px] truncate" th:text="${t.fullName}">Nguyễn Văn A</div>
-                    <div class="text-[12px] text-[color:var(--text-mute)] truncate inline-flex items-center gap-1 mt-0.5">
-                        <i data-lucide="mail" class="w-3 h-3 shrink-0"></i>
-                        <span th:text="${t.email}">email@example.com</span>
-                    </div>
-                    <div th:if="${t.phone != null}" class="text-[12px] text-[color:var(--text-mute)] truncate inline-flex items-center gap-1 mt-0.5">
-                        <i data-lucide="phone" class="w-3 h-3 shrink-0"></i>
-                        <span class="tnum" th:text="${t.phone}">0901xxx</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-xl p-3 bg-white/45 border border-[color:var(--line-soft)] space-y-2">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--text-mute)]">Phòng đang ở</span>
-                    <span th:if="${room != null}" class="badge"
-                          th:classappend="${h.roomUsageBadgeClass(room.currentTenantPaidUntil)}"
-                          th:text="${h.roomUsageLabel(room.currentTenantPaidUntil)}">Còn 12 ngày</span>
-                    <span th:unless="${room != null}" class="badge badge-mute">Chưa gán</span>
-                </div>
-
-                <div th:if="${room != null}" class="space-y-2">
-                    <div class="font-semibold text-[14px] truncate">
-                        <i data-lucide="home" class="w-3.5 h-3.5 inline align-[-2px] text-[color:var(--accent)]"></i>
-                        <span th:text="${room.code + ' · ' + room.title}">A101 · Studio</span>
-                    </div>
-                    <div class="text-[12px] text-[color:var(--text-mute)] truncate"
-                         th:text="${room.district + ', ' + room.city}">Quận 1, TP.HCM</div>
-                    <div class="rounded-lg p-2 bg-white/50 border border-[color:var(--line-soft)] text-[11px] space-y-1">
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="text-[color:var(--text-mute)]">Ngày bắt đầu</span>
-                            <span class="font-semibold tnum"
-                                  th:text="${room.currentTenantStartedOn != null ? #temporals.format(room.currentTenantStartedOn, 'dd/MM/yyyy') : 'Chưa đặt'}">01/05/2026</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="text-[color:var(--text-mute)]">Đã thanh toán đến</span>
-                            <span class="font-semibold tnum"
-                                  th:text="${room.currentTenantPaidUntil != null ? #temporals.format(room.currentTenantPaidUntil, 'dd/MM/yyyy') : 'Chưa đặt'}">09/06/2026</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between gap-2 text-[12px]">
-                        <span class="text-[color:var(--text-mute)]">Tiền thuê</span>
-                        <span class="font-semibold tnum text-[color:var(--accent)]"
-                              th:text="${room.priceMonthly != null ? h.vnd(room.priceMonthly) : '—'}">6.500.000đ</span>
-                    </div>
-                </div>
-
-                <div th:unless="${room != null}" class="text-[12px] text-[color:var(--text-mute)]">
-                    Khách chưa được gán vào phòng nào. Bấm chỉnh sửa để chọn phòng và ngày sử dụng.
-                </div>
-            </div>
-
-            <div class="mt-3 rounded-xl p-3 bg-white/40 border border-[color:var(--line-soft)] space-y-2">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--text-mute)]">Hóa đơn phòng</span>
-                    <span th:if="${openCount > 0}" class="badge badge-amber">
-                        <span th:text="${openCount}">1</span> chưa thu
-                    </span>
-                    <span th:unless="${openCount > 0}" class="badge badge-emerald">Ổn định</span>
-                </div>
-                <div th:if="${latestInvoice != null}" class="text-[12px] space-y-1">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="truncate" th:text="${latestInvoice.code}">INV-001</span>
-                        <span class="badge"
-                              th:classappend="${latestInvoice.status.name() == 'PAID' ? 'badge-emerald' : (latestInvoice.status.name() == 'OVERDUE' ? 'badge-rose' : 'badge-amber')}"
-                              th:text="${latestInvoice.status.name()}">PAID</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-2 text-[color:var(--text-mute)]">
-                        <span>Kỳ <span th:text="${latestInvoice.periodMonth + '/' + latestInvoice.periodYear}">5/2026</span></span>
-                        <span class="font-semibold tnum text-[color:var(--text)]" th:text="${h.vnd(latestInvoice.totalAmount)}">0đ</span>
-                    </div>
-                </div>
-                <div th:if="${latestInvoice == null}" class="text-[12px] text-[color:var(--text-mute)]">
-                    Chưa có hóa đơn cho phòng hiện tại.
-                </div>
-                <div th:if="${openCount > 0}" class="text-[11px] text-[color:var(--warn)]">
-                    Tổng cần thu: <span class="font-semibold tnum" th:text="${h.vnd(openAmount)}">0đ</span>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2 mt-4">
-                <a th:href="@{'/admin/tenants/' + ${t.id}}"
-                   class="btn btn-soft btn-sm flex-1 justify-center"
-                   @click.stop>
-                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Chỉnh sửa
-                </a>
-                <a th:href="@{'/admin/tenants/' + ${t.id}}" class="btn btn-glass btn-sm" title="Xem hồ sơ">
-                    <i data-lucide="user-round" class="w-3.5 h-3.5"></i>
-                </a>
-            </div>
-        </div>
+    <div class="tenant-filter-empty" data-tenant-filter-empty hidden>
+        <div class="empty-state-icon"><i data-lucide="search-x" class="w-6 h-6"></i></div>
+        <h3 th:text="#{tenants.noMatch}">No matching tenants</h3>
+        <p th:text="#{tenants.noMatchHint}">Try changing the search keyword or removing filters.</p>
     </div>
 
-    <!-- Edit tenant modals. Keep outside card grid so fixed backdrop is viewport-sized. -->
-    <div th:if="${tenants != null and !tenants.isEmpty()}">
-        <div th:each="t : ${tenants}"
-             th:with="
-                room=${tenantCurrentRoomByTenantId != null ? tenantCurrentRoomByTenantId.get(t.id) : null},
-                roomInvoices=${tenantRoomInvoicesByTenantId != null ? tenantRoomInvoicesByTenantId.get(t.id) : null}
-             ">
-            <div x-show="editOpen === $el.dataset.tenantId" x-cloak x-transition.opacity
-                 class="modal-backdrop"
-                 th:data-tenant-id="${t.id}"
-                 @keydown.escape.window="editOpen = null">
-                <form @click.outside="editOpen = null"
-                      th:action="@{'/admin/tenants/' + ${t.id} + '/room'}"
-                      method="post"
-                      class="modal-card p-7 w-full max-w-[760px] max-h-[90vh] overflow-y-auto">
-                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                    <input type="hidden" name="q" th:value="${filterQ}" />
-                    <input type="hidden" name="page" th:value="${currentPage}" />
-                    <input type="hidden" name="size" value="8" />
-
-                    <div class="flex items-start justify-between gap-4 mb-5">
-                        <div class="min-w-0">
-                            <span class="eyebrow">Chỉnh sửa khách thuê</span>
-                            <h2 class="text-[22px] font-bold tracking-tight mt-1 truncate" th:text="${t.fullName}">Nguyễn Văn A</h2>
-                            <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
-                                Chọn phòng đang ở, ngày sử dụng và kiểm tra hóa đơn của phòng hiện tại.
-                            </p>
-                        </div>
-                        <button type="button" @click="editOpen = null"
-                                class="w-8 h-8 grid place-items-center rounded-md hover:bg-black/[0.05]">
-                            <i data-lucide="x" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-
-                    <div class="grid lg:grid-cols-[1fr_320px] gap-4">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="form-label">Phòng đang ở</label>
-                                <div class="input-glass h-11">
-                                    <i data-lucide="bed-double" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                                    <select name="roomId" class="text-[13px]">
-                                        <option value="" th:selected="${room == null}">Đang trống / chưa gán phòng</option>
-                                        <option th:each="rr : ${assignableRooms}"
-                                                th:value="${rr.id}"
-                                                th:selected="${room != null and room.id.equals(rr.id)}"
-                                                th:disabled="${rr.currentTenantId != null and !rr.currentTenantId.equals(t.id)}"
-                                                th:text="${rr.code + ' · ' + rr.title + (rr.currentTenantId != null and !rr.currentTenantId.equals(t.id) ? ' · đã có khách' : '')}">
-                                            P101 · Studio
-                                        </option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="grid sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label class="form-label">Ngày bắt đầu ở</label>
-                                    <div class="input-glass h-11">
-                                        <i data-lucide="calendar-days" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                                        <input type="date" name="startedOn"
-                                               th:value="${room != null and room.currentTenantStartedOn != null ? room.currentTenantStartedOn : today}" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="form-label">Đã thanh toán đến</label>
-                                    <div class="input-glass h-11">
-                                        <i data-lucide="calendar-clock" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                                        <input type="date" name="paidUntil"
-                                               th:value="${room != null and room.currentTenantPaidUntil != null ? room.currentTenantPaidUntil : suggestedPaidUntil}" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rounded-xl p-3 bg-[color:var(--accent-soft)] text-[12px] text-[color:var(--accent-hover)] flex items-start gap-2">
-                                <i data-lucide="sparkles" class="w-4 h-4 shrink-0 mt-0.5"></i>
-                                <span>Trạng thái còn hạn/quá hạn được tính từ ngày đã thanh toán đến của phòng.</span>
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl p-3 bg-white/45 border border-[color:var(--line-soft)]">
-                            <div class="flex items-center justify-between gap-2 mb-3">
-                                <div>
-                                    <div class="text-[12px] font-semibold">Hóa đơn của phòng</div>
-                                    <div class="text-[11px] text-[color:var(--text-mute)]"
-                                         th:text="${room != null ? room.code + ' · ' + room.title : 'Chưa chọn phòng'}">P101</div>
-                                </div>
-                                <a href="/admin/invoices" class="btn btn-glass btn-sm" title="Mở trang hóa đơn">
-                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                </a>
-                            </div>
-
-                            <div th:if="${roomInvoices != null and !roomInvoices.isEmpty()}" class="space-y-2">
-                                <div th:each="inv, invIter : ${roomInvoices}" th:if="${invIter.index < 6}"
-                                     class="rounded-lg p-2 bg-white/60 border border-[color:var(--line-soft)]">
-                                    <div class="flex items-center justify-between gap-2 text-[12px]">
-                                        <span class="font-semibold truncate" th:text="${inv.code}">INV-001</span>
-                                        <span class="badge"
-                                              th:classappend="${inv.status.name() == 'PAID' ? 'badge-emerald' : (inv.status.name() == 'OVERDUE' ? 'badge-rose' : 'badge-amber')}"
-                                              th:text="${inv.status.name()}">PAID</span>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-2 text-[11px] text-[color:var(--text-mute)] mt-1">
-                                        <span>Kỳ <span th:text="${inv.periodMonth + '/' + inv.periodYear}">5/2026</span></span>
-                                        <span class="font-semibold tnum text-[color:var(--text)]" th:text="${h.vnd(inv.totalAmount)}">0đ</span>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-2 text-[11px] text-[color:var(--text-mute)] mt-1">
-                                        <span>Hạn thanh toán</span>
-                                        <span class="tnum" th:text="${#temporals.format(inv.dueDate, 'dd/MM/yyyy')}">09/06/2026</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div th:if="${roomInvoices == null or roomInvoices.isEmpty()}" class="empty py-8">
-                                <div class="empty-icon">
-                                    <i data-lucide="receipt" class="w-6 h-6"></i>
-                                </div>
-                                <p class="text-[13px] text-[color:var(--text-mute)] mt-2">Chưa có hóa đơn cho phòng này.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-end gap-2 mt-5">
-                        <button type="button" @click="editOpen = null" class="btn btn-ghost">Hủy</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i data-lucide="save" class="w-4 h-4"></i> Lưu thay đổi
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Empty -->
-    <div th:if="${tenants == null or tenants.isEmpty()}" class="empty">
-        <div class="empty-icon">
+    <div th:if="${tenants == null or tenants.isEmpty()}" class="empty-state">
+        <div class="empty-state-icon">
             <i data-lucide="users" class="w-7 h-7"></i>
         </div>
-        <h3 class="text-[16px] font-semibold">Không có khách phù hợp</h3>
-        <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5">
-            <span th:if="${filterQ != null and !filterQ.isEmpty()}">Thử tìm bằng số điện thoại, email hoặc mã phòng.</span>
-            <span th:unless="${filterQ != null and !filterQ.isEmpty()}">Tạo khách đầu tiên hoặc gán khách vào phòng.</span>
-        </p>
+        <h3 class="text-[16px] font-semibold" th:text="#{tenants.noMatch}">No matching tenants</h3>
+        <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5" th:text="#{tenants.emptyDesc}">Create the first tenant or assign a tenant to a room.</p>
     </div>
 
-    <!-- Pagination -->
-    <div th:if="${totalTenants > 0}" class="card-pad-0">
+    <div th:if="${totalTenants > 0}" class="tenant-pagination-shell">
         <div th:replace="~{fragments/pagination :: pager(
             currentPage=${currentPage},
             totalPages=${totalPages},
             totalElements=${totalTenants},
             pageSize=${pageSize},
-            baseUrl='/admin/tenants?q=' + (filterQ ?: '') + '&'
+            baseUrl=@{/admin/tenants(q=${filterQ})} + '&'
         )}"></div>
     </div>
 
-    <!-- Create tenant modal -->
     <div x-show="createOpen" x-cloak x-transition.opacity
          class="modal-backdrop"
          @keydown.escape.window="createOpen = false">
         <form @click.outside="createOpen = false"
               th:action="@{/admin/tenants/create}" method="post"
-              class="modal-card p-7 w-full max-w-[520px]">
+              class="modal-card p-7 w-full max-w-[520px] tenant-create-form"
+              data-create-tenant-form
+              novalidate>
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
             <div class="flex items-start justify-between mb-5">
                 <div>
-                    <span class="eyebrow">Mới</span>
-                    <h2 class="text-[22px] font-bold tracking-tight mt-1">Tạo tài khoản khách</h2>
+                    <span class="eyebrow" th:text="#{tenants.new}">New</span>
+                    <h2 class="text-[22px] font-bold tracking-tight mt-1" th:text="#{tenants.createAccount}">Create tenant account</h2>
                     <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
-                        Nhập thông tin đăng nhập để khách có thể vào khu vực khách hàng ngay.
+                        <span th:text="#{tenants.createAccountDesc}">Enter login information so the tenant can access the customer area.</span>
                     </p>
                 </div>
                 <button type="button" @click="createOpen = false"
@@ -381,50 +188,78 @@
                 </button>
             </div>
 
-            <div class="space-y-4">
-                <div>
-                    <label class="form-label">Họ và tên <span class="text-[color:var(--err)]">*</span></label>
-                    <div class="input-glass">
-                        <i data-lucide="user" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                        <input type="text" name="fullName" required maxlength="120" placeholder="Nguyễn Văn A" />
-                    </div>
-                </div>
-                <div>
-                    <label class="form-label">Email <span class="text-[color:var(--err)]">*</span></label>
-                    <div class="input-glass">
-                        <i data-lucide="mail" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                        <input type="email" name="email" required maxlength="160" placeholder="khachhang@email.com" />
-                    </div>
-                </div>
-                <div>
-                    <label class="form-label">Mật khẩu <span class="text-[color:var(--err)]">*</span></label>
-                    <div class="input-glass">
-                        <i data-lucide="lock" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                        <input type="password" name="password" required minlength="8" maxlength="64" placeholder="Ít nhất 8 ký tự" autocomplete="new-password" />
-                    </div>
-                </div>
-                <div>
-                    <label class="form-label">Số điện thoại <span class="text-[color:var(--err)]">*</span></label>
-                    <div class="input-glass">
-                        <i data-lucide="phone" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                        <input type="tel" name="phone" required maxlength="20" placeholder="0901xxxxxx" />
-                    </div>
-                </div>
+            <div th:if="${createTenantErrorField == 'form'}"
+                 class="mb-4 px-4 py-3 rounded-xl bg-[color:var(--err-soft)] text-[color:var(--err)] text-[13px] font-semibold"
+                 th:text="${createTenantErrorMessage}">
+                <span th:text="#{validation.invalidInfo}">Invalid information.</span>
             </div>
 
-            <div class="rounded-xl bg-[color:var(--accent-soft)] p-3 mt-4 text-[12px] text-[color:var(--accent-hover)] flex items-start gap-2">
-                <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>
-                <span>Khách đăng nhập bằng email và mật khẩu bạn đặt. Nếu khách quên mật khẩu, vào trang chi tiết khách để đổi lại.</span>
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label"><span th:text="#{tenants.fullName}">Full name</span> <span class="text-[color:var(--err)]">*</span></label>
+                    <div class="input-glass">
+                        <i data-lucide="user" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="text" name="fullName" required maxlength="120" placeholder="Nguyễn Văn A"
+                               data-create-field="fullName"
+                               th:value="${createTenantFullName}" />
+                    </div>
+                    <p class="form-error hidden"
+                       data-create-error-for="fullName"
+                       th:class="${createTenantErrorField == 'fullName'} ? 'form-error' : 'form-error hidden'"
+                       th:text="${createTenantErrorField == 'fullName' ? createTenantErrorMessage : ''}"></p>
+                </div>
+                <div>
+                    <label class="form-label"><span th:text="#{tenants.email}">Email</span> <span class="text-[color:var(--err)]">*</span></label>
+                    <div class="input-glass">
+                        <i data-lucide="mail" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="email" name="email" required maxlength="160" placeholder="khachhang@email.com"
+                               data-create-field="email"
+                               th:value="${createTenantEmail}" />
+                    </div>
+                    <p class="form-error hidden"
+                       data-create-error-for="email"
+                       th:class="${createTenantErrorField == 'email'} ? 'form-error' : 'form-error hidden'"
+                       th:text="${createTenantErrorField == 'email' ? createTenantErrorMessage : ''}"></p>
+                </div>
+                <div>
+                    <label class="form-label"><span th:text="#{tenants.password}">Password</span> <span class="text-[color:var(--err)]">*</span></label>
+                    <div class="input-glass">
+                        <i data-lucide="lock" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="password" name="password" required minlength="8" maxlength="64" th:placeholder="#{tenants.passwordPlaceholder}" autocomplete="new-password"
+                               data-create-field="password" />
+                    </div>
+                    <p class="form-error hidden"
+                       data-create-error-for="password"
+                       th:class="${createTenantErrorField == 'password'} ? 'form-error' : 'form-error hidden'"
+                       th:text="${createTenantErrorField == 'password' ? createTenantErrorMessage : ''}"></p>
+                </div>
+                <div>
+                    <label class="form-label"><span th:text="#{tenants.phone}">Phone number</span> <span class="text-[color:var(--err)]">*</span></label>
+                    <div class="input-glass">
+                        <i data-lucide="phone" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
+                        <input type="tel" name="phone" required maxlength="20" placeholder="0901xxxxxx"
+                               data-create-field="phone"
+                               th:value="${createTenantPhone}" />
+                    </div>
+                    <p class="form-error hidden"
+                       data-create-error-for="phone"
+                       th:class="${createTenantErrorField == 'phone'} ? 'form-error' : 'form-error hidden'"
+                       th:text="${createTenantErrorField == 'phone' ? createTenantErrorMessage : ''}"></p>
+                </div>
             </div>
 
             <div class="flex items-center justify-end gap-2 mt-5">
-                <button type="button" @click="createOpen = false" class="btn btn-ghost">Hủy</button>
+                <button type="button" @click="createOpen = false" class="btn btn-ghost" th:text="#{common.cancel}">Cancel</button>
                 <button type="submit" class="btn btn-primary">
-                    <i data-lucide="user-plus" class="w-4 h-4"></i> Tạo tài khoản
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> <span th:text="#{tenants.createAccountButton}">Create account</span>
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+<th:block layout:fragment="extra-scripts">
+    <script th:src="@{/js/admin-tenants.js}"></script>
+</th:block>
 </body>
 </html>

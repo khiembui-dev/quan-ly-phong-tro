@@ -3,6 +3,8 @@ package vn.glassliving.common.web;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 import vn.glassliving.common.util.IconUtil;
 import vn.glassliving.common.util.MoneyFormatter;
@@ -28,6 +30,7 @@ import java.time.temporal.ChronoUnit;
 public class TemplateHelper {
 
     private final ObjectMapper objectMapper;
+    private final MessageSource messageSource;
 
     public String vnd(BigDecimal amount)         { return MoneyFormatter.vnd(amount); }
     public String vndCompact(BigDecimal amount)  { return MoneyFormatter.vndCompact(amount); }
@@ -44,11 +47,11 @@ public class TemplateHelper {
     }
 
     public String roomUsageLabel(LocalDate paidUntil) {
-        if (paidUntil == null) return "Chưa đặt hạn";
+        if (paidUntil == null) return msg("rooms.usage.notSet");
         long days = daysUntil(paidUntil);
-        if (days > 0) return "Còn " + days + " ngày";
-        if (days == 0) return "Hết hạn hôm nay";
-        return "Quá hạn " + Math.abs(days) + " ngày";
+        if (days > 0) return msg("rooms.usage.daysLeft", days);
+        if (days == 0) return msg("rooms.usage.expiresToday");
+        return msg("rooms.usage.overdueDays", Math.abs(days));
     }
 
     public String roomUsageBadgeClass(LocalDate paidUntil) {
@@ -75,5 +78,9 @@ public class TemplateHelper {
         } catch (JsonProcessingException e) {
             return "[]";
         }
+    }
+
+    private String msg(String code, Object... args) {
+        return messageSource.getMessage(code, args, LocaleContextHolder.getLocale());
     }
 }

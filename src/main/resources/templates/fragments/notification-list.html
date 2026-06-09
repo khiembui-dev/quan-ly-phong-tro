@@ -7,7 +7,8 @@
        th:href="${n.linkUrl} ?: '#'"
        class="flex gap-3 p-4 hover:bg-black/[0.03] transition group">
         <span class="w-10 h-10 shrink-0 rounded-xl bg-[color:var(--accent-soft)] grid place-items-center group-hover:scale-105 transition">
-            <i data-lucide="bell" class="w-4 h-4 text-[color:var(--accent)]"></i>
+            <img th:if="${n.imageUrl != null}" th:src="${n.imageUrl}" alt="Ảnh" class="w-full h-full object-cover rounded-xl" />
+            <i th:unless="${n.imageUrl != null}" data-lucide="bell" class="w-4 h-4 text-[color:var(--accent)]"></i>
         </span>
         <div class="flex-1 min-w-0">
             <div class="text-[13px] font-semibold leading-snug" th:text="${n.title}">Title</div>

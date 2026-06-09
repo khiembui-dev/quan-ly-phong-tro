@@ -3,6 +3,8 @@ package vn.glassliving.invoice.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.glassliving.automation.service.AutomationEmailService;
@@ -31,6 +33,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class InvoiceService {
 
+    private static final UUID NO_FILTER_UUID = new UUID(0L, 0L);
+    private static final LocalDate MIN_FILTER_DATE = LocalDate.of(1900, 1, 1);
+    private static final LocalDate MAX_FILTER_DATE = LocalDate.of(9999, 12, 31);
+
+    private static final List<Invoice.InvoiceStatus> AUTO_CANCEL_STATUSES = List.of(
+            Invoice.InvoiceStatus.PENDING,
+            Invoice.InvoiceStatus.OVERDUE
+    );
+
     private final InvoiceRepository invoiceRepository;
     private final ContractRepository contractRepository;
     private final RoomRepository roomRepository;
@@ -38,6 +49,34 @@ public class InvoiceService {
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
     private final AutomationEmailService automationEmailService;
+
+    @Transactional(readOnly = true)
+    public Page<Invoice> findAdminInvoices(UUID ownerId,
+                                           String q,
+                                           UUID propertyId,
+                                           UUID roomId,
+                                           Invoice.InvoiceStatus status,
+                                           YearMonth month,
+                                           LocalDate fromDate,
+                                           LocalDate toDate,
+                                           Pageable pageable) {
+        boolean dateRangeActive = fromDate != null || toDate != null;
+        Short monthFilter = !dateRangeActive && month != null ? (short) month.getMonthValue() : (short) 0;
+        Short yearFilter = !dateRangeActive && month != null ? (short) month.getYear() : (short) 0;
+
+        return invoiceRepository.searchByOwnerId(
+                ownerId,
+                status != null ? status.name() : "",
+                cleanSearch(q),
+                propertyId != null ? propertyId : NO_FILTER_UUID,
+                monthFilter,
+                yearFilter,
+                fromDate != null ? fromDate : MIN_FILTER_DATE,
+                toDate != null ? toDate : MAX_FILTER_DATE,
+                roomId != null ? roomId : NO_FILTER_UUID,
+                pageable
+        );
+    }
 
     /**
      * Create a single invoice for one contract for a given period.
@@ -188,8 +227,7 @@ public class InvoiceService {
         LocalDate issueDate = LocalDate.now();
         LocalDate dueDate = issueDate.plusDays(10);
 
-        String code = "INV-" + String.format("%04d%02d", year, month) + "-"
-                + String.format("%04d", (int) (Math.random() * 9000) + 1000);
+        String code = nextSequentialInvoiceCode();
 
         Invoice inv = Invoice.builder()
                 .code(code)
@@ -242,8 +280,7 @@ public class InvoiceService {
             if (invoiceRepository.existsByContractIdAndPeriodYearAndPeriodMonth(c.getId(), year, month)) {
                 continue;
             }
-            String code = "INV-" + String.format("%04d%02d", year, month) + "-"
-                    + String.format("%04d", (int) (Math.random() * 9000) + 1000 + created);
+            String code = nextSequentialInvoiceCode();
 
             BigDecimal total = c.getRentMonthly()
                     .add(c.getServiceFee())
@@ -303,15 +340,72 @@ public class InvoiceService {
         if (!inv.getOwnerId().equals(ownerId)) {
             throw BusinessException.forbidden("Bạn không sở hữu hóa đơn này.");
         }
-        if (inv.getStatus() == Invoice.InvoiceStatus.CANCELLED) {
-            throw BusinessException.conflict("Hóa đơn đã hủy không thể chuyển về chờ thanh toán.");
-        }
         inv.setPaidAmount(BigDecimal.ZERO);
         inv.setPaidAt(null);
         inv.setStatus(Invoice.InvoiceStatus.PENDING);
         inv = invoiceRepository.save(inv);
         recalculateRoomPaidUntilAfterUnpay(inv);
         return inv;
+    }
+
+    @Transactional
+    public Invoice cancel(UUID ownerId, UUID id) {
+        Invoice inv = invoiceRepository.findById(id)
+                .orElseThrow(() -> BusinessException.notFound("Hóa đơn"));
+        if (!inv.getOwnerId().equals(ownerId)) {
+            throw BusinessException.forbidden("Bạn không sở hữu hóa đơn này.");
+        }
+        if (inv.getStatus() == Invoice.InvoiceStatus.CANCELLED) {
+            return inv;
+        }
+        inv.setPaidAmount(BigDecimal.ZERO);
+        inv.setPaidAt(null);
+        inv.setStatus(Invoice.InvoiceStatus.CANCELLED);
+        inv = invoiceRepository.save(inv);
+        recalculateRoomPaidUntilAfterUnpay(inv);
+        return inv;
+    }
+
+    @Transactional
+    public int refreshAgingStatuses() {
+        return refreshAgingStatuses(null);
+    }
+
+    @Transactional
+    public int refreshAgingStatuses(UUID ownerId) {
+        LocalDate today = LocalDate.now();
+        LocalDate cancelCutoff = today.minusDays(10);
+        int updated = 0;
+
+        List<Invoice> toCancel = ownerId != null
+                ? invoiceRepository.findByOwnerIdAndStatusInAndDueDateLessThanEqual(ownerId, AUTO_CANCEL_STATUSES, cancelCutoff)
+                : invoiceRepository.findByStatusInAndDueDateLessThanEqual(AUTO_CANCEL_STATUSES, cancelCutoff);
+        for (Invoice invoice : toCancel) {
+            if (invoice.getStatus() == Invoice.InvoiceStatus.CANCELLED || invoice.getStatus() == Invoice.InvoiceStatus.PAID) {
+                continue;
+            }
+            invoice.setPaidAmount(BigDecimal.ZERO);
+            invoice.setPaidAt(null);
+            invoice.setStatus(Invoice.InvoiceStatus.CANCELLED);
+            updated++;
+        }
+        if (!toCancel.isEmpty()) {
+            invoiceRepository.saveAll(toCancel);
+        }
+
+        List<Invoice> toOverdue = ownerId != null
+                ? invoiceRepository.findByOwnerIdAndStatusAndDueDateBefore(ownerId, Invoice.InvoiceStatus.PENDING, today)
+                : invoiceRepository.findByStatusAndDueDateBefore(Invoice.InvoiceStatus.PENDING, today);
+        for (Invoice invoice : toOverdue) {
+            if (invoice.getDueDate() != null && invoice.getDueDate().isAfter(cancelCutoff)) {
+                invoice.setStatus(Invoice.InvoiceStatus.OVERDUE);
+                updated++;
+            }
+        }
+        if (!toOverdue.isEmpty()) {
+            invoiceRepository.saveAll(toOverdue);
+        }
+        return updated;
     }
 
     @Transactional
@@ -329,7 +423,10 @@ public class InvoiceService {
         if (status == Invoice.InvoiceStatus.PENDING) {
             return markPending(ownerId, id);
         }
-        throw BusinessException.badRequest("Trang này chỉ hỗ trợ đổi giữa đã thanh toán và chưa thanh toán.");
+        if (status == Invoice.InvoiceStatus.CANCELLED) {
+            return cancel(ownerId, id);
+        }
+        throw BusinessException.badRequest("Trang này chỉ hỗ trợ đổi trạng thái thanh toán hoặc hủy hóa đơn.");
     }
 
     @Transactional
@@ -371,7 +468,29 @@ public class InvoiceService {
         return qty.multiply(unitPrice);
     }
 
+    private String nextSequentialInvoiceCode() {
+        int next = invoiceRepository.findMaxSequentialInvoiceCode() + 1;
+        for (int i = 0; i < 1000; i++) {
+            String code = "PT-HD-" + (next + i);
+            if (!invoiceRepository.existsByCode(code)) {
+                return code;
+            }
+        }
+        return "PT-HD-" + System.currentTimeMillis();
+    }
+
     private BigDecimal nz(BigDecimal v) { return v != null ? v : BigDecimal.ZERO; }
+
+    private static String cleanSearch(String value) {
+        if (value == null) return "";
+        String clean = value.trim();
+        if (clean.isBlank()
+                || "q".equalsIgnoreCase(clean)
+                || "filterQ".equalsIgnoreCase(clean)) {
+            return "";
+        }
+        return clean;
+    }
 
     public List<InvoiceLineItem> parseOtherItems(Invoice invoice) {
         if (invoice == null || invoice.getOtherItemsJson() == null || invoice.getOtherItemsJson().isBlank()) {
@@ -414,29 +533,40 @@ public class InvoiceService {
     }
 
     private void extendRoomPaidUntil(Invoice inv) {
+        if (inv.getRoomId() == null || inv.getTenantUserId() == null
+                || inv.getPeriodYear() == null || inv.getPeriodMonth() == null) {
+            return;
+        }
         roomRepository.findById(inv.getRoomId()).ifPresent(room -> {
             if (!inv.getOwnerId().equals(room.getOwnerId())) return;
             if (room.getCurrentTenantId() == null || !room.getCurrentTenantId().equals(inv.getTenantUserId())) return;
 
-            LocalDate periodEnd = YearMonth.of(inv.getPeriodYear(), inv.getPeriodMonth()).atEndOfMonth();
             if (room.getCurrentTenantStartedOn() == null) {
                 room.setCurrentTenantStartedOn(LocalDate.now());
             }
-            if (room.getCurrentTenantPaidUntil() == null || room.getCurrentTenantPaidUntil().isBefore(periodEnd)) {
-                room.setCurrentTenantPaidUntil(periodEnd);
+            LocalDate baseDate = room.getCurrentTenantPaidUntil() != null
+                    ? room.getCurrentTenantPaidUntil()
+                    : YearMonth.of(inv.getPeriodYear(), inv.getPeriodMonth()).atEndOfMonth();
+            LocalDate extendedUntil = baseDate.plusMonths(1);
+            if (room.getCurrentTenantPaidUntil() == null || room.getCurrentTenantPaidUntil().isBefore(extendedUntil)) {
+                room.setCurrentTenantPaidUntil(extendedUntil);
                 roomRepository.save(room);
             }
         });
     }
 
     private void recalculateRoomPaidUntilAfterUnpay(Invoice inv) {
-        if (inv.getRoomId() == null || inv.getTenantUserId() == null) return;
+        if (inv.getRoomId() == null || inv.getTenantUserId() == null
+                || inv.getPeriodYear() == null || inv.getPeriodMonth() == null) return;
         roomRepository.findById(inv.getRoomId()).ifPresent(room -> {
             if (!inv.getOwnerId().equals(room.getOwnerId())) return;
             if (room.getCurrentTenantId() == null || !room.getCurrentTenantId().equals(inv.getTenantUserId())) return;
 
             LocalDate revertedPeriodEnd = YearMonth.of(inv.getPeriodYear(), inv.getPeriodMonth()).atEndOfMonth();
-            if (room.getCurrentTenantPaidUntil() == null || !room.getCurrentTenantPaidUntil().equals(revertedPeriodEnd)) {
+            LocalDate revertedCoverageEnd = revertedPeriodEnd.plusMonths(1);
+            if (room.getCurrentTenantPaidUntil() == null
+                    || (!room.getCurrentTenantPaidUntil().equals(revertedPeriodEnd)
+                    && !room.getCurrentTenantPaidUntil().equals(revertedCoverageEnd))) {
                 return;
             }
 
@@ -446,7 +576,7 @@ public class InvoiceService {
                     .stream()
                     .findFirst();
             room.setCurrentTenantPaidUntil(latestPaid
-                    .map(i -> YearMonth.of(i.getPeriodYear(), i.getPeriodMonth()).atEndOfMonth())
+                    .map(i -> YearMonth.of(i.getPeriodYear(), i.getPeriodMonth()).atEndOfMonth().plusMonths(1))
                     .orElse(null));
             roomRepository.save(room);
         });

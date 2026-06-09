@@ -105,10 +105,10 @@ public class LocalUploadService {
         try (InputStream input = file.getInputStream()) {
             BufferedImage image = ImageIO.read(input);
             if (image == null) {
-                throw BusinessException.badRequest("File ảnh không đọc được. Hãy chọn ảnh CCCD/CMND rõ nét.");
+                throw BusinessException.badRequest("File ảnh không đọc được. Hãy chọn ảnh JPG/PNG rõ nét.");
             }
             if (image.getWidth() < 240 || image.getHeight() < 140) {
-                throw BusinessException.badRequest("Ảnh CCCD/CMND quá nhỏ. Hãy tải ảnh rõ hơn, tối thiểu 240x140px.");
+                throw BusinessException.badRequest("Ảnh tải lên quá nhỏ. Hãy chọn ảnh rõ hơn, tối thiểu 240x140px.");
             }
         } catch (IOException ex) {
             throw BusinessException.badRequest("File ảnh không đọc được. Hãy chọn ảnh JPG/PNG rõ nét.");

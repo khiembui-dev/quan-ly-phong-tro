@@ -21,6 +21,37 @@ public interface MaintenanceTicketRepository extends JpaRepository<MaintenanceTi
     Page<MaintenanceTicket> findByOwnerIdAndPriorityOrderByReportedAtDesc(
             UUID ownerId, MaintenanceTicket.Priority priority, Pageable pageable);
 
+    @Query("""
+            SELECT t FROM MaintenanceTicket t
+            WHERE t.ownerId = :ownerId
+              AND t.status IN :statuses
+              AND (:priority IS NULL OR t.priority = :priority)
+              AND (:category IS NULL OR t.category = :category)
+              AND (:propertyId IS NULL OR t.propertyId = :propertyId)
+              AND (:roomId IS NULL OR t.roomId = :roomId)
+              AND (
+                    :q IS NULL OR :q = ''
+                    OR LOWER(t.code) LIKE LOWER(CONCAT('%', :q, '%'))
+                    OR LOWER(t.title) LIKE LOWER(CONCAT('%', :q, '%'))
+                    OR LOWER(COALESCE(t.description, '')) LIKE LOWER(CONCAT('%', :q, '%'))
+              )
+            """)
+    Page<MaintenanceTicket> searchAdmin(@Param("ownerId") UUID ownerId,
+                                        @Param("q") String q,
+                                        @Param("statuses") List<MaintenanceTicket.Status> statuses,
+                                        @Param("priority") MaintenanceTicket.Priority priority,
+                                        @Param("category") MaintenanceTicket.Category category,
+                                        @Param("propertyId") UUID propertyId,
+                                        @Param("roomId") UUID roomId,
+                                        Pageable pageable);
+
+    @Query("""
+            SELECT t FROM MaintenanceTicket t
+            WHERE t.ownerId = :ownerId
+            ORDER BY t.reportedAt DESC
+            """)
+    List<MaintenanceTicket> findTopForOwnerStats(@Param("ownerId") UUID ownerId, Pageable pageable);
+
     List<MaintenanceTicket> findTop8ByReporterUserIdOrderByReportedAtDesc(UUID reporterUserId);
 
     long countByOwnerIdAndStatus(UUID ownerId, MaintenanceTicket.Status status);

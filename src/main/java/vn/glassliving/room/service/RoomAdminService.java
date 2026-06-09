@@ -3,16 +3,20 @@ package vn.glassliving.room.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import vn.glassliving.auth.entity.User;
 import vn.glassliving.auth.repository.UserRepository;
 import vn.glassliving.common.exception.BusinessException;
+import vn.glassliving.common.storage.LocalUploadService;
 import vn.glassliving.common.util.SlugUtil;
 import vn.glassliving.property.entity.Property;
 import vn.glassliving.property.repository.PropertyRepository;
 import vn.glassliving.room.dto.RoomForm;
 import vn.glassliving.room.entity.Amenity;
 import vn.glassliving.room.entity.Room;
+import vn.glassliving.room.entity.RoomImage;
 import vn.glassliving.room.repository.AmenityRepository;
+import vn.glassliving.room.repository.RoomImageRepository;
 import vn.glassliving.room.repository.RoomRepository;
 
 import java.math.BigDecimal;
@@ -21,6 +25,8 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -31,6 +37,8 @@ public class RoomAdminService {
     private final PropertyRepository propertyRepository;
     private final AmenityRepository amenityRepository;
     private final UserRepository userRepository;
+    private final RoomImageRepository roomImageRepository;
+    private final LocalUploadService localUploadService;
 
     @Transactional
     public Room create(UUID ownerId, RoomForm form) {
@@ -51,9 +59,9 @@ public class RoomAdminService {
 
         Room.RoomType type;
         try {
-            type = Room.RoomType.valueOf(blankOr(form.getType(), "STUDIO"));
+            type = Room.RoomType.valueOf(blankOr(form.getType(), "BOARDING"));
         } catch (IllegalArgumentException e) {
-            type = Room.RoomType.STUDIO;
+            type = Room.RoomType.BOARDING;
         }
         Room.RoomStatus status = parseStatus(form.getStatus());
 
@@ -66,7 +74,7 @@ public class RoomAdminService {
         boolean inherit = form.isInheritTariff();
         BigDecimal electric = inherit ? prop.getElectricUnit() : nz(form.getElectricUnit(), prop.getElectricUnit());
         BigDecimal water    = inherit ? prop.getWaterUnit()    : nz(form.getWaterUnit(),    prop.getWaterUnit());
-        BigDecimal serviceFee = nz(form.getServiceFee(), prop.getServiceFeeDefault());
+        BigDecimal serviceFee = inherit ? prop.getServiceFeeDefault() : nz(form.getServiceFee(), prop.getServiceFeeDefault());
 
         // Slug from title + code
         String slug = ensureUniqueSlug(SlugUtil.slugify(title + " " + code));
@@ -90,15 +98,16 @@ public class RoomAdminService {
                 .inheritTariff(inherit)
                 .electricUnit(electric)
                 .waterUnit(water)
-                .extraFees(buildExtraFees(form))
+                .extraFees(inherit ? new ArrayList<>() : buildRoomExtraFees(form))
                 .customAmenities(buildCustomAmenities(form))
+                .roomInfo(buildRoomInfo(form))
                 .status(status)
                 .currentTenantId(currentTenantId)
                 .currentTenantStartedOn(currentTenantId != null ? LocalDate.now() : null)
                 .currentTenantPaidUntil(currentTenantId != null
                         ? resolvePaidUntil(form.getCurrentTenantPaidUntil(), null)
                         : null)
-                .addressLine(form.getAddressLine())
+                .addressLine(resolveRoomAddress(prop))
                 .district(prop.getDistrict())
                 .city(prop.getCity())
                 .ratingAvg(BigDecimal.ZERO)
@@ -124,6 +133,13 @@ public class RoomAdminService {
     }
 
     @Transactional
+    public Room create(UUID ownerId, RoomForm form, MultipartFile[] uploadedImages) {
+        Room room = create(ownerId, form);
+        syncRoomImages(ownerId, room.getId(), form, uploadedImages);
+        return roomRepository.findById(room.getId()).orElse(room);
+    }
+
+    @Transactional
     public Room update(UUID ownerId, UUID id, RoomForm form) {
         Room r = roomRepository.findById(id)
                 .orElseThrow(() -> BusinessException.notFound("Phòng"));
@@ -144,6 +160,9 @@ public class RoomAdminService {
 
         if (form.getTitle() != null && !form.getTitle().isBlank()) r.setTitle(form.getTitle().trim());
         r.setDescription(form.getDescription());
+        if (form.getCoverUrl() != null && !form.getCoverUrl().isBlank()) {
+            r.setCoverUrl(blankSafe(form.getCoverUrl()));
+        }
         if (form.getType() != null && !form.getType().isBlank()) {
             try { r.setType(Room.RoomType.valueOf(form.getType())); } catch (IllegalArgumentException ignored) {}
         }
@@ -154,24 +173,24 @@ public class RoomAdminService {
         if (form.getMaxOccupants() != null) r.setMaxOccupants(form.getMaxOccupants());
         if (form.getPriceMonthly() != null) r.setPriceMonthly(form.getPriceMonthly());
         if (form.getDepositAmount() != null)r.setDepositAmount(form.getDepositAmount());
-        if (form.getServiceFee() != null)   r.setServiceFee(form.getServiceFee());
-
+        Property prop = propertyRepository.findById(r.getPropertyId())
+                .orElseThrow(() -> BusinessException.notFound("Cơ sở"));
         r.setInheritTariff(form.isInheritTariff());
         if (form.isInheritTariff()) {
             // Refresh from property
-            Property prop = propertyRepository.findById(r.getPropertyId())
-                    .orElseThrow(() -> BusinessException.notFound("Cơ sở"));
             r.setElectricUnit(prop.getElectricUnit());
             r.setWaterUnit(prop.getWaterUnit());
+            r.setServiceFee(prop.getServiceFeeDefault());
         } else {
+            if (form.getServiceFee() != null)   r.setServiceFee(form.getServiceFee());
             if (form.getElectricUnit() != null) r.setElectricUnit(form.getElectricUnit());
             if (form.getWaterUnit() != null)    r.setWaterUnit(form.getWaterUnit());
         }
 
-        r.setExtraFees(buildExtraFees(form));
+        r.setExtraFees(form.isInheritTariff() ? new ArrayList<>() : buildRoomExtraFees(form));
         r.setCustomAmenities(buildCustomAmenities(form));
-
-        if (form.getAddressLine() != null) r.setAddressLine(form.getAddressLine());
+        r.setRoomInfo(buildRoomInfo(form));
+        r.setAddressLine(resolveRoomAddress(prop));
 
         UUID previousTenant = r.getCurrentTenantId();
         Room.RoomStatus newStatus = parseStatus(form.getStatus());
@@ -207,6 +226,13 @@ public class RoomAdminService {
     }
 
     @Transactional
+    public Room update(UUID ownerId, UUID id, RoomForm form, MultipartFile[] uploadedImages) {
+        Room room = update(ownerId, id, form);
+        syncRoomImages(ownerId, room.getId(), form, uploadedImages);
+        return roomRepository.findById(room.getId()).orElse(room);
+    }
+
+    @Transactional
     public Room changeStatus(UUID ownerId, UUID id, String status) {
         Room r = roomRepository.findById(id)
                 .orElseThrow(() -> BusinessException.notFound("Phòng"));
@@ -235,6 +261,10 @@ public class RoomAdminService {
         }
         if (r.getStatus() == Room.RoomStatus.OCCUPIED || r.getCurrentTenantId() != null) {
             throw BusinessException.conflict("Không thể xóa phòng đang có khách thuê. Hãy gỡ khách khỏi phòng trước.");
+        }
+        for (RoomImage image : roomImageRepository.findByRoomIdOrderBySortOrderAsc(r.getId())) {
+            localUploadService.deletePublicUrl(image.getUrl());
+            roomImageRepository.delete(image);
         }
         roomRepository.delete(r);
 
@@ -293,6 +323,7 @@ public class RoomAdminService {
                     .waterUnit(prop.getWaterUnit())
                     .extraFees(new ArrayList<>())
                     .status(Room.RoomStatus.AVAILABLE)
+                    .addressLine(resolveRoomAddress(prop))
                     .district(prop.getDistrict())
                     .city(prop.getCity())
                     .ratingAvg(BigDecimal.ZERO)
@@ -340,6 +371,7 @@ public class RoomAdminService {
         f.setCode(r.getCode());
         f.setTitle(r.getTitle());
         f.setDescription(r.getDescription());
+        f.setCoverUrl(r.getCoverUrl());
         f.setType(r.getType().name());
         f.setFloor(r.getFloor());
         f.setAreaSqm(r.getAreaSqm());
@@ -365,7 +397,7 @@ public class RoomAdminService {
             f.setAmenityCodes(codes);
         }
         // Extra fees
-        if (r.getExtraFees() != null) {
+        if (!r.isInheritTariff() && r.getExtraFees() != null) {
             List<String> names = new ArrayList<>(r.getExtraFees().size());
             List<BigDecimal> amounts = new ArrayList<>(r.getExtraFees().size());
             for (var fee : r.getExtraFees()) {
@@ -385,6 +417,24 @@ public class RoomAdminService {
             }
             f.setCustomAmenityNames(names);
             f.setCustomAmenityCategories(cats);
+        }
+        if (r.getRoomInfo() != null) {
+            List<String> infoTexts = new ArrayList<>(r.getRoomInfo().size());
+            for (var info : r.getRoomInfo()) {
+                if (info != null && info.getText() != null && !info.getText().isBlank()) {
+                    infoTexts.add(info.getText());
+                }
+            }
+            f.setRoomInfoTexts(infoTexts);
+        }
+        List<String> imageUrls = roomImageRepository.findByRoomIdOrderBySortOrderAsc(r.getId()).stream()
+                .map(RoomImage::getUrl)
+                .filter(Objects::nonNull)
+                .toList();
+        if (!imageUrls.isEmpty()) {
+            f.setImageUrls(imageUrls);
+        } else if (r.getCoverUrl() != null && !r.getCoverUrl().isBlank()) {
+            f.setImageUrls(List.of(r.getCoverUrl()));
         }
         return f;
     }
@@ -430,9 +480,9 @@ public class RoomAdminService {
     }
 
     private Room.RoomType parseType(String s) {
-        if (s == null || s.isBlank()) return Room.RoomType.STUDIO;
+        if (s == null || s.isBlank()) return Room.RoomType.BOARDING;
         try { return Room.RoomType.valueOf(s); }
-        catch (IllegalArgumentException e) { return Room.RoomType.STUDIO; }
+        catch (IllegalArgumentException e) { return Room.RoomType.BOARDING; }
     }
 
     private UUID resolveTenantForStatus(Room.RoomStatus status, String tenantIdStr) {
@@ -521,20 +571,179 @@ public class RoomAdminService {
         return out;
     }
 
-    private static List<vn.glassliving.property.entity.Property.ExtraFee> buildExtraFees(RoomForm form) {
-        List<String> names = form.getExtraFeeNames();
-        List<BigDecimal> amounts = form.getExtraFeeAmounts();
-        if (names == null || amounts == null) return new ArrayList<>();
-        int n = Math.min(names.size(), amounts.size());
-        List<vn.glassliving.property.entity.Property.ExtraFee> out = new ArrayList<>(n);
-        for (int i = 0; i < n; i++) {
-            String name = names.get(i);
-            BigDecimal amount = amounts.get(i);
-            if (name == null || name.isBlank()) continue;
-            out.add(new vn.glassliving.property.entity.Property.ExtraFee(name.trim(),
-                    amount != null ? amount : BigDecimal.ZERO));
+    private static List<Room.RoomInfo> buildRoomInfo(RoomForm form) {
+        List<String> texts = form.getRoomInfoTexts();
+        if (texts == null) return new ArrayList<>();
+        List<Room.RoomInfo> out = new ArrayList<>(texts.size());
+        for (String raw : texts) {
+            String text = blankSafe(raw);
+            if (text == null) continue;
+            text = text.trim();
+            if (text.length() > 100) text = text.substring(0, 100);
+            out.add(new Room.RoomInfo(text));
         }
         return out;
+    }
+
+    private static List<vn.glassliving.property.entity.Property.ExtraFee> buildRoomExtraFees(RoomForm form) {
+        List<String> names = form.getExtraFeeNames();
+        List<BigDecimal> amounts = form.getExtraFeeAmounts();
+        if (names == null) return new ArrayList<>();
+        List<vn.glassliving.property.entity.Property.ExtraFee> out = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (int i = 0; i < names.size(); i++) {
+            String name = blankSafe(names.get(i));
+            if (name == null) continue;
+            BigDecimal amount = amounts != null && i < amounts.size() ? amounts.get(i) : null;
+            if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) continue;
+            String key = name.trim().toLowerCase();
+            if (!seen.add(key)) continue;
+            out.add(new vn.glassliving.property.entity.Property.ExtraFee(name.trim(), amount));
+        }
+        return out;
+    }
+
+    private static String resolveRoomAddress(Property prop) {
+        List<String> parts = new ArrayList<>();
+        if (blankSafe(prop.getAddressLine()) != null) parts.add(prop.getAddressLine().trim());
+        if (blankSafe(prop.getDistrict()) != null) parts.add(prop.getDistrict().trim());
+        if (blankSafe(prop.getCity()) != null) parts.add(prop.getCity().trim());
+        return String.join(", ", parts);
+    }
+
+    private void syncRoomImages(UUID ownerId, UUID roomId, RoomForm form, MultipartFile[] uploadedImages) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> BusinessException.notFound("Phòng"));
+        if (!room.getOwnerId().equals(ownerId)) {
+            throw BusinessException.forbidden("Bạn không sở hữu phòng này.");
+        }
+
+        List<RoomImage> images = new ArrayList<>(roomImageRepository.findByRoomIdOrderBySortOrderAsc(room.getId()));
+        Set<UUID> removeIds = parseUuidSet(form.getRemoveImageIds());
+        if (!removeIds.isEmpty()) {
+            for (RoomImage image : new ArrayList<>(images)) {
+                if (removeIds.contains(image.getId())) {
+                    localUploadService.deletePublicUrl(image.getUrl());
+                    roomImageRepository.delete(image);
+                    images.remove(image);
+                }
+            }
+        }
+
+        int sort = images.stream()
+                .map(RoomImage::getSortOrder)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(-1) + 1;
+
+        for (String url : normalizeImageUrls(form)) {
+            if (images.stream().noneMatch(image -> url.equals(image.getUrl()))) {
+                RoomImage image = roomImageRepository.save(RoomImage.builder()
+                        .roomId(room.getId())
+                        .url(url)
+                        .alt(room.getTitle())
+                        .sortOrder(sort++)
+                        .cover(false)
+                        .build());
+                images.add(image);
+            }
+        }
+
+        if (uploadedImages != null) {
+            String folder = "rooms/" + room.getId();
+            for (MultipartFile file : uploadedImages) {
+                String url = localUploadService.storeImage(file, folder, "room");
+                if (url == null) {
+                    continue;
+                }
+                RoomImage image = roomImageRepository.save(RoomImage.builder()
+                        .roomId(room.getId())
+                        .url(url)
+                        .alt(room.getTitle())
+                        .sortOrder(sort++)
+                        .cover(false)
+                        .build());
+                images.add(image);
+            }
+        }
+
+        applyCover(room, images, form.getCoverImageId());
+    }
+
+    private void applyCover(Room room, List<RoomImage> images, String requestedCoverId) {
+        if (images.isEmpty()) {
+            room.setCoverUrl(null);
+            roomRepository.save(room);
+            return;
+        }
+
+        UUID coverId = parseUuidOrNull(requestedCoverId);
+        RoomImage cover = coverId != null
+                ? images.stream().filter(image -> coverId.equals(image.getId())).findFirst().orElse(null)
+                : null;
+        if (cover == null && room.getCoverUrl() != null) {
+            cover = images.stream()
+                    .filter(image -> room.getCoverUrl().equals(image.getUrl()))
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (cover == null) {
+            cover = images.get(0);
+        }
+
+        for (RoomImage image : images) {
+            image.setCover(image.getId().equals(cover.getId()));
+            roomImageRepository.save(image);
+        }
+        room.setCoverUrl(cover.getUrl());
+        roomRepository.save(room);
+    }
+
+    private static List<String> normalizeImageUrls(RoomForm form) {
+        List<String> urls = new ArrayList<>();
+        if (form.getImageUrlsText() != null) {
+            for (String line : form.getImageUrlsText().split("\\R")) {
+                addUrl(urls, line);
+            }
+        }
+        if (form.getImageUrls() != null) {
+            for (String url : form.getImageUrls()) {
+                addUrl(urls, url);
+            }
+        }
+        return urls;
+    }
+
+    private static void addUrl(List<String> urls, String rawUrl) {
+        String url = blankSafe(rawUrl);
+        if (url != null && urls.stream().noneMatch(url::equals)) {
+            urls.add(url);
+        }
+    }
+
+    private static Set<UUID> parseUuidSet(List<String> values) {
+        Set<UUID> ids = new HashSet<>();
+        if (values == null) {
+            return ids;
+        }
+        for (String value : values) {
+            UUID id = parseUuidOrNull(value);
+            if (id != null) {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private static UUID parseUuidOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value.trim());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     private String ensureUniqueSlug(String base) {

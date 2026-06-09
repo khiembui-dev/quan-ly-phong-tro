@@ -2,97 +2,123 @@
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/customer-layout}"
-      lang="vi">
+      th:lang="${currentLang}">
 <head><title>Hóa đơn - SmartRent</title></head>
 <body>
-<div layout:fragment="content" class="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-16">
-
-    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+<div layout:fragment="content" class="customer-page">
+    <header class="customer-page-heading">
         <div>
-            <span class="eyebrow">Thanh toán</span>
-            <h1 class="text-[28px] sm:text-[34px] font-bold tracking-tight mt-2">Hóa đơn</h1>
-            <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5">
-                Theo dõi hóa đơn, xem đầy đủ từng khoản phí và thanh toán tự động.
-            </p>
+            <span class="customer-eyebrow">Thanh toán</span>
+            <h1>Hóa đơn các tháng</h1>
+            <p>Theo dõi từng khoản phí, hạn thanh toán và lịch sử đã trả.</p>
         </div>
-        <a href="/me#rooms" class="btn btn-glass btn-sm">
-            <i data-lucide="home" class="w-3.5 h-3.5"></i>
-            Phòng đang ở
-        </a>
-    </div>
+        <a href="/customer/dashboard#rooms" class="btn btn-glass"><i data-lucide="home"></i> Phòng của tôi</a>
+    </header>
 
-    <div th:if="${invoices != null and !invoices.isEmpty()}" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-        <div class="surface p-4">
-            <div class="kpi-label">Tổng hóa đơn</div>
-            <div class="text-[24px] font-extrabold tnum mt-1" th:text="${invoices.size()}">12</div>
-        </div>
-        <div class="surface p-4">
-            <div class="kpi-label">Đã thanh toán</div>
-            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--ok)]" th:text="${paidCount}">0</div>
-        </div>
-        <div class="surface p-4">
-            <div class="kpi-label">Chờ thanh toán</div>
-            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--warn)]" th:text="${openCount}">0</div>
-        </div>
-        <div class="surface p-4">
-            <div class="kpi-label">Quá hạn</div>
-            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--err)]" th:text="${overdueCount}">0</div>
-        </div>
-    </div>
+    <section class="customer-stat-grid">
+        <article><span class="is-warning"><i data-lucide="wallet"></i></span><div><small>Tổng còn nợ</small><b th:text="${h.vnd(totalDebt)}">0đ</b></div></article>
+        <article><span class="is-success"><i data-lucide="badge-check"></i></span><div><small>Đã thanh toán</small><b th:text="${h.vnd(paidTotal)}">0đ</b></div></article>
+        <article><span class="is-danger"><i data-lucide="triangle-alert"></i></span><div><small>Đang quá hạn</small><b th:text="${h.vnd(overdueTotal)}">0đ</b></div></article>
+    </section>
 
-    <div class="table-wrap">
-        <table class="data-table">
-            <thead>
-            <tr>
-                <th>Mã</th>
-                <th>Kỳ</th>
-                <th>Số tiền</th>
-                <th>Hạn</th>
-                <th>Trạng thái</th>
-                <th class="text-right">Thao tác</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="i : ${invoices}">
-                <td>
-                    <a th:href="@{'/me/invoices/' + ${i.id}}"
-                       class="mono text-[12px] text-[color:var(--accent)] hover:underline"
-                       th:text="${i.code}">INV-001</a>
-                </td>
-                <td class="tnum" th:text="${i.periodMonth + '/' + i.periodYear}">5/2026</td>
-                <td class="font-semibold tnum" th:text="${h.vnd(i.totalAmount)}">7tr</td>
-                <td class="tnum" th:text="${#temporals.format(i.dueDate, 'dd/MM/yyyy')}">10/05/2026</td>
-                <td>
-                    <span class="badge"
-                          th:classappend="${i.status.name() == 'PAID' ? 'badge-emerald' : (i.status.name() == 'OVERDUE' ? 'badge-rose' : (i.status.name() == 'CANCELLED' ? 'badge-mute' : 'badge-amber'))}">
-                        <span th:if="${i.status.name() == 'PENDING'}" class="dot dot-pulse" style="background:currentColor"></span>
-                        <span th:switch="${i.status.name()}">
-                            <span th:case="'PAID'">Đã trả</span>
-                            <span th:case="'PENDING'">Chờ thanh toán</span>
-                            <span th:case="'PARTIALLY_PAID'">Trả 1 phần</span>
-                            <span th:case="'OVERDUE'">Quá hạn</span>
-                            <span th:case="'CANCELLED'">Đã hủy</span>
-                        </span>
+    <form action="/customer/invoices" method="get" class="customer-invoice-filters">
+        <input type="hidden" name="size" th:value="${pageSize}" />
+        <label>
+            <span>Tháng</span>
+            <select name="month" class="customer-select">
+                <option value="">Tất cả tháng</option>
+                <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}"
+                        th:selected="${filterMonth != null and filterMonth == m}"
+                        th:text="${'Tháng ' + m}">Tháng</option>
+            </select>
+        </label>
+        <label>
+            <span>Năm</span>
+            <select name="year" class="customer-select">
+                <option value="">Tất cả năm</option>
+                <option th:each="y : ${invoiceYears}" th:value="${y}"
+                        th:selected="${filterYear != null and filterYear == y}"
+                        th:text="${y}">2026</option>
+            </select>
+        </label>
+        <label>
+            <span>Trạng thái</span>
+            <select name="status" class="customer-select">
+                <option value="">Tất cả trạng thái</option>
+                <option value="PENDING" th:selected="${filterStatus == 'PENDING'}">Chưa thanh toán</option>
+                <option value="PARTIALLY_PAID" th:selected="${filterStatus == 'PARTIALLY_PAID'}">Đã trả một phần</option>
+                <option value="PAID" th:selected="${filterStatus == 'PAID'}">Đã thanh toán</option>
+                <option value="OVERDUE" th:selected="${filterStatus == 'OVERDUE'}">Quá hạn</option>
+                <option value="CANCELLED" th:selected="${filterStatus == 'CANCELLED'}">Đã hủy</option>
+            </select>
+        </label>
+        <button type="submit" class="btn btn-primary"><i data-lucide="filter"></i> Lọc</button>
+        <a href="/customer/invoices" class="btn btn-ghost">Xóa lọc</a>
+    </form>
+
+    <section th:if="${invoices != null and !invoices.isEmpty()}" class="customer-invoice-list">
+        <article th:each="invoice : ${invoices}" class="customer-invoice-card">
+            <header>
+                <div>
+                    <span class="customer-invoice-period" th:text="${'Tháng ' + invoice.periodMonth + '/' + invoice.periodYear}">Tháng</span>
+                    <h2 th:text="${invoice.code}">PT-HD-1</h2>
+                </div>
+                <span class="customer-status"
+                      th:classappend="${invoice.status.name() == 'PAID' ? 'is-success' : (invoice.status.name() == 'OVERDUE' ? 'is-danger' : (invoice.status.name() == 'CANCELLED' ? 'is-muted' : 'is-warning'))}">
+                    <span th:switch="${invoice.status.name()}">
+                        <span th:case="'PAID'">Đã thanh toán</span>
+                        <span th:case="'OVERDUE'">Quá hạn</span>
+                        <span th:case="'PARTIALLY_PAID'">Đã trả một phần</span>
+                        <span th:case="'CANCELLED'">Đã hủy</span>
+                        <span th:case="*">Chưa thanh toán</span>
                     </span>
-                </td>
-                <td class="text-right">
-                    <a th:href="@{'/me/invoices/' + ${i.id}}" class="btn btn-soft btn-sm">
-                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                        Xem phí
-                    </a>
-                </td>
-            </tr>
-            <tr th:if="${invoices == null or invoices.isEmpty()}">
-                <td colspan="6" class="text-center py-12">
-                    <div class="empty-icon mx-auto mb-4">
-                        <i data-lucide="receipt" class="w-7 h-7"></i>
-                    </div>
-                    <h3 class="text-[16px] font-semibold">Chưa có hóa đơn nào</h3>
-                    <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Hóa đơn sẽ xuất hiện khi chủ nhà phát hành cho phòng bạn đang thuê.</p>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+                </span>
+            </header>
+
+            <div class="customer-invoice-lines">
+                <div><span>Tiền phòng</span><b th:text="${h.vnd(invoice.rentAmount)}">0đ</b></div>
+                <div><span>Tiền điện</span><b th:text="${h.vnd(invoice.electricAmount)}">0đ</b></div>
+                <div><span>Tiền nước</span><b th:text="${h.vnd(invoice.waterAmount)}">0đ</b></div>
+                <div><span>Dịch vụ / phí khác</span><b th:text="${h.vnd(invoice.serviceAmount.add(invoice.otherAmount))}">0đ</b></div>
+            </div>
+
+            <div class="customer-invoice-total">
+                <div>
+                    <span>Hạn thanh toán</span>
+                    <b th:text="${#temporals.format(invoice.dueDate, 'dd/MM/yyyy')}">--</b>
+                </div>
+                <div>
+                    <span>Tổng tiền</span>
+                    <strong th:text="${h.vnd(invoice.totalAmount)}">0đ</strong>
+                </div>
+            </div>
+
+            <footer>
+                <a th:href="@{'/customer/invoice-detail/' + ${invoice.id}}" class="btn btn-glass">
+                    <i data-lucide="eye"></i> Xem chi tiết
+                </a>
+                <a th:if="${invoice.status.name() != 'PAID' and invoice.status.name() != 'CANCELLED'}"
+                   th:href="@{'/customer/invoices/' + ${invoice.id} + '/pay'}"
+                   class="btn btn-primary">
+                    <i data-lucide="credit-card"></i> Thanh toán
+                </a>
+            </footer>
+        </article>
+    </section>
+
+    <div th:if="${invoicePage != null and invoicePage.totalElements > 0}"
+         th:replace="~{fragments/pagination :: pager(
+            currentPage=${invoicePage.number},
+            totalPages=${invoicePage.totalPages},
+            totalElements=${invoicePage.totalElements},
+            pageSize=${invoicePage.size},
+            baseUrl=@{/customer/invoices(month=${filterMonth},year=${filterYear},status=${filterStatus})} + '&'
+         )}"></div>
+
+    <div th:if="${invoices == null or invoices.isEmpty()}" class="customer-empty-state">
+        <i data-lucide="receipt"></i>
+        <h2>Chưa có hóa đơn</h2>
+        <p>Hóa đơn sẽ xuất hiện khi chủ trọ phát hành cho phòng bạn đang thuê.</p>
     </div>
 </div>
 </body>

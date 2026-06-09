@@ -62,7 +62,7 @@ public class AiAssistantService {
         if (p.contains("doanh thu")) {
             return isAdmin
                     ? "Doanh thu tháng này: 142.500.000₫ (+12.4% so với tháng trước).\n" +
-                      "Top 3 cơ sở: Glass Tower (58tr), Riverside (45tr), Lotus House (39tr).\n" +
+                      "Top 3 cơ sở: SmartRent Tower (58tr), Riverside (45tr), Lotus House (39tr).\n" +
                       "Dự báo Q2: ~430-460tr nếu tỉ lệ lấp đầy giữ ở mức 88%."
                     : "Tổng chi phí thuê + dịch vụ tháng này của bạn: 7.260.000₫. Hóa đơn còn 1 chưa thanh toán.";
         }
@@ -89,7 +89,7 @@ public class AiAssistantService {
                    "Trân trọng,\nSmartRent";
         }
         if (p.contains("thú cưng") || p.contains("pet")) {
-            return "Hiện có 2 phòng cho phép thú cưng: Riverside Q7 205 (7.8tr/tháng) và Glass Tower B-502 (penthouse 18tr). " +
+            return "Hiện có 2 phòng cho phép thú cưng: Riverside Q7 205 (7.8tr/tháng) và SmartRent Tower B-502 (penthouse 18tr). " +
                    "Cả 2 đều có ban công và gần công viên.";
         }
         if (p.contains("studio") && p.contains("đôi")) {
@@ -100,7 +100,7 @@ public class AiAssistantService {
         }
         if (p.contains("q1") || p.contains("quận 1")) {
             return "Phòng Quận 1 dưới 10 triệu hiện có:\n" +
-                   "• Studio Glass Tower 301 — 8.5tr — 28m² — view trung tâm.\n" +
+                   "• Studio SmartRent Tower 301 — 8.5tr — 28m² — view trung tâm.\n" +
                    "Bạn muốn mình lọc thêm theo tiêu chí gì (m², ban công, thú cưng…)?";
         }
         return isAdmin

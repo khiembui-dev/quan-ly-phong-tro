@@ -10,6 +10,8 @@ logs
 *.zip
 .env
 .env.local
+.env.prod
+.env.gemini
 HUONG_DAN_*.md
 BACKEND_SPLIT_GUIDE.md
 design_handoff_glass_living

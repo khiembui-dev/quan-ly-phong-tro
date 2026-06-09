@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - V8 add room.inherit_tariff
+-- SmartRent - V8 add room.inherit_tariff
 -- When TRUE (default), room ignores its own electric/water unit and
 -- inherits from its property. When FALSE, room values are used.
 -- ===================================================================

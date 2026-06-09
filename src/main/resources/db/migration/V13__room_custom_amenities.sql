@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - V13 add room.custom_amenities
+-- SmartRent - V13 add room.custom_amenities
 -- Per-room user-defined amenities outside the seeded amenity catalog.
 -- Stored as JSONB list of {name, category}.
 -- ===================================================================

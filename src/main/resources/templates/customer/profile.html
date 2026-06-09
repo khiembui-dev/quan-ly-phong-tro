@@ -2,11 +2,11 @@
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/customer-layout}"
-      lang="vi">
+      th:lang="${currentLang}">
 <head><title>Hồ sơ khách thuê - SmartRent</title></head>
 <body>
 <div layout:fragment="content"
-     class="max-w-[1120px] mx-auto px-4 sm:px-6 pt-8 pb-16"
+     class="customer-page customer-profile-page"
      x-data="{ tab: ['profile','docs','security'].includes(new URLSearchParams(window.location.search).get('tab')) ? new URLSearchParams(window.location.search).get('tab') : 'profile' }">
 
     <div class="mb-7">
@@ -53,10 +53,14 @@
     <div x-show="tab==='profile'" class="grid lg:grid-cols-[300px_1fr] gap-6">
         <aside class="glass p-6">
             <div class="flex items-center gap-4">
-                <div class="avatar avatar-xl avatar-violet" th:text="${#strings.substring(user.fullName, 0, 1)}">U</div>
+                <div class="avatar avatar-xl avatar-violet overflow-hidden">
+                    <img th:if="${user.avatarUrl != null}" th:src="${user.avatarUrl}" alt="Ảnh đại diện"
+                         class="w-full h-full object-cover" />
+                    <span th:unless="${user.avatarUrl != null}" th:text="${#strings.substring(user.fullName, 0, 1)}">U</span>
+                </div>
                 <div class="min-w-0">
                     <div class="text-[18px] font-semibold truncate" th:text="${user.fullName}">Nguyễn Văn A</div>
-                    <div class="text-[12px] text-[color:var(--text-mute)] truncate" th:text="${user.email}">tenant@glass.living</div>
+                    <div class="text-[12px] text-[color:var(--text-mute)] truncate" th:text="${user.email}">tenant@smartrent.local</div>
                 </div>
             </div>
             <div class="divider my-5"></div>
@@ -78,11 +82,30 @@
             </div>
         </aside>
 
-        <form action="/me/profile" method="post" class="glass p-6 space-y-5">
+        <form action="/me/profile" method="post" enctype="multipart/form-data"
+              class="glass-card customer-profile-form space-y-6" data-profile-form>
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <div>
                 <h2 class="text-[18px] font-semibold">Thông tin cá nhân</h2>
                 <p class="text-[12px] text-[color:var(--text-mute)] mt-1">Thông tin này giúp admin liên hệ và lập hóa đơn chính xác.</p>
+            </div>
+            <div class="customer-profile-avatar-upload">
+                <div class="customer-profile-avatar-preview">
+                    <img th:if="${user.avatarUrl != null}" th:src="${user.avatarUrl}" alt="Ảnh đại diện"
+                         data-profile-avatar-preview />
+                    <span th:unless="${user.avatarUrl != null}" data-profile-avatar-initial
+                          th:text="${#strings.substring(user.fullName, 0, 1)}">U</span>
+                </div>
+                <div class="min-w-0">
+                    <label class="form-label">Ảnh đại diện</label>
+                    <p class="form-help">JPG, PNG hoặc WEBP, tối đa 10MB.</p>
+                </div>
+                <label class="btn btn-glass btn-sm cursor-pointer ml-auto">
+                    <i data-lucide="image-plus" class="w-4 h-4"></i>
+                    Chọn ảnh
+                    <input name="avatar" type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
+                           data-profile-avatar-input />
+                </label>
             </div>
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
@@ -104,7 +127,8 @@
                     <label class="form-label">Số điện thoại</label>
                     <div class="input-glass">
                         <i data-lucide="phone" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                        <input name="phone" type="tel" maxlength="20" placeholder="0901xxxxxx" th:value="${user.phone}" />
+                        <input name="phone" type="tel" maxlength="20" placeholder="0901xxxxxx" th:value="${user.phone}"
+                               pattern="(0|\+84|84)[0-9\s().-]{8,14}" />
                     </div>
                 </div>
                 <div>
@@ -148,7 +172,7 @@
           class="grid lg:grid-cols-[1fr_360px] gap-6">
         <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
-        <section class="glass p-6 space-y-5">
+        <section class="glass-card space-y-5">
             <div>
                 <h2 class="text-[18px] font-semibold">CCCD/CMND</h2>
                 <p class="text-[12px] text-[color:var(--text-mute)] mt-1">
@@ -161,7 +185,7 @@
                     <label class="form-label">Loại giấy tờ</label>
                     <div class="input-glass">
                         <i data-lucide="id-card" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                        <select name="identityType">
+                        <select name="identityType" required data-identity-type>
                             <option value="" th:selected="${user.identityType == null}">Chọn loại giấy tờ</option>
                             <option value="CCCD" th:selected="${user.identityType != null and user.identityType.name() == 'CCCD'}">CCCD</option>
                             <option value="CMND" th:selected="${user.identityType != null and user.identityType.name() == 'CMND'}">CMND</option>
@@ -174,14 +198,14 @@
                     <div class="input-glass">
                         <i data-lucide="hash" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
                         <input name="identityNumber" type="text" maxlength="32" th:value="${user.identityNumber}"
-                               placeholder="Nhập số CCCD/CMND" />
+                               placeholder="Nhập số CCCD/CMND" required data-identity-number />
                     </div>
                 </div>
                 <div>
                     <label class="form-label">Ngày cấp</label>
                     <div class="input-glass">
                         <i data-lucide="calendar" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                        <input name="identityIssuedDate" type="date" th:value="${user.identityIssuedDate}" />
+                        <input name="identityIssuedDate" type="date" th:value="${user.identityIssuedDate}" required />
                     </div>
                 </div>
                 <div>
@@ -189,7 +213,7 @@
                     <div class="input-glass">
                         <i data-lucide="landmark" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
                         <input name="identityIssuedPlace" type="text" maxlength="160" th:value="${user.identityIssuedPlace}"
-                               placeholder="Cục CSQLHC về TTXH..." />
+                               placeholder="Cục CSQLHC về TTXH..." required minlength="2" />
                     </div>
                 </div>
             </div>
@@ -199,7 +223,7 @@
                 <div class="input-glass">
                     <i data-lucide="map-pinned" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
                     <input name="permanentAddress" type="text" maxlength="240" th:value="${user.permanentAddress}"
-                           placeholder="Địa chỉ theo giấy tờ" />
+                           placeholder="Địa chỉ theo giấy tờ" required minlength="5" />
                 </div>
             </div>
 
@@ -228,7 +252,8 @@
                     <label class="btn btn-glass btn-sm w-full mt-3 cursor-pointer">
                         <i data-lucide="upload" class="w-3.5 h-3.5"></i>
                         Chọn ảnh mặt trước
-                        <input name="identityFront" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
+                        <input name="identityFront" type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
+                               th:required="${user.identityFrontUrl == null}" />
                     </label>
                 </div>
 
@@ -256,7 +281,8 @@
                     <label class="btn btn-glass btn-sm w-full mt-3 cursor-pointer">
                         <i data-lucide="upload" class="w-3.5 h-3.5"></i>
                         Chọn ảnh mặt sau
-                        <input name="identityBack" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
+                        <input name="identityBack" type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
+                               th:required="${user.identityBackUrl == null}" />
                     </label>
                 </div>
             </div>
@@ -269,7 +295,7 @@
             </div>
         </section>
 
-        <aside class="glass p-6 h-fit">
+        <aside class="glass-card h-fit">
             <h3 class="font-semibold text-[16px]">Trạng thái hồ sơ</h3>
             <div class="mt-4 space-y-3">
                 <div class="flex items-center justify-between gap-3 text-[13px]">
@@ -300,7 +326,7 @@
         </aside>
     </form>
 
-    <section x-show="tab==='security'" x-cloak class="glass p-6 max-w-2xl">
+    <section x-show="tab==='security'" x-cloak class="glass-card max-w-2xl">
         <h2 class="text-[18px] font-semibold">Bảo mật</h2>
         <p class="text-[13px] text-[color:var(--text-mute)] mt-1">
             Tài khoản đang dùng email <span class="font-semibold" th:text="${user.email}">email</span>. Chức năng đổi mật khẩu sẽ được xử lý ở màn hình bảo mật riêng.
@@ -319,5 +345,54 @@
     </section>
 
 </div>
+
+<th:block layout:fragment="extra-scripts">
+    <script>
+        (function () {
+            var avatarInput = document.querySelector('[data-profile-avatar-input]');
+            var preview = document.querySelector('[data-profile-avatar-preview]');
+            var initial = document.querySelector('[data-profile-avatar-initial]');
+            if (avatarInput) {
+                avatarInput.addEventListener('change', function () {
+                    var file = avatarInput.files && avatarInput.files[0];
+                    if (!file || !file.type || !file.type.startsWith('image/')) return;
+                    var url = URL.createObjectURL(file);
+                    if (!preview) {
+                        preview = document.createElement('img');
+                        preview.setAttribute('data-profile-avatar-preview', '');
+                        preview.alt = 'Ảnh đại diện';
+                        avatarInput.closest('.customer-profile-avatar-upload')
+                            .querySelector('.customer-profile-avatar-preview')
+                            .appendChild(preview);
+                    }
+                    preview.src = url;
+                    if (initial) initial.hidden = true;
+                });
+            }
+
+            var identityType = document.querySelector('[data-identity-type]');
+            var identityNumber = document.querySelector('[data-identity-number]');
+            function updateIdentityPattern() {
+                if (!identityType || !identityNumber) return;
+                var type = identityType.value;
+                if (type === 'CCCD') {
+                    identityNumber.pattern = '[0-9]{12}';
+                    identityNumber.title = 'CCCD phải gồm đúng 12 chữ số.';
+                } else if (type === 'CMND') {
+                    identityNumber.pattern = '([0-9]{9}|[0-9]{12})';
+                    identityNumber.title = 'CMND phải gồm 9 hoặc 12 chữ số.';
+                } else if (type === 'PASSPORT') {
+                    identityNumber.pattern = '[A-Za-z0-9]{6,12}';
+                    identityNumber.title = 'Hộ chiếu phải gồm 6 đến 12 ký tự chữ hoặc số.';
+                } else {
+                    identityNumber.removeAttribute('pattern');
+                    identityNumber.removeAttribute('title');
+                }
+            }
+            updateIdentityPattern();
+            if (identityType) identityType.addEventListener('change', updateIdentityPattern);
+        })();
+    </script>
+</th:block>
 </body>
 </html>

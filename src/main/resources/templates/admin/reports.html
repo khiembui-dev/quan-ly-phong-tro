@@ -263,7 +263,7 @@
         </div>
     </div>
 
-    <div class="glass p-4 mb-5">
+    <div class="glass-card mb-5">
         <form method="get" action="/admin/reports" class="grid sm:grid-cols-2 xl:grid-cols-7 gap-3 items-end">
             <div>
                 <label class="form-label">Từ tháng</label>
@@ -304,7 +304,7 @@
                         <option th:each="p : ${report.properties}"
                                 th:value="${p.id}"
                                 th:selected="${selectedPropertyId != null and p.id.equals(selectedPropertyId)}"
-                                th:text="${p.name}">Glass Tower</option>
+                                th:text="${p.name}">SmartRent Tower</option>
                     </select>
                 </div>
             </div>
@@ -355,7 +355,7 @@
     </div>
 
     <div class="grid 2xl:grid-cols-[1.45fr_.75fr] gap-5 mb-5">
-        <div class="glass p-5 report-chart-shell">
+        <div class="glass-card report-chart-shell">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
                 <div>
                     <span class="eyebrow">Thu tiền</span>
@@ -435,7 +435,7 @@
             </div>
         </div>
 
-        <div class="glass p-5 report-chart-shell">
+        <div class="glass-card report-chart-shell">
             <div class="flex items-start justify-between gap-3 mb-5">
                 <div>
                     <span class="eyebrow">Hiện trạng</span>

@@ -20,7 +20,7 @@
             <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5">Các phòng bạn đã đánh dấu để xem lại sau.</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="/" class="btn btn-glass btn-sm">
+            <a href="/customer/booking" class="btn btn-glass btn-sm">
                 <i data-lucide="search" class="w-4 h-4"></i>
                 Khám phá thêm
             </a>
@@ -33,15 +33,15 @@
         </th:block>
     </div>
 
-    <div th:if="${rooms == null or rooms.isEmpty()}" class="empty">
-        <div class="empty-icon" style="background: #fef2f2; color: #dc2626;">
+    <div th:if="${rooms == null or rooms.isEmpty()}" class="empty-state">
+        <div class="empty-state-icon" style="background: #fef2f2; color: #dc2626;">
             <i data-lucide="heart-off" class="w-7 h-7"></i>
         </div>
         <h3 class="text-[17px] font-semibold">Chưa có phòng yêu thích</h3>
         <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5 max-w-md mx-auto">
             Khám phá danh sách phòng và bấm trái tim để lưu các phòng bạn quan tâm — quay lại xem bất cứ lúc nào.
         </p>
-        <a href="/" class="btn btn-primary mt-5">
+        <a href="/customer/booking" class="btn btn-primary mt-5">
             <i data-lucide="search" class="w-4 h-4"></i>
             Khám phá phòng
         </a>

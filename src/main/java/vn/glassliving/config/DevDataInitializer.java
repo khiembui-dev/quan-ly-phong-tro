@@ -67,7 +67,7 @@ public class DevDataInitializer {
     @PostConstruct
     @Transactional
     public void seed() {
-        if (userRepository.existsByEmailIgnoreCase("owner@glass.living")) {
+        if (userRepository.existsByEmailIgnoreCase("owner@smartrent.local") || userRepository.existsByPhone("0901234567")) {
             log.info("Dev seed users already present, skipping.");
             return;
         }
@@ -75,17 +75,17 @@ public class DevDataInitializer {
 
         // Demo accounts. Password = "password123"
         User owner = userRepository.save(User.builder()
-                .email("owner@glass.living")
+                .email("owner@smartrent.local")
                 .emailVerified(true)
                 .phone("0901234567")
-                .fullName("Chủ trọ Glass")
+                .fullName("Chủ trọ SmartRent")
                 .passwordHash(passwordEncoder.encode("password123"))
                 .roles(Set.of(User.Role.OWNER))
                 .status(User.UserStatus.ACTIVE)
                 .build());
 
         User tenant = userRepository.save(User.builder()
-                .email("tenant@glass.living")
+                .email("tenant@smartrent.local")
                 .emailVerified(true)
                 .phone("0907654321")
                 .fullName("Khách Nguyễn Văn A")
@@ -94,29 +94,19 @@ public class DevDataInitializer {
                 .status(User.UserStatus.ACTIVE)
                 .build());
 
-        userRepository.save(User.builder()
-                .email("admin@glass.living")
-                .emailVerified(true)
-                .phone("0900000099")
-                .fullName("Quản trị viên")
-                .passwordHash(passwordEncoder.encode("password123"))
-                .roles(Set.of(User.Role.ADMIN))
-                .status(User.UserStatus.ACTIVE)
-                .build());
-
         // 3 properties, several rooms
         Property gt = propertyRepository.save(Property.builder()
-                .ownerId(owner.getId()).name("Glass Tower").slug("glass-tower")
+                .ownerId(owner.getId()).name("SmartRent Tower").slug("smartrent-tower")
                 .description("Tòa nhà cao cấp giữa lòng Quận 1")
-                .addressLine("128 Nguyễn Huệ").district("Quận 1").city("TP.HCM").totalRooms(2).build());
+                .addressLine("128 Nguyễn Huệ").district("Quận 1").city("TP.HCM").totalRooms(1).build());
         Property lh = propertyRepository.save(Property.builder()
                 .ownerId(owner.getId()).name("Lotus House").slug("lotus-house")
                 .description("Nhà trọ cao cấp Q3 yên tĩnh")
-                .addressLine("45 Võ Văn Tần").district("Quận 3").city("TP.HCM").totalRooms(2).build());
+                .addressLine("45 Võ Văn Tần").district("Quận 3").city("TP.HCM").totalRooms(1).build());
         Property rs = propertyRepository.save(Property.builder()
                 .ownerId(owner.getId()).name("Riverside").slug("riverside-q7")
                 .description("View sông Q7 mát mẻ")
-                .addressLine("88 Nguyễn Thị Thập").district("Quận 7").city("TP.HCM").totalRooms(2).build());
+                .addressLine("88 Nguyễn Thị Thập").district("Quận 7").city("TP.HCM").totalRooms(0).build());
 
         // Amenity lookup by code (V2 migration seeded these)
         Map<String, Amenity> amenities = amenityRepository.findAll().stream()
@@ -126,38 +116,18 @@ public class DevDataInitializer {
                 "WIFI", "AIR_CON", "WATER_HEATER", "FRIDGE", "KITCHEN",
                 "WASHING", "PARKING", "SECURITY_24", "CCTV", "POOL", "GYM", "ELEVATOR", "BALCONY");
 
-        Room r1 = roomRepository.save(buildRoom(gt, owner.getId(), "GT-A-301", "studio-glass-tower-301",
-                "Studio Glass Tower 301", Room.RoomType.STUDIO, (short) 3, "28.50",
+        Room r1 = roomRepository.save(buildRoom(gt, owner.getId(), "GT-A-301", "studio-smartrent-tower-301",
+                "Studio SmartRent Tower 301", Room.RoomType.STUDIO, (short) 3, "28.50",
                 "8500000", "8500000", "500000", "Quận 1", "TP.HCM", true, false,
                 Room.RoomStatus.AVAILABLE, "4.92", 234, 1245));
-        roomRepository.save(buildRoom(gt, owner.getId(), "GT-B-502", "penthouse-glass-tower-502",
-                "Penthouse Glass Tower 502", Room.RoomType.PENTHOUSE, (short) 5, "65.00",
-                "18000000", "18000000", "1200000", "Quận 1", "TP.HCM", true, true,
-                Room.RoomStatus.AVAILABLE, "4.85", 89, 670));
         Room r3 = roomRepository.save(buildRoom(lh, owner.getId(), "LH-201", "phong-doi-lotus-201",
                 "Phòng đôi Lotus 201", Room.RoomType.DOUBLE, (short) 2, "22.00",
                 "6500000", "6500000", "300000", "Quận 3", "TP.HCM", false, false,
                 Room.RoomStatus.OCCUPIED, "4.71", 156, 980));
-        roomRepository.save(buildRoom(lh, owner.getId(), "LH-303", "studio-lotus-303",
-                "Studio Lotus 303", Room.RoomType.STUDIO, (short) 3, "25.00",
-                "6800000", "6800000", "300000", "Quận 3", "TP.HCM", false, false,
-                Room.RoomStatus.MAINTENANCE, "4.40", 12, 56));
-        roomRepository.save(buildRoom(rs, owner.getId(), "RS-101", "riverside-q7-101",
-                "Riverside Q7 101", Room.RoomType.STUDIO, (short) 1, "32.00",
-                "7500000", "7500000", "400000", "Quận 7", "TP.HCM", true, false,
-                Room.RoomStatus.AVAILABLE, "4.66", 67, 432));
-        Room r5 = roomRepository.save(buildRoom(rs, owner.getId(), "RS-205", "riverside-q7-205",
-                "Riverside Q7 205", Room.RoomType.STUDIO, (short) 2, "30.00",
-                "7800000", "7800000", "400000", "Quận 7", "TP.HCM", true, true,
-                Room.RoomStatus.AVAILABLE, "4.55", 23, 110));
 
         // Attach amenities to all rooms
         attachAmenities(r1, premiumAmenities);
         attachAmenities(r3, baseAmenities);
-        attachAmenities(r5, premiumAmenities);
-        roomRepository.findBySlug("penthouse-glass-tower-502").ifPresent(r -> attachAmenities(r, premiumAmenities));
-        roomRepository.findBySlug("studio-lotus-303").ifPresent(r -> attachAmenities(r, baseAmenities));
-        roomRepository.findBySlug("riverside-q7-101").ifPresent(r -> attachAmenities(r, premiumAmenities));
 
         // Seed room images via Unsplash CDN (free hot-link).
         // 5 photos per room — front, living, bedroom, kitchen, bath.
@@ -175,34 +145,6 @@ public class DevDataInitializer {
                 "1502672260266-1c1ef2d93688",
                 "1556912173-3bb406ef7e77"
         });
-        seedImages(r5, new String[]{
-                "1567767292278-a4f21aa2d36e",
-                "1505691938895-1758d7feb511",
-                "1631679706909-1844bbd07221",
-                "1556909114-f6e7ad7d3136",
-                "1620626011761-996317b8d101"
-        });
-        roomRepository.findBySlug("penthouse-glass-tower-502").ifPresent(r -> seedImages(r, new String[]{
-                "1502672023488-70e25813eb80",
-                "1505691938895-1758d7feb511",
-                "1493809842364-78817add7ffb",
-                "1556909114-f6e7ad7d3136",
-                "1554995207-c18c203602cb"
-        }));
-        roomRepository.findBySlug("studio-lotus-303").ifPresent(r -> seedImages(r, new String[]{
-                "1522708323590-d24dbb6b0267",
-                "1540518614846-7eded433c457",
-                "1556909114-f6e7ad7d3136",
-                "1620626011761-996317b8d101",
-                "1493809842364-78817add7ffb"
-        }));
-        roomRepository.findBySlug("riverside-q7-101").ifPresent(r -> seedImages(r, new String[]{
-                "1502672260266-1c1ef2d93688",
-                "1505693416388-ac5ce068fe85",
-                "1556912173-3bb406ef7e77",
-                "1552321554-5fefe8c9ef14",
-                "1631049307264-da0ec9d70304"
-        }));
 
         // Active contract on LH-201 for tenant
         Contract contract = contractRepository.save(Contract.builder()
@@ -302,9 +244,6 @@ public class DevDataInitializer {
         seedReading(owner.getId(), lh.getId(), r3.getId(), (short) 2026, (short) 5,
                 java.time.LocalDate.of(2026, 5, 31),
                 "2493", "2588", "4000", "11.0", "14.2", "25000");
-        seedReading(owner.getId(), rs.getId(), r5.getId(), (short) 2026, (short) 5,
-                java.time.LocalDate.of(2026, 5, 31),
-                "560", "612", "3800", "5.5", "7.8", "22000");
 
         // ----- Sample maintenance tickets -----
         maintenanceTicketRepository.save(MaintenanceTicket.builder()
@@ -329,20 +268,6 @@ public class DevDataInitializer {
                 .estimatedCost(new BigDecimal("250000"))
                 .scheduledFor(java.time.OffsetDateTime.now().plusDays(1))
                 .reportedAt(java.time.OffsetDateTime.now().minusDays(2))
-                .build());
-        maintenanceTicketRepository.save(MaintenanceTicket.builder()
-                .code("REQ-20260420-0003").ownerId(owner.getId())
-                .propertyId(rs.getId()).roomId(r5.getId()).reporterUserId(tenant.getId())
-                .category(MaintenanceTicket.Category.INTERNET)
-                .priority(MaintenanceTicket.Priority.NORMAL)
-                .status(MaintenanceTicket.Status.RESOLVED)
-                .title("Wi-Fi yếu vào giờ cao điểm")
-                .description("Wi-Fi yếu/mất sóng từ 19h-22h hằng ngày.")
-                .estimatedCost(new BigDecimal("150000"))
-                .actualCost(new BigDecimal("120000"))
-                .resolvedAt(java.time.OffsetDateTime.now().minusDays(1))
-                .resolutionNote("Đã thay router, kiểm tra đường truyền nhà mạng — đã ổn định.")
-                .reportedAt(java.time.OffsetDateTime.now().minusDays(10))
                 .build());
         maintenanceTicketRepository.save(MaintenanceTicket.builder()
                 .code("REQ-20260415-0004").ownerId(owner.getId())
@@ -373,7 +298,7 @@ public class DevDataInitializer {
                 .quietHoursEnd((short) 8)
                 .build());
 
-        log.info("Dev seed complete. Login: owner@/tenant@/admin@glass.living  pwd: password123");
+        log.info("Dev seed complete. Login: owner@smartrent.local / tenant@smartrent.local  pwd: password123");
     }
 
     private void seedReading(UUID ownerId, UUID propertyId, UUID roomId,

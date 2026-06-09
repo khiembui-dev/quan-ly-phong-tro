@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title th:text="${roomFormHeading != null ? roomFormHeading + ' — SmartRent' : 'Thêm phòng — SmartRent'}">Thêm phòng — SmartRent</title></head>
+<body>
+<div layout:fragment="content" class="rooms-page room-create-page">
+    <section class="rooms-hero reveal reveal-1">
+        <div class="min-w-0">
+            <a th:href="${roomFormBackUrl != null ? roomFormBackUrl : '/admin/rooms'}" class="properties-back-link">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Quay lại
+            </a>
+            <h1 th:text="${roomFormHeading != null ? roomFormHeading : 'Thêm phòng'}">Thêm phòng</h1>
+            <p th:text="${roomFormDescription != null ? roomFormDescription : 'Nhập thông tin phòng, giá thuê và tiện nghi hiển thị.'}">Nhập thông tin phòng, giá thuê và tiện nghi hiển thị.</p>
+        </div>
+    </section>
+
+    <form th:action="${roomFormAction != null ? roomFormAction : '/admin/rooms/create'}"
+          method="post"
+          enctype="multipart/form-data"
+          th:object="${form}"
+          class="room-create-form reveal reveal-2"
+          data-room-create-form
+          th:data-submit-loading-text="${roomFormSubmitLoading != null ? roomFormSubmitLoading : 'Đang tạo...'}"
+          th:data-init-status="*{status}"
+          th:data-init-inherit="*{inheritTariff}"
+          x-data="{ inherit: $el.dataset.initInherit !== 'false', status: $el.dataset.initStatus || 'AVAILABLE' }"
+          novalidate>
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <input type="hidden" name="addressLine" data-field="addressLine" data-full-address th:value="*{addressLine}" />
+
+        <div th:if="${#fields.hasGlobalErrors()}" class="property-form-alert">
+            <i data-lucide="circle-alert" class="w-4 h-4"></i>
+            <div>
+                <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Có lỗi khi tạo phòng.</p>
+            </div>
+        </div>
+
+        <section class="room-form-section">
+            <div class="room-form-head">
+                <span>1</span>
+                <div>
+                    <h2>Cơ sở và địa chỉ</h2>
+                </div>
+            </div>
+
+            <div class="room-form-grid">
+                <label class="room-form-field room-form-field-wide">
+                    <span>Cơ sở <b>*</b></span>
+                    <select name="propertyId" data-field="propertyId" data-property-select>
+                        <option value="">Chọn cơ sở</option>
+                        <option th:each="p : ${properties}"
+                                th:value="${p.id}"
+                                th:selected="*{propertyId} == ${p.id.toString()}"
+                                th:data-address="${p.addressLine + ', ' + p.district + ', ' + p.city}"
+                                th:data-electric="${p.electricUnit}"
+                                th:data-water="${p.waterUnit}"
+                                th:data-service="${p.serviceFeeDefault}"
+                                th:text="${p.name}">Cơ sở</option>
+                    </select>
+                    <small data-error-for="propertyId" th:if="${#fields.hasErrors('propertyId')}" th:errors="*{propertyId}">Vui lòng chọn cơ sở.</small>
+                    <small data-error-for="propertyId" th:unless="${#fields.hasErrors('propertyId')}"></small>
+                </label>
+
+                <div class="room-form-field room-address-preview room-form-field-wide">
+                    <span>Địa chỉ từ cơ sở</span>
+                    <output data-address-preview th:text="*{addressLine} ?: 'Chọn cơ sở để lấy địa chỉ.'">Chọn cơ sở để lấy địa chỉ.</output>
+                    <small data-error-for="addressLine" th:if="${#fields.hasErrors('addressLine')}" th:errors="*{addressLine}">Vui lòng chọn cơ sở có địa chỉ.</small>
+                    <small data-error-for="addressLine" th:unless="${#fields.hasErrors('addressLine')}"></small>
+                </div>
+            </div>
+
+            <p class="property-address-status" data-address-status aria-live="polite"></p>
+        </section>
+
+        <section class="room-form-section">
+            <div class="room-form-head">
+                <span>2</span>
+                <div>
+                    <h2>Thông tin phòng</h2>
+                </div>
+            </div>
+
+            <div class="room-form-grid room-main-info-grid">
+                <label class="room-form-field">
+                    <span>Mã phòng</span>
+                    <input type="text" name="code" th:value="*{code}" maxlength="32" autocomplete="off" placeholder="VD: A301" />
+                    <small th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></small>
+                </label>
+
+                <label class="room-form-field">
+                    <span>Tên phòng</span>
+                    <input type="text" name="title" th:value="*{title}" maxlength="200" autocomplete="off" placeholder="Tự tạo nếu để trống" />
+                    <small th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></small>
+                </label>
+
+                <label class="room-form-field">
+                    <span>Loại phòng</span>
+                    <select name="type">
+                        <option value="BOARDING" th:selected="*{type} == 'BOARDING'">Phòng trọ</option>
+                        <option value="STUDIO" th:selected="*{type} == 'STUDIO'">Studio</option>
+                        <option value="SINGLE" th:selected="*{type} == 'SINGLE'">Phòng đơn</option>
+                        <option value="DOUBLE" th:selected="*{type} == 'DOUBLE'">Phòng đôi</option>
+                        <option value="APARTMENT" th:selected="*{type} == 'APARTMENT'">Căn hộ</option>
+                        <option value="PENTHOUSE" th:selected="*{type} == 'PENTHOUSE'">Penthouse</option>
+                        <option value="OTHER" th:selected="*{type} == 'OTHER'">Khác</option>
+                    </select>
+                </label>
+
+                <label class="room-form-field">
+                    <span>Diện tích (m²) <b>*</b></span>
+                    <input type="text" name="areaSqm" th:value="*{areaSqm}" inputmode="decimal" data-field="areaSqm" data-decimal-input placeholder="20" />
+                    <small data-error-for="areaSqm" th:if="${#fields.hasErrors('areaSqm')}" th:errors="*{areaSqm}">Diện tích phải lớn hơn 0.</small>
+                    <small data-error-for="areaSqm" th:unless="${#fields.hasErrors('areaSqm')}"></small>
+                </label>
+            </div>
+
+            <div class="room-info-builder">
+                <div class="room-info-builder-head">
+                    <div>
+                        <strong>Thông tin thêm</strong>
+                        <p>Ấn nút Thêm thông tin để nhập các thông tin như tầng của phòng, số phòng tắm, phòng ngủ, số người ở tối đa, số xe ở tối đa.</p>
+                    </div>
+                    <button type="button" class="btn btn-soft btn-sm" data-add-room-info>
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        Thêm thông tin
+                    </button>
+                </div>
+
+                <div class="room-info-list" data-room-info-list>
+                    <div th:each="infoText, stat : *{roomInfoTexts}" class="room-info-row" data-room-info-row>
+                        <label>
+                            <span>Nội dung</span>
+                            <input type="text"
+                                   th:name="${'roomInfoTexts[' + stat.index + ']'}"
+                                   th:value="${infoText}"
+                                   maxlength="100"
+                                   data-room-info-text
+                                   placeholder="VD: 1 phòng ngủ, tầng 3, tối đa 2 xe" />
+                        </label>
+                        <div class="room-info-actions">
+                            <button type="button" class="room-info-add" data-add-room-info-row title="Thêm tiếp">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </button>
+                            <button type="button" class="room-extra-remove" data-remove-room-info title="Xóa dòng">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="room-form-section">
+            <div class="room-form-head">
+                <span>3</span>
+                <div>
+                    <h2>Giá và trạng thái</h2>
+                </div>
+            </div>
+
+            <div class="room-form-grid">
+                <label class="room-form-field">
+                    <span>Giá thuê hằng tháng</span>
+                    <input type="text" name="priceMonthly" th:value="*{priceMonthly}" inputmode="numeric" data-field="priceMonthly" data-money-input placeholder="0" />
+                    <span class="property-money-preview" data-money-preview-for="priceMonthly"></span>
+                    <small data-error-for="priceMonthly" th:if="${#fields.hasErrors('priceMonthly')}" th:errors="*{priceMonthly}"></small>
+                    <small data-error-for="priceMonthly" th:unless="${#fields.hasErrors('priceMonthly')}"></small>
+                </label>
+
+                <label class="room-form-field">
+                    <span>Tiền cọc</span>
+                    <input type="text" name="depositAmount" th:value="*{depositAmount}" inputmode="numeric" data-field="depositAmount" data-money-input placeholder="0" />
+                    <span class="property-money-preview" data-money-preview-for="depositAmount"></span>
+                    <small data-error-for="depositAmount" th:if="${#fields.hasErrors('depositAmount')}" th:errors="*{depositAmount}"></small>
+                    <small data-error-for="depositAmount" th:unless="${#fields.hasErrors('depositAmount')}"></small>
+                </label>
+
+                <label class="room-form-field">
+                    <span>Trạng thái</span>
+                    <select name="status" x-model="status" data-field="status">
+                        <option value="AVAILABLE">Còn trống</option>
+                        <option value="OCCUPIED">Đang ở</option>
+                        <option value="MAINTENANCE">Bảo trì</option>
+                        <option value="HIDDEN">Tạm ẩn</option>
+                    </select>
+                </label>
+
+                <label class="room-form-field room-form-field-wide" x-show="status === 'OCCUPIED'" x-cloak>
+                    <span>Khách thuê hiện tại <b>*</b></span>
+                    <select name="currentTenantId" data-field="currentTenantId">
+                        <option value="">Chọn khách thuê</option>
+                        <option th:each="tenant : ${tenantUsers}"
+                                th:value="${tenant.id}"
+                                th:selected="*{currentTenantId} == ${tenant.id.toString()}"
+                                th:text="${tenant.fullName + ' · ' + tenant.email}">Khách thuê</option>
+                    </select>
+                    <small data-error-for="currentTenantId" th:if="${#fields.hasErrors('currentTenantId')}" th:errors="*{currentTenantId}"></small>
+                    <small data-error-for="currentTenantId" th:unless="${#fields.hasErrors('currentTenantId')}"></small>
+                </label>
+
+                <label class="room-form-field" x-show="status === 'OCCUPIED'" x-cloak>
+                    <span>Đã thanh toán đến</span>
+                    <input type="date" name="currentTenantPaidUntil" th:value="*{currentTenantPaidUntil}" />
+                </label>
+            </div>
+
+            <div class="room-tariff-panel" data-room-tariff-panel>
+                <div class="room-inherit-card">
+                    <label class="room-inherit-switch">
+                        <input type="hidden" name="_inheritTariff" value="on" />
+                        <input type="checkbox" name="inheritTariff" value="true" th:checked="*{inheritTariff}" x-model="inherit" data-inherit-toggle />
+                        <span class="room-inherit-knob"></span>
+                        <span class="room-inherit-copy">
+                            <strong>Kế thừa giá từ cơ sở</strong>
+                            <small>Điện, nước, phí dịch vụ và các chi phí cố định sẽ tự lấy theo cơ sở đã chọn.</small>
+                        </span>
+                    </label>
+                    <span class="room-inherit-state" data-inherit-state>Kế thừa đang bật</span>
+                </div>
+
+                <div class="room-inherited-summary" data-inherited-summary x-show="inherit" x-cloak>
+                    <div class="room-inherited-head">
+                        <div>
+                            <span>Đang lấy đơn giá từ</span>
+                            <strong data-inherited-property-name>Chưa chọn cơ sở</strong>
+                        </div>
+                        <small data-inherited-note>Chọn cơ sở để xem đầy đủ phí kế thừa.</small>
+                    </div>
+                    <div class="room-inherited-rate-grid" data-inherited-rate-grid></div>
+                    <div class="room-inherited-extra">
+                        <div class="room-inherited-extra-head">
+                            <span>Chi phí khác</span>
+                            <small>Internet, rác, quản lý và chi phí riêng của cơ sở</small>
+                        </div>
+                        <div class="room-inherited-fee-list" data-inherited-extra-fees></div>
+                    </div>
+                </div>
+
+                <div class="room-override-panel" x-show="!inherit" x-cloak>
+                    <div class="room-override-copy">
+                        <strong>Đơn giá riêng cho phòng này</strong>
+                        <span>Bỏ kế thừa để chỉnh điện, nước, phí dịch vụ và các chi phí cố định riêng.</span>
+                    </div>
+
+                    <div class="room-form-grid">
+                        <label class="room-form-field">
+                            <span>Phí dịch vụ riêng</span>
+                            <input type="text" name="serviceFee" th:value="*{serviceFee}" inputmode="numeric" data-field="serviceFee" data-money-input data-inherited-lock placeholder="0" />
+                            <span class="property-money-preview" data-money-preview-for="serviceFee"></span>
+                            <small data-error-for="serviceFee" th:if="${#fields.hasErrors('serviceFee')}" th:errors="*{serviceFee}"></small>
+                            <small data-error-for="serviceFee" th:unless="${#fields.hasErrors('serviceFee')}"></small>
+                        </label>
+                        <label class="room-form-field">
+                            <span>Giá điện riêng</span>
+                            <input type="text" name="electricUnit" th:value="*{electricUnit}" inputmode="numeric" data-field="electricUnit" data-money-input data-money-suffix="/ kWh" data-inherited-lock placeholder="0" />
+                            <span class="property-money-preview" data-money-preview-for="electricUnit"></span>
+                        </label>
+                        <label class="room-form-field">
+                            <span>Giá nước riêng</span>
+                            <input type="text" name="waterUnit" th:value="*{waterUnit}" inputmode="numeric" data-field="waterUnit" data-money-input data-money-suffix="/ m³" data-inherited-lock placeholder="0" />
+                            <span class="property-money-preview" data-money-preview-for="waterUnit"></span>
+                        </label>
+                    </div>
+
+                    <div class="room-fee-editor-head">
+                        <div>
+                            <strong>Chi phí cố định riêng</strong>
+                            <span>Ví dụ: Internet, rác, quản lý, gửi xe.</span>
+                        </div>
+                        <button type="button" class="btn btn-soft btn-sm" data-add-room-fee data-inherited-lock>
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            Thêm chi phí
+                        </button>
+                    </div>
+
+                    <div class="room-extra-list room-fee-list" data-room-fee-list>
+                        <div th:each="feeName, stat : *{extraFeeNames}" class="room-extra-row room-tariff-fee-row" data-room-fee-row>
+                            <label>
+                                <span>Tên chi phí</span>
+                                <input type="text"
+                                       th:name="${'extraFeeNames[' + stat.index + ']'}"
+                                       th:value="${feeName}"
+                                       maxlength="80"
+                                       data-room-fee-name
+                                       data-inherited-lock
+                                       placeholder="VD: Internet" />
+                            </label>
+                            <label>
+                                <span>Số tiền</span>
+                                <input type="text"
+                                       th:name="${'extraFeeAmounts[' + stat.index + ']'}"
+                                       th:value="${form.extraFeeAmounts != null and stat.index < form.extraFeeAmounts.size() ? form.extraFeeAmounts[stat.index] : ''}"
+                                       inputmode="numeric"
+                                       data-money-input
+                                       data-room-fee-amount
+                                       data-inherited-lock
+                                       placeholder="0" />
+                                <span class="property-money-preview" data-room-fee-money-preview></span>
+                                <small class="property-extra-error" data-room-fee-error></small>
+                            </label>
+                            <div class="room-feature-actions">
+                                <button type="button" class="room-feature-add" data-add-room-fee-row data-inherited-lock title="Thêm tiếp">
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                </button>
+                                <button type="button" class="room-extra-remove" data-remove-room-fee data-inherited-lock title="Xóa dòng">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="room-form-section">
+            <div class="room-form-head room-extra-head">
+                <span>4</span>
+                <div>
+                    <h2>Tiện nghi và nội thất</h2>
+                </div>
+                <button type="button" class="btn btn-soft btn-sm" data-add-room-feature>
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    Thêm tiện ích / nội thất
+                </button>
+            </div>
+
+            <div class="room-feature-guide">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                <span>Có thể tick vào các mục có sẵn hoặc thêm tiện ích, nội thất bằng nút Thêm bên cạnh. Sau khi thêm một mục, dùng dấu + ở cuối dòng để thêm tiếp.</span>
+            </div>
+
+            <div class="room-amenity-groups">
+                <div th:each="grp : ${amenityGroups}" th:if="${grp.value != null and !grp.value.isEmpty()}" class="room-amenity-group">
+                    <h3 th:switch="${grp.key}">
+                        <span th:case="'FURNITURE'">Nội thất</span>
+                        <span th:case="'UTILITY'">Tiện ích</span>
+                        <span th:case="'RULE'">Quy định</span>
+                        <span th:case="*">Khác</span>
+                    </h3>
+                    <div class="room-amenity-chips">
+                        <label th:each="a : ${grp.value}">
+                            <input type="checkbox" name="amenityCodes" th:value="${a.code}" th:checked="${form.amenityCodes != null and form.amenityCodes.contains(a.code)}" />
+                            <span th:text="${a.name}">Tiện nghi</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="room-feature-list" data-room-feature-list>
+                <div th:each="featureName, stat : *{customAmenityNames}" class="room-extra-row room-feature-row" data-room-feature-row>
+                    <label>
+                        <span>Tên tiện ích/nội thất</span>
+                        <input type="text"
+                               th:name="${'customAmenityNames[' + stat.index + ']'}"
+                               th:value="${featureName}"
+                               maxlength="80"
+                               data-room-feature-name
+                               placeholder="VD: Tủ quần áo, máy lạnh" />
+                    </label>
+                    <label>
+                        <span>Nhóm</span>
+                        <select th:name="${'customAmenityCategories[' + stat.index + ']'}" data-room-feature-category>
+                            <option value="FURNITURE"
+                                    th:selected="${form.customAmenityCategories != null and stat.index < form.customAmenityCategories.size() and form.customAmenityCategories[stat.index] == 'FURNITURE'}">Nội thất</option>
+                            <option value="UTILITY"
+                                    th:selected="${form.customAmenityCategories == null or stat.index >= form.customAmenityCategories.size() or form.customAmenityCategories[stat.index] == 'UTILITY'}">Tiện ích</option>
+                            <option value="RULE"
+                                    th:selected="${form.customAmenityCategories != null and stat.index < form.customAmenityCategories.size() and form.customAmenityCategories[stat.index] == 'RULE'}">Quy định</option>
+                            <option value="OTHER"
+                                    th:selected="${form.customAmenityCategories != null and stat.index < form.customAmenityCategories.size() and form.customAmenityCategories[stat.index] == 'OTHER'}">Khác</option>
+                        </select>
+                    </label>
+                    <div class="room-feature-actions">
+                        <button type="button" class="room-feature-add" data-add-room-feature-row title="Thêm tiếp">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
+                        <button type="button" class="room-extra-remove" data-remove-room-feature title="Xóa dòng">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="room-form-section">
+            <div class="room-form-head">
+                <span>5</span>
+                <div>
+                    <h2>Ảnh phòng</h2>
+                </div>
+            </div>
+
+            <div class="room-image-manager">
+                <label class="room-image-upload">
+                    <input type="file"
+                           name="roomImages"
+                           accept="image/jpeg,image/png,image/webp"
+                           multiple
+                           data-room-image-input />
+                    <span class="room-image-upload-icon">
+                        <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                    </span>
+                    <span class="room-image-upload-copy">
+                        <strong>Chọn ảnh từ máy</strong>
+                        <small>JPG, PNG hoặc WEBP, tối đa 10MB/ảnh.</small>
+                    </span>
+                </label>
+                <div class="room-upload-preview" data-room-image-preview></div>
+
+                <div th:if="${roomImages != null and !roomImages.isEmpty()}" class="room-existing-images">
+                    <article th:each="img : ${roomImages}" class="room-existing-image">
+                        <img th:src="${img.url}" th:alt="${img.alt != null ? img.alt : 'Ảnh phòng'}" />
+                        <div class="room-existing-image-actions">
+                            <label>
+                                <input type="radio"
+                                       name="coverImageId"
+                                       th:value="${img.id}"
+                                       th:checked="${img.cover or (editRoom != null and editRoom.coverUrl == img.url)}" />
+                                <span>Ảnh đại diện</span>
+                            </label>
+                            <label class="room-image-delete-check">
+                                <input type="checkbox" name="removeImageIds" th:value="${img.id}" />
+                                <span>Xóa ảnh</span>
+                            </label>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <div class="property-form-footer">
+            <a th:href="${roomFormBackUrl != null ? roomFormBackUrl : '/admin/rooms'}" class="btn btn-ghost">Hủy</a>
+            <button type="submit" class="btn btn-primary" data-submit-button>
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span th:text="${roomFormSubmitLabel != null ? roomFormSubmitLabel : 'Tạo phòng'}">Tạo phòng</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+    <script th:inline="javascript">
+        window.SmartRentRoomTariffs = /*[[${propertyTariffs}]]*/ {};
+    </script>
+    <script th:src="@{/js/admin-room-create.js}"></script>
+</th:block>
+</body>
+</html>

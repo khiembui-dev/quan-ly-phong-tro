@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - V3 admin extensions (2026)
+-- SmartRent - V3 admin extensions (2026)
 -- Property tariff defaults, utility readings, maintenance, automation
 -- ===================================================================
 

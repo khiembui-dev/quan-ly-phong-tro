@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - V12 re-apply amenity categorisation
+-- SmartRent - V12 re-apply amenity categorisation
 -- V10 ran but UPDATE statements didn't take effect on V2-seeded rows
 -- in some runs (Flyway transaction edge case). Re-apply idempotently.
 -- ===================================================================

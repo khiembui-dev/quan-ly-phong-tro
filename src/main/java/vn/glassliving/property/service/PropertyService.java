@@ -22,6 +22,7 @@ public class PropertyService {
 
     @Transactional
     public Property create(UUID ownerId, PropertyForm form) {
+        validateTariffs(form);
         String baseSlug = SlugUtil.slugify(form.getName());
         String slug = ensureUniqueSlug(baseSlug);
 
@@ -30,9 +31,9 @@ public class PropertyService {
                 .name(form.getName().trim())
                 .slug(slug)
                 .description(form.getDescription())
-                .addressLine(form.getAddressLine().trim())
-                .district(form.getDistrict().trim())
-                .city(form.getCity().trim())
+                .addressLine(addressLine(form))
+                .district(district(form))
+                .city(city(form))
                 .totalRooms(0)
                 .electricUnit(nz(form.getElectricUnit(), "4000"))
                 .waterUnit(nz(form.getWaterUnit(), "25000"))
@@ -48,15 +49,16 @@ public class PropertyService {
 
     @Transactional
     public Property update(UUID ownerId, UUID id, PropertyForm form) {
+        validateTariffs(form);
         Property p = propertyRepository.findById(id)
                 .orElseThrow(() -> BusinessException.notFound("Cơ sở"));
         if (!p.getOwnerId().equals(ownerId)) {
             throw BusinessException.forbidden("Bạn không sở hữu cơ sở này.");
         }
         p.setName(form.getName().trim());
-        p.setAddressLine(form.getAddressLine().trim());
-        p.setDistrict(form.getDistrict().trim());
-        p.setCity(form.getCity().trim());
+        p.setAddressLine(addressLine(form));
+        p.setDistrict(district(form));
+        p.setCity(city(form));
         p.setDescription(form.getDescription());
         if (form.getElectricUnit() != null)      p.setElectricUnit(form.getElectricUnit());
         if (form.getWaterUnit() != null)         p.setWaterUnit(form.getWaterUnit());
@@ -105,6 +107,11 @@ public class PropertyService {
             for (Property.ExtraFee fee : p.getExtraFees()) {
                 names.add(fee.getName());
                 amounts.add(fee.getAmount());
+                PropertyForm.ExtraFeeInput item = new PropertyForm.ExtraFeeInput();
+                item.setName(fee.getName());
+                item.setAmount(fee.getAmount());
+                item.setCycle("monthly");
+                f.getExtraFees().add(item);
             }
             f.setExtraFeeNames(names);
             f.setExtraFeeAmounts(amounts);
@@ -135,17 +142,76 @@ public class PropertyService {
 
     /** Pair extraFeeNames[i] with extraFeeAmounts[i] from the form, dropping blanks. */
     private static List<Property.ExtraFee> buildExtraFees(vn.glassliving.property.dto.PropertyForm form) {
+        List<Property.ExtraFee> out = new ArrayList<>();
+
+        if (form.getExtraFees() != null) {
+            for (PropertyForm.ExtraFeeInput fee : form.getExtraFees()) {
+                if (fee == null || fee.getName() == null || fee.getName().isBlank()) continue;
+                out.add(new Property.ExtraFee(fee.getName().trim(), validatedAmount(fee.getAmount(), "Chi phí khác")));
+            }
+        }
+
         List<String> names = form.getExtraFeeNames();
         List<BigDecimal> amounts = form.getExtraFeeAmounts();
-        if (names == null || amounts == null) return new ArrayList<>();
-        int n = Math.min(names.size(), amounts.size());
-        List<Property.ExtraFee> out = new ArrayList<>(n);
-        for (int i = 0; i < n; i++) {
-            String name = names.get(i);
-            BigDecimal amount = amounts.get(i);
-            if (name == null || name.isBlank()) continue;
-            out.add(new Property.ExtraFee(name.trim(), amount != null ? amount : BigDecimal.ZERO));
+        if (names != null && amounts != null) {
+            int n = Math.min(names.size(), amounts.size());
+            for (int i = 0; i < n; i++) {
+                String name = names.get(i);
+                BigDecimal amount = amounts.get(i);
+                if (name == null || name.isBlank()) continue;
+                out.add(new Property.ExtraFee(name.trim(), validatedAmount(amount, "Chi phí khác")));
+            }
         }
         return out;
+    }
+
+    private static void validateTariffs(PropertyForm form) {
+        validateMoney(form.getElectricUnit(), "Giá điện");
+        validateMoney(form.getWaterUnit(), "Giá nước");
+        validateMoney(form.getServiceFeeDefault(), "Phí dịch vụ");
+        validateMoney(form.getInternetFee(), "Phí internet");
+        validateMoney(form.getGarbageFee(), "Phí rác");
+        validateMoney(form.getManagementFee(), "Phí quản lý");
+        Short day = form.getBillingDayDefault();
+        if (day == null || day < 1 || day > 31) {
+            throw BusinessException.badRequest("Ngày phát hành hóa đơn phải từ 1 đến 31");
+        }
+    }
+
+    private static BigDecimal validatedAmount(BigDecimal amount, String label) {
+        BigDecimal safe = amount != null ? amount : BigDecimal.ZERO;
+        validateMoney(safe, label);
+        return safe;
+    }
+
+    private static void validateMoney(BigDecimal amount, String label) {
+        if (amount == null) return;
+        if (amount.signum() < 0 || amount.stripTrailingZeros().scale() > 0) {
+            throw BusinessException.badRequest(label + " phải là số nguyên không âm.");
+        }
+    }
+
+    private static String addressLine(PropertyForm form) {
+        String street = firstNonBlank(form.getStreetAddress(), form.getAddressLine());
+        String ward = trim(form.getWardName());
+        if (!street.isBlank() && !ward.isBlank()) return street + ", " + ward;
+        return street;
+    }
+
+    private static String district(PropertyForm form) {
+        return firstNonBlank(form.getDistrictName(), form.getDistrict());
+    }
+
+    private static String city(PropertyForm form) {
+        return firstNonBlank(form.getProvinceName(), form.getCity());
+    }
+
+    private static String firstNonBlank(String primary, String fallback) {
+        String p = trim(primary);
+        return !p.isBlank() ? p : trim(fallback);
+    }
+
+    private static String trim(String value) {
+        return value != null ? value.trim() : "";
     }
 }

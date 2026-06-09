@@ -1,12 +1,39 @@
-# Glass Living - Khoi dong server dev (PowerShell)
+# SmartRent - Khoi dong server dev (PowerShell)
 # Chay: .\start-dev.ps1
 # Hoac click chuot phai -> Run with PowerShell
 
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
+function Import-DotEnvFile([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return
+    }
+
+    Get-Content -LiteralPath $Path | ForEach-Object {
+        $line = $_.Trim()
+        if (-not $line -or $line.StartsWith("#")) {
+            return
+        }
+
+        $separator = $line.IndexOf("=")
+        if ($separator -le 0) {
+            return
+        }
+
+        $name = $line.Substring(0, $separator).Trim()
+        $value = $line.Substring($separator + 1).Trim().Trim('"').Trim("'")
+        if ($name -match '^[A-Za-z_][A-Za-z0-9_]*$') {
+            Set-Item -Path "Env:$name" -Value $value
+        }
+    }
+}
+
+Import-DotEnvFile (Join-Path $PSScriptRoot ".env.local")
+Import-DotEnvFile (Join-Path $PSScriptRoot ".env.gemini")
+
 Write-Host ""
-Write-Host "===== Glass Living dev server =====" -ForegroundColor Cyan
+Write-Host "===== SmartRent dev server =====" -ForegroundColor Cyan
 Write-Host ""
 
 # 1. Postgres
@@ -61,9 +88,9 @@ if ($needBuild) {
 Write-Host ""
 Write-Host "===== Khoi dong Spring Boot (Ctrl+C de tat) =====" -ForegroundColor Cyan
 Write-Host "Mo browser: http://localhost:8080" -ForegroundColor Cyan
-Write-Host "  owner@glass.living  / password123  -> /admin" -ForegroundColor DarkGray
-Write-Host "  tenant@glass.living / password123  -> /me" -ForegroundColor DarkGray
-Write-Host "  admin@glass.living  / password123  -> all" -ForegroundColor DarkGray
+Write-Host "  owner@smartrent.local  / password123  -> /admin" -ForegroundColor DarkGray
+Write-Host "  tenant@smartrent.local / password123  -> /me" -ForegroundColor DarkGray
+Write-Host "  First ADMIN is created from ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_FULL_NAME." -ForegroundColor DarkGray
 Write-Host ""
 
 & .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"

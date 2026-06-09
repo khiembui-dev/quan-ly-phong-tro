@@ -36,7 +36,7 @@ public class Invoice extends BaseEntity {
     private UUID tenantUserId;
 
     @JdbcTypeCode(SqlTypes.UUID)
-    @Column(name = "room_id", nullable = false)
+    @Column(name = "room_id")
     private UUID roomId;
 
     @Column(name = "period_year", nullable = false)
@@ -107,6 +107,9 @@ public class Invoice extends BaseEntity {
 
     @Column(name = "paid_at")
     private OffsetDateTime paidAt;
+
+    @Column(name = "payment_code", length = 160)
+    private String paymentCode;
 
     @Column(name = "last_reminder_at")
     private OffsetDateTime lastReminderAt;

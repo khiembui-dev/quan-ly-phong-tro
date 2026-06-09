@@ -4,24 +4,34 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:lang="${currentLang}">
 <head th:replace="~{fragments/head :: head(${pageTitle ?: 'SmartRent'})}"></head>
-<body class="min-h-screen flex flex-col">
+<body class="app-shell flex flex-col overflow-x-hidden">
     <div th:replace="~{fragments/customer-navbar :: navbar}"></div>
 
-    <main layout:fragment="content" class="flex-1 relative">
+    <main layout:fragment="content" class="flex-1 relative min-w-0 max-w-full overflow-x-hidden">
         <!-- page content -->
     </main>
 
     <div th:replace="~{fragments/customer-footer :: footer}"></div>
 
-    <!-- AI floating button (only when authenticated to avoid spam) -->
-    <div sec:authorize="isAuthenticated()" th:replace="~{fragments/ai-button :: aiButton}"></div>
+    <div sec:authorize="isAuthenticated()" th:replace="~{fragments/ai-chatbot :: widget}"></div>
 
     <!-- Flash alert (auto-shows when redirect carries a flashMessage) -->
     <div th:replace="~{fragments/flash :: alert}"></div>
 
     <!-- Toast container is auto-created by app.js -->
-    <script th:src="@{/js/modules/ai-assistant.js}"></script>
+    <script th:src="@{/js/modules/ai-chatbot.js}"></script>
     <script th:src="@{/js/modules/favorite.js}"></script>
+    <script th:src="@{/js/ui/sidebar.js}"></script>
+    <script th:src="@{/js/ui/dropdown.js}"></script>
+    <script th:src="@{/js/ui/select.js}"></script>
+    <script th:src="@{/js/ui/modal.js}"></script>
+    <script th:src="@{/js/ui/toast.js}"></script>
+    <script th:src="@{/js/ui/search.js}"></script>
+    <script th:src="@{/js/ui/filter.js}"></script>
+    <script th:src="@{/js/ui/theme.js}"></script>
+    <script th:src="@{/js/ui/animations.js}"></script>
+    <script th:src="@{/js/i18n.js}"></script>
+    <script th:src="@{/js/customer-portal.js}"></script>
     <script th:src="@{/js/app.js}"></script>
     <th:block layout:fragment="extra-scripts"></th:block>
 </body>

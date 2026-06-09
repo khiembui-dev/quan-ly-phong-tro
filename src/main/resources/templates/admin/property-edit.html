@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title th:text="${#messages.msg('properties.form.editTitle') + ' — SmartRent'}">Edit property — SmartRent</title></head>
+<body>
+<div layout:fragment="content" class="properties-page property-create-page">
+    <section class="properties-header reveal reveal-1">
+        <div class="min-w-0">
+            <a href="/admin/properties" class="properties-back-link">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                <span th:text="#{common.back}">Back</span>
+            </a>
+            <h1 th:text="#{properties.form.editTitle}">Edit property</h1>
+            <p th:text="#{properties.form.editDesc}">Update property information and default pricing.</p>
+        </div>
+    </section>
+
+    <form th:action="@{/admin/properties/{id}/update(id=${propertyId})}"
+          method="post"
+          th:object="${form}"
+          class="property-create-form reveal reveal-2"
+          data-property-create-form
+          data-address-mode="manual"
+          th:data-submit-loading-label="#{common.saving}"
+          novalidate>
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+        <div th:if="${#fields.hasGlobalErrors()}" class="property-form-alert">
+            <i data-lucide="circle-alert" class="w-4 h-4"></i>
+            <div>
+                <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Có lỗi khi cập nhật cơ sở.</p>
+            </div>
+        </div>
+
+        <section class="property-form-section">
+            <div class="property-form-section-head">
+                <span>1</span>
+                <div>
+                    <h2 th:text="#{properties.form.propertyInfo}">Property information</h2>
+                </div>
+            </div>
+
+            <div class="property-form-grid">
+                <label class="property-form-field property-form-field-wide">
+                    <span><span th:text="#{properties.form.propertyName}">Property name</span> <b>*</b></span>
+                    <input type="text"
+                           name="propertyName"
+                           th:value="*{propertyName}"
+                           maxlength="160"
+                           data-field="propertyName"
+                           autocomplete="off"
+                           th:placeholder="#{properties.form.propertyNamePlaceholder}" />
+                    <small data-error-for="propertyName" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Vui lòng nhập tên cơ sở.</small>
+                    <small data-error-for="propertyName" th:unless="${#fields.hasErrors('name')}"></small>
+                </label>
+
+                <label class="property-form-field property-form-field-wide">
+                    <span><span th:text="#{properties.form.streetAddress}">Street address</span> <b>*</b></span>
+                    <input type="text"
+                           name="streetAddress"
+                           th:value="*{streetAddress}"
+                           maxlength="240"
+                           data-field="streetAddress"
+                           autocomplete="off"
+                           th:placeholder="#{properties.form.streetAddressPlaceholder}" />
+                    <small data-error-for="streetAddress" th:if="${#fields.hasErrors('addressLine')}" th:errors="*{addressLine}">Vui lòng nhập địa chỉ.</small>
+                    <small data-error-for="streetAddress" th:unless="${#fields.hasErrors('addressLine')}"></small>
+                </label>
+
+                <label class="property-form-field">
+                    <span><span th:text="#{properties.form.city}">Province/City</span> <b>*</b></span>
+                    <input type="text"
+                           name="city"
+                           th:value="*{city}"
+                           maxlength="80"
+                           data-field="city"
+                           autocomplete="off"
+                           th:placeholder="#{properties.form.cityPlaceholder}" />
+                    <small data-error-for="city" th:if="${#fields.hasErrors('city')}" th:errors="*{city}">Vui lòng nhập tỉnh/thành phố.</small>
+                    <small data-error-for="city" th:unless="${#fields.hasErrors('city')}"></small>
+                </label>
+
+                <label class="property-form-field">
+                    <span><span th:text="#{properties.form.district}">District</span> <b>*</b></span>
+                    <input type="text"
+                           name="district"
+                           th:value="*{district}"
+                           maxlength="80"
+                           data-field="district"
+                           autocomplete="off"
+                           th:placeholder="#{properties.form.districtPlaceholder}" />
+                    <small data-error-for="district" th:if="${#fields.hasErrors('district')}" th:errors="*{district}">Vui lòng nhập quận/huyện.</small>
+                    <small data-error-for="district" th:unless="${#fields.hasErrors('district')}"></small>
+                </label>
+
+                <label class="property-form-field property-form-field-wide">
+                    <span th:text="#{properties.form.shortDescription}">Short description</span>
+                    <textarea name="description"
+                              th:text="*{description}"
+                              maxlength="4000"
+                              rows="3"
+                              th:placeholder="#{properties.form.shortDescriptionPlaceholder}"></textarea>
+                    <small data-error-for="description" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></small>
+                    <small data-error-for="description" th:unless="${#fields.hasErrors('description')}"></small>
+                </label>
+            </div>
+        </section>
+
+        <section class="property-form-section">
+            <div class="property-form-section-head">
+                <span>2</span>
+                <div>
+                    <h2 th:text="#{properties.form.defaultPricing}">Default pricing</h2>
+                </div>
+            </div>
+
+            <div class="property-form-grid property-price-grid">
+                <label class="property-form-field">
+                    <span th:text="#{properties.form.electricityPrice}">Electricity price per kWh</span>
+                    <input type="text"
+                           name="electricityPrice"
+                           th:value="*{electricityPrice}"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           autocomplete="off"
+                           placeholder="0"
+                           data-field="electricityPrice"
+                           data-money-input
+                           th:data-money-suffix="#{properties.form.perKwh}" />
+                    <span class="property-money-preview" data-money-preview-for="electricityPrice"></span>
+                    <small data-error-for="electricityPrice" th:if="${#fields.hasErrors('electricUnit')}" th:errors="*{electricUnit}"></small>
+                    <small data-error-for="electricityPrice" th:unless="${#fields.hasErrors('electricUnit')}"></small>
+                </label>
+
+                <label class="property-form-field">
+                    <span th:text="#{properties.form.waterPrice}">Water price per m³</span>
+                    <input type="text"
+                           name="waterPrice"
+                           th:value="*{waterPrice}"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           autocomplete="off"
+                           placeholder="0"
+                           data-field="waterPrice"
+                           data-money-input
+                           th:data-money-suffix="#{properties.form.perM3}" />
+                    <span class="property-money-preview" data-money-preview-for="waterPrice"></span>
+                    <small data-error-for="waterPrice" th:if="${#fields.hasErrors('waterUnit')}" th:errors="*{waterUnit}"></small>
+                    <small data-error-for="waterPrice" th:unless="${#fields.hasErrors('waterUnit')}"></small>
+                </label>
+
+                <label class="property-form-field">
+                    <span th:text="#{properties.form.monthlyServiceFee}">Monthly service fee</span>
+                    <input type="text"
+                           name="serviceFee"
+                           th:value="*{serviceFee}"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           autocomplete="off"
+                           placeholder="0"
+                           data-field="serviceFee"
+                           data-money-input
+                           th:data-money-suffix="#{properties.form.perMonth}" />
+                    <span class="property-money-preview" data-money-preview-for="serviceFee"></span>
+                    <small data-error-for="serviceFee" th:if="${#fields.hasErrors('serviceFeeDefault')}" th:errors="*{serviceFeeDefault}"></small>
+                    <small data-error-for="serviceFee" th:unless="${#fields.hasErrors('serviceFeeDefault')}"></small>
+                </label>
+
+                <label class="property-form-field">
+                    <span th:text="#{properties.form.monthlyInternetFee}">Monthly internet fee</span>
+                    <input type="text"
+                           name="internetFee"
+                           th:value="*{internetFee}"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           autocomplete="off"
+                           placeholder="0"
+                           data-field="internetFee"
+                           data-money-input
+                           th:data-money-suffix="#{properties.form.perMonth}" />
+                    <span class="property-money-preview" data-money-preview-for="internetFee"></span>
+                    <small data-error-for="internetFee" th:if="${#fields.hasErrors('internetFee')}" th:errors="*{internetFee}"></small>
+                    <small data-error-for="internetFee" th:unless="${#fields.hasErrors('internetFee')}"></small>
+                </label>
+
+                <label class="property-form-field">
+                    <span th:text="#{properties.form.monthlyTrashFee}">Monthly trash fee</span>
+                    <input type="text"
+                           name="trashFee"
+                           th:value="*{trashFee}"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           autocomplete="off"
+                           placeholder="0"
+                           data-field="trashFee"
+                           data-money-input
+                           th:data-money-suffix="#{properties.form.perMonth}" />
+                    <span class="property-money-preview" data-money-preview-for="trashFee"></span>
+                    <small data-error-for="trashFee" th:if="${#fields.hasErrors('garbageFee')}" th:errors="*{garbageFee}"></small>
+                    <small data-error-for="trashFee" th:unless="${#fields.hasErrors('garbageFee')}"></small>
+                </label>
+
+                <label class="property-form-field">
+                    <span th:text="#{properties.form.monthlyManagementFee}">Monthly management fee</span>
+                    <input type="text"
+                           name="managementFee"
+                           th:value="*{managementFee}"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           autocomplete="off"
+                           placeholder="0"
+                           data-field="managementFee"
+                           data-money-input
+                           th:data-money-suffix="#{properties.form.perMonth}" />
+                    <span class="property-money-preview" data-money-preview-for="managementFee"></span>
+                    <small data-error-for="managementFee" th:if="${#fields.hasErrors('managementFee')}" th:errors="*{managementFee}"></small>
+                    <small data-error-for="managementFee" th:unless="${#fields.hasErrors('managementFee')}"></small>
+                </label>
+
+                <label class="property-form-field">
+                    <span th:text="#{properties.form.invoiceDay}">Monthly invoice issue day</span>
+                    <input type="text"
+                           name="invoiceDay"
+                           th:value="*{invoiceDay}"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           autocomplete="off"
+                           maxlength="2"
+                           placeholder="1"
+                           data-field="invoiceDay"
+                           data-invoice-day />
+                    <small data-error-for="invoiceDay" th:if="${#fields.hasErrors('billingDayDefault')}" th:errors="*{billingDayDefault}"></small>
+                    <small data-error-for="invoiceDay" th:unless="${#fields.hasErrors('billingDayDefault')}"></small>
+                </label>
+            </div>
+        </section>
+
+        <section class="property-form-section">
+            <div class="property-form-section-head property-extra-create-head">
+                <span>3</span>
+                <div>
+                    <h2 th:text="#{properties.form.extraFees}">Extra fees</h2>
+                </div>
+                <button type="button" class="btn btn-soft btn-sm" data-add-extra-fee>
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span th:text="#{properties.form.addFee}">Add fee</span>
+                </button>
+            </div>
+
+            <div class="property-extra-create-list" data-extra-fees-list>
+                <div th:each="fee, stat : *{extraFees}" class="property-extra-create-row" data-extra-fee-row>
+                    <label>
+                        <span th:text="#{properties.form.feeName}">Fee name</span>
+                        <input type="text"
+                               th:name="${'extraFees[' + stat.index + '].name'}"
+                               th:value="${fee.name}"
+                               maxlength="60"
+                               data-extra-field="name"
+                               th:placeholder="#{properties.form.feeNamePlaceholder}" />
+                    </label>
+                    <label>
+                        <span th:text="#{properties.form.amount}">Amount</span>
+                        <input type="text"
+                               th:name="${'extraFees[' + stat.index + '].amount'}"
+                               th:value="${fee.amount}"
+                               inputmode="numeric"
+                               pattern="[0-9]*"
+                               autocomplete="off"
+                               data-money-input
+                               data-extra-field="amount"
+                               placeholder="0" />
+                        <span class="property-money-preview" data-extra-money-preview></span>
+                        <small class="property-extra-error"
+                               data-extra-error
+                               th:if="${#fields.hasErrors('extraFees[' + stat.index + '].amount')}"
+                               th:errors="*{extraFees[__${stat.index}__].amount}"></small>
+                        <small class="property-extra-error"
+                               data-extra-error
+                               th:unless="${#fields.hasErrors('extraFees[' + stat.index + '].amount')}"></small>
+                    </label>
+                    <label>
+                        <span th:text="#{properties.form.billingCycle}">Billing cycle</span>
+                        <select th:name="${'extraFees[' + stat.index + '].cycle'}" data-extra-field="cycle">
+                            <option value="monthly" th:selected="${fee.cycle == null or fee.cycle == 'monthly'}" th:text="#{properties.form.monthly}">Monthly</option>
+                            <option value="once" th:selected="${fee.cycle == 'once'}" th:text="#{properties.form.once}">One-time</option>
+                        </select>
+                    </label>
+                    <button type="button" class="property-extra-remove" data-remove-extra-fee th:title="#{properties.form.deleteRow}">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <div class="property-form-footer">
+            <a href="/admin/properties" class="btn btn-ghost" th:text="#{common.cancel}">Cancel</a>
+            <button type="submit" class="btn btn-primary" data-submit-button>
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span th:text="#{common.saveChanges}">Save changes</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+    <script th:src="@{/js/admin-properties.js}"></script>
+</th:block>
+</body>
+</html>

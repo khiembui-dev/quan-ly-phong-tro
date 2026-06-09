@@ -17,6 +17,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmailIgnoreCase(String email);
     boolean existsByPhone(String phone);
 
+    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u JOIN u.roles r WHERE r = :role")
+    boolean existsByRole(@Param("role") User.Role role);
+
     @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r = :role ORDER BY u.fullName")
     List<User> findByRolesContaining(@Param("role") User.Role role);
 }

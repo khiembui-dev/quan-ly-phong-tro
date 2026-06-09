@@ -3,18 +3,22 @@
 <body>
 <a th:fragment="card(room)"
    th:href="@{'/rooms/' + ${room.slug}}"
-   class="group glass overflow-hidden flex flex-col">
+   class="group room-card flex flex-col">
 
     <!-- Image -->
     <div class="relative aspect-[4/3] overflow-hidden"
          style="background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(124,58,237,0.16), rgba(6,182,212,0.14));">
-        <img th:if="${room.coverUrl != null}" th:src="${room.coverUrl}" alt=""
+        <img th:if="${room.coverUrl != null and !#strings.isEmpty(room.coverUrl)}"
+             th:src="${room.coverUrl}" alt=""
+             data-room-cover
+             onerror="this.hidden=true; this.nextElementSibling.hidden=false;"
              class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
              loading="lazy" />
-        <div th:unless="${room.coverUrl != null}"
+        <div data-room-image-fallback
+             th:hidden="${room.coverUrl != null and !#strings.isEmpty(room.coverUrl)}"
              class="absolute inset-0 grid place-items-center text-white/85 font-extrabold text-[26px] tracking-tight"
              th:text="${room.district}">
-            Quận
+            District
         </div>
 
         <!-- Gradient overlay on hover for depth -->
@@ -27,19 +31,21 @@
               style="backdrop-filter: blur(8px);">
             <span class="dot dot-pulse" th:if="${room.status.name() == 'AVAILABLE'}" style="background:currentColor"></span>
             <span th:switch="${room.status.name()}">
-                <span th:case="'AVAILABLE'">Còn phòng</span>
-                <span th:case="'OCCUPIED'">Đang ở</span>
-                <span th:case="'MAINTENANCE'">Bảo trì</span>
-                <span th:case="'HIDDEN'">Ẩn</span>
+                <span th:case="'AVAILABLE'" th:text="#{rooms.status.available}">Available</span>
+                <span th:case="'OCCUPIED'" th:text="#{rooms.status.occupied}">Occupied</span>
+                <span th:case="'MAINTENANCE'" th:text="#{rooms.status.maintenance}">Maintenance</span>
+                <span th:case="'HIDDEN'" th:text="#{rooms.status.hidden}">Hidden</span>
             </span>
         </span>
 
         <!-- Favorite -->
         <button sec:authorize="isAuthenticated()"
                 type="button"
-                onclick="event.preventDefault(); event.stopPropagation(); glassToggleFavorite(this);"
+                th:with="isFav=${favoriteRoomIds != null and favoriteRoomIds.contains(room.id)}"
+                onclick="event.preventDefault(); event.stopPropagation(); glassToggleFavorite(this); return false;"
                 th:data-room-id="${room.id}"
-                aria-label="Yêu thích"
+                th:attr="aria-pressed=${isFav},aria-label=${isFav ? #messages.msg('roomCard.removeFavorite') : #messages.msg('roomCard.favorite')}"
+                th:classappend="${isFav} ? ' is-active !text-rose-600 !bg-rose-50 !border-rose-200' : ''"
                 class="absolute top-3 right-3 w-9 h-9 grid place-items-center rounded-full glass-strong hover:scale-110 transition">
             <i data-lucide="heart" class="w-4 h-4"></i>
         </button>
@@ -48,11 +54,12 @@
         <span th:if="${room.type != null}" class="absolute bottom-3 left-3 chip" style="background: rgba(255,255,255,0.92);">
             <i data-lucide="home" class="w-3 h-3"></i>
             <span th:switch="${room.type.name()}">
-                <span th:case="'STUDIO'">Studio</span>
-                <span th:case="'SINGLE'">Phòng đơn</span>
-                <span th:case="'DOUBLE'">Phòng đôi</span>
-                <span th:case="'PENTHOUSE'">Penthouse</span>
-                <span th:case="*">Phòng</span>
+                <span th:case="'BOARDING'" th:text="#{rooms.type.boarding}">Boarding room</span>
+                <span th:case="'STUDIO'" th:text="#{rooms.type.studio}">Studio</span>
+                <span th:case="'SINGLE'" th:text="#{rooms.type.single}">Single room</span>
+                <span th:case="'DOUBLE'" th:text="#{rooms.type.double}">Double room</span>
+                <span th:case="'PENTHOUSE'" th:text="#{rooms.type.penthouse}">Penthouse</span>
+                <span th:case="*" th:text="#{rooms.type.other}">Other</span>
             </span>
         </span>
     </div>
@@ -61,12 +68,12 @@
     <div class="p-5 flex flex-col gap-2.5 flex-1">
         <div class="flex items-start justify-between gap-3">
             <h3 class="text-[16px] font-semibold leading-snug line-clamp-2 group-hover:text-[color:var(--accent)] transition tracking-tight"
-                th:text="${room.title}">Tên phòng</h3>
+                th:text="${room.title}">Room name</h3>
         </div>
 
         <p class="text-[13px] text-[color:var(--text-mute)] inline-flex items-center gap-1.5">
             <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
-            <span th:text="${room.district}">Quận 1</span>
+            <span th:text="${room.district}">District 1</span>
             <span class="text-[color:var(--text-faint)]">·</span>
             <span><span th:text="${room.areaSqm}">28</span> m²</span>
         </p>
@@ -82,11 +89,11 @@
             </span>
             <span class="inline-flex items-center gap-1" th:if="${room.hasBalcony}">
                 <i data-lucide="trees" class="w-3.5 h-3.5"></i>
-                Ban công
+                <span th:text="#{roomCard.balcony}">Balcony</span>
             </span>
             <span class="inline-flex items-center gap-1" th:if="${room.petAllowed}">
                 <i data-lucide="paw-print" class="w-3.5 h-3.5"></i>
-                Pet
+                <span th:text="#{roomCard.petAllowed}">Pet-friendly</span>
             </span>
         </div>
 
@@ -96,9 +103,9 @@
             <div>
                 <div class="flex items-baseline gap-0.5">
                     <span class="text-[18px] font-extrabold text-[color:var(--text)] tnum tracking-tight"
-                          th:text="${h.vnd(room.priceMonthly)}">8.500.000₫</span>
+                          th:text="${h.vnd(room.priceMonthly)}">8,500,000đ</span>
                 </div>
-                <div class="text-[11px] text-[color:var(--text-mute)] -mt-0.5">/ tháng</div>
+                <div class="text-[11px] text-[color:var(--text-mute)] -mt-0.5" th:text="#{roomCard.perMonth}">/ month</div>
             </div>
             <div class="flex items-center gap-1 text-[12px] font-medium">
                 <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>

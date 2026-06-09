@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - V5 partial unique slug
+-- SmartRent - V5 partial unique slug
 -- Soft-deleted rows (deleted=true) should not block reuse of their slug
 -- when the user creates a new property/room. Convert the global UNIQUE
 -- constraint into a partial unique index that ignores soft-deleted rows.

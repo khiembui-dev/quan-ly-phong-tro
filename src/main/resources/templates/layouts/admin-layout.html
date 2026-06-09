@@ -4,9 +4,9 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:lang="${currentLang}">
 <head th:replace="~{fragments/head :: head(${pageTitle ?: #messages.msg('app.adminTitle')})}"></head>
-<body class="min-h-screen overflow-x-hidden">
+<body class="app-shell overflow-x-hidden">
 
-<div class="flex min-h-screen"
+<div class="flex min-h-screen w-full max-w-full overflow-x-hidden"
      x-data="{ adminSidebarOpen: false }"
      @keydown.escape.window="adminSidebarOpen = false">
 
@@ -19,120 +19,110 @@
     <!-- ============================================================
          SIDEBAR — single scrollable nav, no item cutoff
          ============================================================ -->
-    <aside class="fixed inset-y-0 left-0 z-40 h-screen w-[280px] max-w-[calc(100vw-2rem)] -translate-x-full flex flex-col transform transition-transform duration-200 ease-out lg:fixed lg:top-0 lg:z-20 lg:w-[260px] lg:translate-x-0"
-           :class="adminSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-           style="background: rgba(255,255,255,0.62); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); border-right: 1px solid var(--glass-border);">
+    <aside class="glass-sidebar fixed inset-y-0 left-0 z-40 h-screen w-[280px] max-w-[calc(100vw-2rem)] -translate-x-full flex flex-col transform transition-transform duration-200 ease-out lg:fixed lg:top-0 lg:z-20 lg:w-[260px] lg:translate-x-0"
+           :class="adminSidebarOpen ? 'translate-x-0' : '-translate-x-full'">
 
         <!-- Brand (fixed) -->
         <div class="px-5 pt-5 pb-3 shrink-0 flex items-center justify-between gap-3">
-            <div th:replace="~{fragments/brand :: brand('/admin')}"></div>
+            <a href="/admin" class="brand-link inline-flex items-center gap-2.5 group min-w-0">
+                <span class="brand-mark relative w-8 h-8 grid place-items-center shrink-0">
+                    <span class="absolute inset-0 rounded-xl"
+                          style="background: linear-gradient(135deg, #2563EB, #7C3AED, #06B6D4); opacity:.94"></span>
+                    <svg viewBox="0 0 24 24" class="relative w-5 h-5 text-white" fill="none" stroke="currentColor"
+                         stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 2 3 7v10l9 5 9-5V7l-9-5z"></path>
+                        <path d="M3 7l9 5 9-5"></path>
+                        <path d="M12 22V12"></path>
+                    </svg>
+                </span>
+                <span class="brand-name font-extrabold tracking-tight text-[18px] truncate" style="color:var(--text)">SmartRent</span>
+            </a>
             <button type="button"
                     class="topbar-icon-btn lg:hidden"
                     @click="adminSidebarOpen = false"
-                    aria-label="Close admin menu">
+                    th:attr="aria-label=#{nav.closeAdminMenu}">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
 
-        <!-- Single scrollable nav (everything fits) -->
-        <nav class="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-3 space-y-0.5 sidebar-scroll"
+        <!-- Compact admin navigation -->
+        <nav class="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-3 pt-2 space-y-1 sidebar-scroll"
              @click="if ($event.target.closest('a')) adminSidebarOpen = false">
-
-            <!-- Section: TỔNG QUAN -->
             <div class="nav-section">
-                <span class="nav-section-label" th:text="#{nav.overview}">Tổng quan</span>
+                <div class="nav-section-label" th:text="#{nav.overview}">Overview</div>
+                <a href="/admin"
+                   th:classappend="${#strings.equals(activeNav, 'dashboard') ? 'active' : ''}"
+                   class="nav-item">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate" th:text="#{nav.dashboard}">Bảng điều khiển</span>
+                </a>
             </div>
-            <a href="/admin"
-               th:classappend="${#strings.equals(activeNav, 'dashboard') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate" th:text="#{nav.dashboard}">Bảng điều khiển</span>
-            </a>
 
-            <!-- Section: VẬN HÀNH -->
             <div class="nav-section">
-                <span class="nav-section-label" th:text="#{nav.operations}">Vận hành</span>
+                <div class="nav-section-label" th:text="#{nav.operations}">Operations</div>
+                <a href="/admin/properties"
+                   th:classappend="${#strings.equals(activeNav, 'properties') ? 'active' : ''}"
+                   class="nav-item">
+                    <i data-lucide="building-2" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate" th:text="#{nav.properties}">Cơ sở &amp; Đơn giá</span>
+                </a>
+                <a href="/admin/rooms"
+                   th:classappend="${#strings.equals(activeNav, 'rooms') ? 'active' : ''}"
+                   class="nav-item">
+                    <i data-lucide="bed" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate" th:text="#{nav.rooms}">Phòng</span>
+                </a>
+                <a href="/admin/utilities"
+                   th:classappend="${#strings.equals(activeNav, 'utilities') ? 'active' : ''}"
+                   class="nav-item">
+                    <i data-lucide="calculator" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate" th:text="#{nav.utilities}">Tính tiền phòng</span>
+                </a>
+                <a href="/admin/tickets"
+                   th:classappend="${#strings.equals(activeNav, 'maintenance') ? 'active' : ''}"
+                   class="nav-item">
+                    <i data-lucide="ticket-check" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate flex-1" th:text="#{nav.ticket}">Ticket</span>
+                    <span th:if="${openTickets != null and openTickets > 0}"
+                          class="badge-count" th:text="${openTickets}">2</span>
+                </a>
             </div>
-            <a href="/admin/properties"
-               th:classappend="${#strings.equals(activeNav, 'properties') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="building-2" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate" th:text="#{nav.properties}">Cơ sở &amp; Đơn giá</span>
-            </a>
-            <a href="/admin/rooms"
-               th:classappend="${#strings.equals(activeNav, 'rooms') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="bed" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate" th:text="#{nav.rooms}">Phòng</span>
-            </a>
-            <a href="/admin/utilities"
-               th:classappend="${#strings.equals(activeNav, 'utilities') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="calculator" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate" th:text="#{nav.utilities}">Tính tiền phòng</span>
-            </a>
-            <a href="/admin/tickets"
-               th:classappend="${#strings.equals(activeNav, 'maintenance') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="ticket-check" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate flex-1" th:text="#{nav.ticket}">Ticket</span>
-                <span th:if="${openTickets != null and openTickets > 0}"
-                      class="badge-count" th:text="${openTickets}">2</span>
-            </a>
 
-            <!-- Section: TÀI CHÍNH -->
             <div class="nav-section">
-                <span class="nav-section-label" th:text="#{nav.finance}">Tài chính</span>
+                <div class="nav-section-label" th:text="#{nav.finance}">Finance</div>
+                <a href="/admin/invoices"
+                   th:classappend="${#strings.equals(activeNav, 'invoices') ? 'active' : ''}"
+                   class="nav-item">
+                    <i data-lucide="receipt" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate" th:text="#{nav.invoices}">Hóa đơn</span>
+                </a>
+                <a href="/admin/contracts"
+                   th:classappend="${#strings.equals(activeNav, 'contracts') ? 'active' : ''}"
+                   class="nav-item">
+                    <i data-lucide="file-signature" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate" th:text="#{nav.contracts}">Hợp đồng</span>
+                </a>
+                <a href="/admin/tenants"
+                   th:classappend="${#strings.equals(activeNav, 'tenants') ? 'active' : ''}"
+                   class="nav-item">
+                    <i data-lucide="users" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate" th:text="#{nav.tenants}">Khách thuê</span>
+                </a>
             </div>
-            <a href="/admin/invoices"
-               th:classappend="${#strings.equals(activeNav, 'invoices') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="receipt" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate" th:text="#{nav.invoices}">Hóa đơn</span>
-            </a>
-            <a href="/admin/contracts"
-               th:classappend="${#strings.equals(activeNav, 'contracts') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="file-signature" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate" th:text="#{nav.contracts}">Hợp đồng</span>
-            </a>
-            <a href="/admin/reports"
-               th:classappend="${#strings.equals(activeNav, 'reports') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="bar-chart-3" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate" th:text="#{nav.reports}">Báo cáo</span>
-            </a>
-            <a href="/admin/tenants"
-               th:classappend="${#strings.equals(activeNav, 'tenants') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="users" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate" th:text="#{nav.tenants}">Khách thuê</span>
-            </a>
 
-            <!-- Section: TIỆN ÍCH -->
             <div class="nav-section">
-                <span class="nav-section-label" th:text="#{nav.tools}">Tiện ích</span>
+                <div class="nav-section-label" th:text="#{nav.tools}">Tools</div>
+                <a href="/admin/system-settings"
+                   th:classappend="${#strings.equals(activeNav, 'automations') ? 'active' : ''}"
+                   class="nav-item">
+                    <i data-lucide="settings-2" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate" th:text="#{nav.automations}">Cài đặt hệ thống</span>
+                </a>
+                <a href="/" class="nav-item">
+                    <i data-lucide="external-link" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate" th:text="#{nav.customerArea}">Khu vực khách</span>
+                </a>
             </div>
-            <a href="/admin/automations"
-               th:classappend="${#strings.equals(activeNav, 'automations') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="bot" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate" th:text="#{nav.automations}">Tự động hóa</span>
-            </a>
-            <a href="/admin/ai"
-               th:classappend="${#strings.equals(activeNav, 'ai') ? 'active' : ''}"
-               class="nav-item">
-                <i data-lucide="sparkles" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate flex-1" th:text="#{nav.aiAssistant}">Trợ lý AI</span>
-                <span class="nav-tag-ai">AI</span>
-            </a>
-
-            <!-- Divider + customer area shortcut -->
-            <div class="divider my-3"></div>
-            <a href="/" class="nav-item">
-                <i data-lucide="external-link" class="w-4 h-4 shrink-0"></i>
-                <span class="truncate" th:text="#{nav.customerArea}">Khu vực khách</span>
-            </a>
         </nav>
 
         <!-- User card (always visible at bottom) -->
@@ -158,15 +148,14 @@
     <!-- ============================================================
          MAIN
          ============================================================ -->
-    <div class="flex-1 flex flex-col min-w-0 lg:ml-[260px]">
+    <div class="flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden lg:pl-[260px]">
         <!-- Topbar -->
-        <header class="min-h-16 sticky top-0 z-10 flex flex-wrap lg:flex-nowrap items-center px-4 sm:px-6 py-3 gap-3 lg:gap-4"
-                style="background: rgba(255,255,255,0.72); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); border-bottom: 1px solid var(--glass-border);">
-            <div class="order-1 flex items-center gap-2 min-w-0 flex-1 lg:flex-none">
+        <header class="glass-topbar min-h-14 sticky top-0 z-10 flex flex-wrap lg:flex-nowrap items-center px-4 sm:px-5 py-2 gap-2 lg:gap-3">
+            <div class="order-1 flex items-center gap-2 min-w-0 flex-1">
                 <button type="button"
                         class="topbar-icon-btn lg:hidden"
                         @click="adminSidebarOpen = true"
-                        aria-label="Mở menu admin">
+                        th:attr="aria-label=#{nav.openAdminMenu}">
                     <i data-lucide="menu" class="w-4 h-4"></i>
                 </button>
                 <div class="text-[13px] text-[color:var(--text-mute)] flex items-center gap-2 min-w-0">
@@ -174,14 +163,6 @@
                     <span class="hidden sm:inline" th:text="#{nav.admin}">Admin</span>
                     <span th:if="${pageTitle}" class="text-[color:var(--text-faint)]">/</span>
                     <span class="text-[color:var(--text)] font-medium truncate" th:text="${pageTitle}">Trang</span>
-                </div>
-            </div>
-
-            <div class="order-3 w-full lg:order-2 lg:flex-1 lg:flex lg:justify-center">
-                <div class="input-glass h-10 w-full lg:max-w-[480px]">
-                    <i data-lucide="search" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                    <input type="text" th:placeholder="#{nav.searchAdmin}" />
-                    <span class="text-[10px] mono px-1.5 py-0.5 rounded border border-[color:var(--line)] text-[color:var(--text-mute)]">⌘K</span>
                 </div>
             </div>
 
@@ -201,16 +182,28 @@
             </div>
         </header>
 
-        <main layout:fragment="content" class="flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto min-w-0">
+        <main layout:fragment="content" class="flex-1 page-shell min-w-0 max-w-full overflow-x-hidden">
             <!-- page content -->
         </main>
     </div>
 </div>
 
 <!-- Flash alert (auto-shows when redirect carries a flashMessage) -->
+<div sec:authorize="isAuthenticated()" th:replace="~{fragments/ai-chatbot :: widget}"></div>
 <div th:replace="~{fragments/flash :: alert}"></div>
 
 <script th:src="@{/js/modules/ai-assistant.js}"></script>
+<script th:src="@{/js/modules/ai-chatbot.js}"></script>
+<script th:src="@{/js/ui/sidebar.js}"></script>
+<script th:src="@{/js/ui/dropdown.js}"></script>
+<script th:src="@{/js/ui/select.js}"></script>
+<script th:src="@{/js/ui/modal.js}"></script>
+<script th:src="@{/js/ui/toast.js}"></script>
+<script th:src="@{/js/ui/search.js}"></script>
+<script th:src="@{/js/ui/filter.js}"></script>
+<script th:src="@{/js/ui/theme.js}"></script>
+<script th:src="@{/js/ui/animations.js}"></script>
+<script th:src="@{/js/i18n.js}"></script>
 <script th:src="@{/js/app.js}"></script>
 <th:block layout:fragment="extra-scripts"></th:block>
 </body>

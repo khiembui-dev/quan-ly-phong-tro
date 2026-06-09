@@ -3,384 +3,421 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/admin-layout}"
       lang="vi">
-<head><title>Ticket — SmartRent</title></head>
+<head><title th:text="#{tickets.title} + ' - SmartRent'">Tickets - SmartRent</title></head>
 <body>
-<div layout:fragment="content" x-data="{ createOpen: false }">
+<div layout:fragment="content"
+     class="ticket-page"
+     data-ticket-page
+     x-data="{ createOpen: false }">
 
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
-        <div>
-            <span class="eyebrow">Vận hành</span>
-            <h1 class="text-[28px] sm:text-[32px] font-bold tracking-tight mt-2">Ticket</h1>
-            <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Theo dõi và xử lý yêu cầu hỗ trợ, sửa chữa, phản ánh từ khách thuê.</p>
+    <section class="ticket-hero">
+        <div class="ticket-hero-copy">
+            <h1 th:text="#{tickets.title}">Tickets</h1>
+            <p th:text="#{tickets.subtitle}">Manage tenant support requests.</p>
         </div>
-        <button @click="createOpen = true" class="btn btn-primary btn-sm">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-            Tạo ticket
-        </button>
-    </div>
+        <div class="ticket-hero-actions">
+            <button type="button" class="ticket-primary-button" @click="createOpen = true">
+                <i data-lucide="plus"></i>
+                <span th:text="#{tickets.create}">Create ticket</span>
+            </button>
+        </div>
+    </section>
 
-    <!-- Stats -->
-    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
-        <a th:href="@{/admin/tickets}"
-           class="surface p-4 hover:scale-[1.01] transition cursor-pointer"
-           th:classappend="${(filterStatus == null or filterStatus == '') and (filterPriority == null or filterPriority == '')} ? 'ring-2 ring-[color:var(--accent)]' : ''">
-            <div class="kpi-label">Tất cả</div>
-            <div class="text-[24px] font-extrabold tnum mt-1" th:text="${countAll}">4</div>
+    <section class="ticket-stats-grid">
+        <a th:href="@{/admin/tickets(state='OPEN',size=${pageSize})}" class="ticket-stat-card" th:classappend="${filterState == 'OPEN'} ? 'is-active'">
+            <span class="ticket-stat-icon"><i data-lucide="inbox"></i></span>
+            <span th:text="#{tickets.open}">Open</span>
+            <strong class="tnum" th:text="${stats.open}">0</strong>
+            <small th:text="#{tickets.openHint}">New tickets needing action</small>
         </a>
-        <a th:href="@{/admin/tickets(status='OPEN')}"
-           class="surface p-4 hover:scale-[1.01] transition cursor-pointer"
-           th:classappend="${filterStatus == 'OPEN'} ? 'ring-2 ring-[color:var(--accent)]' : ''">
-            <div class="kpi-label inline-flex items-center gap-1.5">
-                <span class="status-dot ok" style="background: var(--accent);"></span>Mới
-            </div>
-            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--accent)]" th:text="${countOpen}">1</div>
+        <a th:href="@{/admin/tickets(state='REPLIED',size=${pageSize})}" class="ticket-stat-card" th:classappend="${filterState == 'REPLIED'} ? 'is-active'">
+            <span class="ticket-stat-icon is-amber"><i data-lucide="message-circle-reply"></i></span>
+            <span th:text="#{tickets.replied}">Replied</span>
+            <strong class="tnum" th:text="${stats.replied}">0</strong>
+            <small th:text="#{tickets.repliedHint}">In conversation with tenants</small>
         </a>
-        <a th:href="@{/admin/tickets(status='IN_PROGRESS')}"
-           class="surface p-4 hover:scale-[1.01] transition cursor-pointer"
-           th:classappend="${filterStatus == 'IN_PROGRESS'} ? 'ring-2 ring-[color:var(--warn)]' : ''">
-            <div class="kpi-label inline-flex items-center gap-1.5">
-                <span class="status-dot warn"></span>Đang xử lý
-            </div>
-            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--warn)]" th:text="${countInProgress}">1</div>
+        <a th:href="@{/admin/tickets(state='CLOSED',size=${pageSize})}" class="ticket-stat-card" th:classappend="${filterState == 'CLOSED'} ? 'is-active'">
+            <span class="ticket-stat-icon is-green"><i data-lucide="circle-check-big"></i></span>
+            <span th:text="#{tickets.closed}">Closed</span>
+            <strong class="tnum" th:text="${stats.closed}">0</strong>
+            <small th:text="#{tickets.closedHint}">Completed tickets</small>
         </a>
-        <a th:href="@{/admin/tickets(status='RESOLVED')}"
-           class="surface p-4 hover:scale-[1.01] transition cursor-pointer"
-           th:classappend="${filterStatus == 'RESOLVED'} ? 'ring-2 ring-[color:var(--ok)]' : ''">
-            <div class="kpi-label inline-flex items-center gap-1.5">
-                <span class="status-dot ok"></span>Đã xong
-            </div>
-            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--ok)]" th:text="${countResolved}">1</div>
-        </a>
-        <a th:href="@{/admin/tickets(priority='URGENT')}"
-           class="surface p-4 hover:scale-[1.01] transition cursor-pointer"
-           th:classappend="${filterPriority == 'URGENT'} ? 'ring-2 ring-[color:var(--err)]' : ''">
-            <div class="kpi-label inline-flex items-center gap-1.5">
-                <span class="status-dot err"></span>Khẩn cấp
-            </div>
-            <div class="text-[24px] font-extrabold tnum mt-1 text-[color:var(--err)]" th:text="${countUrgent}">1</div>
-        </a>
-    </div>
+    </section>
 
-    <!-- Tickets -->
-    <div th:if="${tickets != null and !tickets.isEmpty()}" class="space-y-4 mb-6">
-        <div th:each="t, iter : ${tickets}" class="glass p-5 reveal" th:classappend="${'reveal-' + (iter.index % 5 + 1)}">
-            <div class="flex flex-col lg:flex-row gap-4 items-start">
-                <!-- Priority + category icon -->
-                <div class="flex flex-col items-center gap-2 shrink-0">
-                    <span th:classappend="${
-                        t.priority.name() == 'URGENT' ? 'bg-[#fef2f2] text-[#dc2626]' :
-                       (t.priority.name() == 'HIGH'   ? 'bg-[#fffbeb] text-[#b45309]' :
-                       (t.priority.name() == 'NORMAL' ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' :
-                                                       'bg-slate-100 text-[color:var(--text-mute)]'))}"
-                          class="w-12 h-12 rounded-2xl grid place-items-center">
+    <section class="ticket-filter-card ticket-filter-compact">
+        <form method="get" th:action="@{/admin/tickets}" class="ticket-filter-form ticket-filter-form-compact" data-auto-search-form>
+            <input type="hidden" name="state" th:value="${filterState}" />
+            <input type="hidden" name="size" th:value="${pageSize}" />
+
+            <label class="ticket-smart-search">
+                <span class="sr-only" th:text="#{tickets.searchLabel}">Search tickets</span>
+                <i data-lucide="search"></i>
+                <input type="search"
+                       name="q"
+                       th:value="${filterQ}"
+                       th:placeholder="#{tickets.searchPlaceholder}"
+                       data-ticket-search
+                       data-search-input
+                       data-auto-search-input />
+            </label>
+        </form>
+    </section>
+
+    <section class="ticket-list-card">
+        <div class="ticket-empty-state" th:if="${tickets == null or tickets.isEmpty()}">
+            <span><i data-lucide="ticket-check"></i></span>
+            <h3 th:text="#{tickets.emptyTitle}">No matching tickets</h3>
+            <p th:text="#{tickets.emptyDesc}">Try changing filters or create a new ticket.</p>
+            <button type="button" class="ticket-primary-button" @click="createOpen = true">
+                <i data-lucide="plus"></i>
+                <span th:text="#{tickets.create}">Create ticket</span>
+            </button>
+        </div>
+
+        <div class="ticket-inbox" th:if="${tickets != null and !tickets.isEmpty()}">
+            <article th:each="t : ${tickets}"
+                     th:id="${'ticket-' + t.id}"
+                     th:with="ticketMessages=${messageMap != null ? messageMap.get(t.id) : null}"
+                     class="ticket-row"
+                     x-data="{ open: false }"
+                     th:data-search="${(t.code ?: '') + ' ' + (t.title ?: '') + ' ' + (t.description ?: '')}">
+                <div class="ticket-row-main">
+                    <div class="ticket-category-icon"
+                         th:classappend="${t.priority.name() == 'URGENT' ? 'is-red' : (t.priority.name() == 'HIGH' ? 'is-amber' : '')}">
                         <i th:attr="data-lucide=${
                             t.category.name() == 'ELECTRICAL' ? 'zap' :
-                           (t.category.name() == 'PLUMBING'   ? 'droplets' :
-                           (t.category.name() == 'AC_HVAC'    ? 'wind' :
-                           (t.category.name() == 'FURNITURE'  ? 'sofa' :
-                           (t.category.name() == 'APPLIANCE'  ? 'refrigerator' :
-                           (t.category.name() == 'INTERNET'   ? 'wifi' :
-                           (t.category.name() == 'CLEANING'   ? 'spray-can' :
-                           (t.category.name() == 'SECURITY'   ? 'shield' :
-                                                                'wrench')))))))}"
-                           class="w-5 h-5"></i>
-                    </span>
+                           (t.category.name() == 'PLUMBING' ? 'droplets' :
+                           (t.category.name() == 'AC_HVAC' ? 'wind' :
+                           (t.category.name() == 'FURNITURE' ? 'sofa' :
+                           (t.category.name() == 'APPLIANCE' ? 'refrigerator' :
+                           (t.category.name() == 'INTERNET' ? 'wifi' :
+                           (t.category.name() == 'CLEANING' ? 'spray-can' :
+                           (t.category.name() == 'SECURITY' ? 'shield' : 'wrench')))))))}"></i>
+                    </div>
+
+                    <div class="ticket-title-cell">
+                        <div class="ticket-code-line">
+                            <span class="tnum" th:text="${t.code}">MT</span>
+                            <span>·</span>
+                            <span th:text="${categoryLabels.get(t.category.name())}">Khác</span>
+                            <span th:if="${attachmentMap.get(t.id) != null and !attachmentMap.get(t.id).isEmpty()}">·</span>
+                            <span th:if="${attachmentMap.get(t.id) != null and !attachmentMap.get(t.id).isEmpty()}" class="ticket-mini-meta">
+                                <i data-lucide="paperclip"></i>
+                                <span th:text="${attachmentMap.get(t.id).size()}">1</span>
+                            </span>
+                        </div>
+                        <h3 th:text="${t.title}">Tiêu đề ticket</h3>
+                        <p th:text="${t.description != null and !t.description.isBlank() ? t.description : 'Không có mô tả.'}">Mô tả</p>
+                    </div>
+
+                    <div class="ticket-context-cell">
+                        <strong th:text="${t.roomId != null ? roomLabels.get(t.roomId) : 'Không gắn phòng'}">Phòng</strong>
+                        <span th:text="${t.propertyId != null ? propertyLabels.get(t.propertyId) : 'Chưa chọn cơ sở'}">Cơ sở</span>
+                    </div>
+
+                    <div class="ticket-user-cell">
+                        <span class="ticket-avatar"
+                              th:text="${usersById.get(t.reporterUserId) != null ? usersById.get(t.reporterUserId).fullName.substring(0,1).toUpperCase() : 'A'}">A</span>
+                        <div>
+                            <strong th:text="${usersById.get(t.reporterUserId) != null ? usersById.get(t.reporterUserId).fullName : 'Admin'}">Người báo</strong>
+                            <span th:text="${usersById.get(t.assigneeUserId) != null ? 'Xử lý: ' + usersById.get(t.assigneeUserId).fullName : 'Chưa phân công'}">Chưa phân công</span>
+                        </div>
+                    </div>
+
+                    <div class="ticket-status-cell">
+                        <span class="badge"
+                              th:classappend="${t.status.name() == 'RESOLVED' or t.status.name() == 'CLOSED' ? 'badge-emerald' : (t.status.name() == 'CANCELLED' ? 'badge-mute' : (t.status.name() == 'IN_PROGRESS' or t.status.name() == 'AWAITING_PARTS' ? 'badge-amber' : 'badge-violet'))}"
+                              th:text="${statusLabels.get(t.status.name())}">Mới</span>
+                        <span class="badge"
+                              th:classappend="${t.priority.name() == 'URGENT' ? 'badge-rose' : (t.priority.name() == 'HIGH' ? 'badge-amber' : (t.priority.name() == 'LOW' ? 'badge-mute' : 'badge-violet'))}"
+                              th:text="${priorityLabels.get(t.priority.name())}">Ưu tiên</span>
+                        <span class="badge" th:classappend="${slaMap.get(t.id).badgeClass}" th:text="${slaMap.get(t.id).label}">SLA</span>
+                    </div>
+
+                    <div class="ticket-time-cell">
+                        <strong class="tnum" th:text="${#temporals.format(t.reportedAt, 'dd/MM HH:mm')}">04/06</strong>
+                        <span th:text="${t.resolvedAt != null ? 'Xong ' + #temporals.format(t.resolvedAt, 'dd/MM') : 'Đang theo dõi'}">Đang theo dõi</span>
+                    </div>
+
+                    <div class="ticket-row-actions">
+                        <button type="button" class="ticket-soft-button" @click="open = !open">
+                            <i data-lucide="panel-right-open"></i>
+                            <span th:text="#{tickets.details}">Details</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Body -->
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-start justify-between gap-3 flex-wrap">
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="mono text-[11px] text-[color:var(--text-mute)] inline-flex items-center gap-1">
-                                    <i data-lucide="hash" class="w-3 h-3"></i>
-                                    <span th:text="${t.code}">REQ-001</span>
-                                </span>
-                                <span class="text-[color:var(--text-faint)]">·</span>
-                                <span class="text-[12px] text-[color:var(--text-mute)] inline-flex items-center gap-1">
-                                    <i data-lucide="map-pin" class="w-3 h-3"></i>
-                                    <span class="font-medium text-[color:var(--text-soft)]"
-                                          th:text="${t.roomId != null ? roomLabels.get(t.roomId) : '—'}">LH-201 · Lotus</span>
-                                </span>
+                <div class="ticket-detail-panel" x-show="open">
+                    <div class="ticket-conversation">
+                        <div class="ticket-panel-section">
+                            <h4>Hội thoại</h4>
+                            <div th:if="${ticketMessages != null and !ticketMessages.isEmpty()}"
+                                 th:each="message : ${ticketMessages}"
+                                 th:with="messagePhotos=${messageAttachmentMap != null ? messageAttachmentMap.get(message.id) : null}"
+                                 class="ticket-message"
+                                 th:classappend="${message.senderRole != null and message.senderRole.name() == 'TENANT' ? ' is-customer' : ' is-internal'}">
+                                <span class="ticket-avatar"
+                                      th:classappend="${message.senderRole != null and message.senderRole.name() == 'TENANT' ? '' : ' is-staff'}"
+                                      th:text="${message.senderRole != null and message.senderRole.name() == 'TENANT'
+                                            ? (usersById.get(message.senderUserId) != null ? usersById.get(message.senderUserId).fullName.substring(0,1).toUpperCase() : 'K')
+                                            : 'Q'}">Q</span>
+                                <div>
+                                    <strong th:text="${message.senderRole != null and message.senderRole.name() == 'TENANT'
+                                            ? (usersById.get(message.senderUserId) != null ? usersById.get(message.senderUserId).fullName : 'Khách thuê')
+                                            : (message.senderRole != null and message.senderRole.name() == 'SYSTEM' ? 'SmartRent' : 'Quản trị viên')}">Người gửi</strong>
+                                    <p th:if="${message.body != null and !message.body.isBlank()}" th:text="${message.body}">Nội dung</p>
+                                    <div th:if="${messagePhotos != null and !messagePhotos.isEmpty()}" class="ticket-attachments ticket-message-attachments">
+                                        <a th:each="url : ${messagePhotos}" th:href="${url}" target="_blank" rel="noopener">
+                                            <img th:src="${url}" alt="Ảnh ticket" />
+                                        </a>
+                                    </div>
+                                    <small class="tnum" th:text="${message.createdAt != null ? #temporals.format(message.createdAt, 'dd/MM/yyyy HH:mm') : ''}">04/06</small>
+                                </div>
                             </div>
-                            <h3 class="text-[16px] font-semibold mt-1.5 leading-snug" th:text="${t.title}">Máy lạnh không lạnh</h3>
-                            <p th:if="${t.description != null}" class="text-[13px] text-[color:var(--text-soft)] mt-1.5 leading-relaxed line-clamp-2" th:text="${t.description}">Mô tả chi tiết</p>
+                            <div th:if="${ticketMessages == null or ticketMessages.isEmpty()}" class="ticket-message is-customer">
+                                <span class="ticket-avatar"
+                                      th:text="${usersById.get(t.reporterUserId) != null ? usersById.get(t.reporterUserId).fullName.substring(0,1).toUpperCase() : 'A'}">K</span>
+                                <div>
+                                    <strong th:text="${usersById.get(t.reporterUserId) != null ? usersById.get(t.reporterUserId).fullName : 'Người tạo'}">Khách thuê</strong>
+                                    <p th:text="${t.description != null and !t.description.isBlank() ? t.description : t.title}">Nội dung yêu cầu</p>
+                                    <small class="tnum" th:text="${#temporals.format(t.reportedAt, 'dd/MM/yyyy HH:mm')}">04/06</small>
+                                </div>
+                            </div>
+                            <div class="ticket-message is-internal">
+                                <span class="ticket-avatar is-system"><i data-lucide="bot"></i></span>
+                                <div>
+                                    <strong>SmartRent</strong>
+                                    <p>
+                                        Hệ thống đã phân loại là
+                                        <b th:text="${categoryLabels.get(t.category.name())}">Khác</b>,
+                                        ưu tiên
+                                        <b th:text="${priorityLabels.get(t.priority.name())}">Bình thường</b>.
+                                    </p>
+                                    <small th:text="${slaMap.get(t.id).label}">SLA</small>
+                                </div>
+                            </div>
+                            <div class="ticket-message is-internal" th:if="${t.resolutionNote != null and !t.resolutionNote.isBlank()}">
+                                <span class="ticket-avatar is-staff"><i data-lucide="check"></i></span>
+                                <div>
+                                    <strong>Ghi chú xử lý</strong>
+                                    <p th:text="${t.resolutionNote}">Ghi chú</p>
+                                    <small th:text="${t.resolvedAt != null ? #temporals.format(t.resolvedAt, 'dd/MM/yyyy HH:mm') : ''}">Ngày</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <!-- Priority badge -->
-                            <span class="badge"
-                                  th:classappend="${
-                                    t.priority.name() == 'URGENT' ? 'badge-rose' :
-                                   (t.priority.name() == 'HIGH'   ? 'badge-amber' :
-                                   (t.priority.name() == 'NORMAL' ? 'badge-violet' :
-                                                                    'badge-mute'))}">
-                                <span th:switch="${t.priority.name()}">
-                                    <span th:case="'URGENT'">🔥 Khẩn</span>
-                                    <span th:case="'HIGH'">Cao</span>
-                                    <span th:case="'NORMAL'">Bình thường</span>
-                                    <span th:case="'LOW'">Thấp</span>
-                                </span>
-                            </span>
-                            <!-- Status badge -->
-                            <span class="badge"
-                                  th:classappend="${
-                                    t.status.name() == 'OPEN'           ? 'badge-violet' :
-                                   (t.status.name() == 'ACKNOWLEDGED'   ? 'badge-violet' :
-                                   (t.status.name() == 'IN_PROGRESS'    ? 'badge-amber' :
-                                   (t.status.name() == 'AWAITING_PARTS' ? 'badge-amber' :
-                                   (t.status.name() == 'RESOLVED'       ? 'badge-emerald' :
-                                                                          'badge-mute'))))}">
-                                <span th:if="${t.status.name() == 'OPEN' or t.status.name() == 'IN_PROGRESS'}" class="dot dot-pulse" style="background: currentColor"></span>
-                                <span th:switch="${t.status.name()}">
-                                    <span th:case="'OPEN'">Mới</span>
-                                    <span th:case="'ACKNOWLEDGED'">Đã ghi nhận</span>
-                                    <span th:case="'IN_PROGRESS'">Đang xử lý</span>
-                                    <span th:case="'AWAITING_PARTS'">Chờ vật tư</span>
-                                    <span th:case="'RESOLVED'">Đã xong</span>
-                                    <span th:case="'CLOSED'">Đã đóng</span>
-                                    <span th:case="'CANCELLED'">Đã hủy</span>
-                                </span>
-                            </span>
+
+                        <div class="ticket-panel-section">
+                            <h4>Đính kèm</h4>
+                            <div class="ticket-attachments" th:if="${attachmentMap.get(t.id) != null and !attachmentMap.get(t.id).isEmpty()}">
+                                <a th:each="url : ${attachmentMap.get(t.id)}" th:href="${url}" target="_blank" rel="noopener">
+                                    <img th:src="${url}" alt="Ảnh ticket" />
+                                </a>
+                            </div>
+                            <p class="ticket-muted" th:if="${attachmentMap.get(t.id) == null or attachmentMap.get(t.id).isEmpty()}">Chưa có ảnh đính kèm.</p>
                         </div>
                     </div>
 
-                    <!-- Meta row -->
-                    <div class="flex items-center gap-x-4 gap-y-1.5 text-[12px] text-[color:var(--text-mute)] mt-3 pt-3 border-t border-[color:var(--line-soft)] flex-wrap">
-                        <span class="inline-flex items-center gap-1.5">
-                            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-                            Báo cáo: <span class="font-medium text-[color:var(--text-soft)] tnum"
-                                          th:text="${#temporals.format(t.reportedAt, 'dd/MM HH:mm')}">06/05 14:30</span>
-                        </span>
-                        <span th:if="${t.scheduledFor != null}" class="inline-flex items-center gap-1.5">
-                            <i data-lucide="calendar-check" class="w-3.5 h-3.5"></i>
-                            Lịch xử lý: <span class="font-medium text-[color:var(--text-soft)] tnum"
-                                              th:text="${#temporals.format(t.scheduledFor, 'dd/MM HH:mm')}">07/05 09:00</span>
-                        </span>
-                        <span th:if="${t.resolvedAt != null}" class="inline-flex items-center gap-1.5 text-[color:var(--ok)]">
-                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
-                            Đã xong: <span class="font-medium tnum"
-                                           th:text="${#temporals.format(t.resolvedAt, 'dd/MM HH:mm')}">08/05 11:00</span>
-                        </span>
-                        <span th:if="${t.estimatedCost != null}" class="inline-flex items-center gap-1.5">
-                            <i data-lucide="circle-dollar-sign" class="w-3.5 h-3.5"></i>
-                            Dự kiến: <span class="font-medium text-[color:var(--text-soft)] tnum"
-                                            th:text="${h.vnd(t.estimatedCost)}">450.000₫</span>
-                        </span>
-                        <span th:if="${t.actualCost != null}" class="inline-flex items-center gap-1.5 text-[color:var(--ok)]">
-                            <i data-lucide="badge-check" class="w-3.5 h-3.5"></i>
-                            Thực tế: <span class="font-medium tnum"
-                                           th:text="${h.vnd(t.actualCost)}">120.000₫</span>
-                        </span>
-                    </div>
+                    <div class="ticket-side-workflow">
+                        <div class="ticket-panel-section">
+                            <h4>Trả lời khách thuê</h4>
+                            <form th:action="@{'/admin/tickets/' + ${t.id} + '/messages'}"
+                                  method="post"
+                                  enctype="multipart/form-data"
+                                  class="ticket-admin-reply-form"
+                                  data-ticket-form>
+                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <textarea name="body" rows="4" placeholder="Nhập phản hồi cho khách thuê..."></textarea>
+                                <div class="ticket-uploader ticket-reply-uploader" data-ticket-uploader>
+                                    <input class="ticket-uploader-input"
+                                           type="file"
+                                           name="attachments"
+                                           accept="image/png,image/jpeg,image/webp"
+                                           multiple
+                                           data-ticket-file-input />
+                                    <button type="button" class="ticket-uploader-drop" data-ticket-upload-button>
+                                        <span class="ticket-uploader-icon"><i data-lucide="image-plus"></i></span>
+                                        <span>
+                                            <strong>Đính kèm ảnh</strong>
+                                            <small>Không bắt buộc.</small>
+                                        </span>
+                                    </button>
+                                    <div class="ticket-uploader-meta">
+                                        <span data-ticket-file-count>Chưa chọn ảnh</span>
+                                    </div>
+                                    <div class="ticket-uploader-preview" data-ticket-file-list hidden></div>
+                                </div>
+                                <button type="submit" class="ticket-primary-button">
+                                    <i data-lucide="send"></i>
+                                    Gửi trả lời
+                                </button>
+                            </form>
+                        </div>
 
-                    <!-- Resolution note -->
-                    <div th:if="${t.resolutionNote != null and !t.resolutionNote.isEmpty()}"
-                         class="mt-3 rounded-xl p-3 bg-[color:var(--ok-soft)] border border-[color:var(--ok)]/20">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.06em] text-[color:var(--ok)] mb-1">Ghi chú xử lý</div>
-                        <p class="text-[13px] text-[color:var(--text-soft)] leading-relaxed" th:text="${t.resolutionNote}">Đã thay router</p>
+                        <div class="ticket-panel-section">
+                            <h4>Workflow</h4>
+                            <div class="ticket-workflow">
+                                <form th:action="@{'/admin/tickets/' + ${t.id} + '/status'}" method="post">
+                                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                    <select name="status" data-native-select>
+                                        <option value="OPEN" th:selected="${t.status.name() == 'OPEN'}">Đang mở</option>
+                                        <option value="ACKNOWLEDGED"
+                                                th:selected="${t.status.name() == 'ACKNOWLEDGED' or t.status.name() == 'IN_PROGRESS' or t.status.name() == 'AWAITING_PARTS'}">Đã trả lời</option>
+                                        <option value="CLOSED"
+                                                th:selected="${t.status.name() == 'RESOLVED' or t.status.name() == 'CLOSED' or t.status.name() == 'CANCELLED'}">Đã đóng</option>
+                                    </select>
+                                    <textarea name="note" rows="3" placeholder="Ghi chú cho khách thuê hoặc nội bộ..."></textarea>
+                                    <button type="submit" class="ticket-primary-button">
+                                        <i data-lucide="save"></i>
+                                        Cập nhật trạng thái
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="ticket-panel-section">
+                            <h4>Phân công</h4>
+                            <form th:action="@{'/admin/tickets/' + ${t.id} + '/assign'}" method="post" class="ticket-assign-form">
+                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <select name="assigneeId" data-native-select>
+                                    <option th:each="u : ${assignees}"
+                                            th:value="${u.id}"
+                                            th:selected="${t.assigneeUserId != null and t.assigneeUserId.equals(u.id)}"
+                                            th:text="${u.fullName + ' · ' + u.email}">Admin</option>
+                                </select>
+                                <button type="submit" class="ticket-soft-button">
+                                    <i data-lucide="user-check"></i>
+                                    Gán
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="ticket-panel-section">
+                            <h4>Audit log</h4>
+                            <ol class="ticket-timeline">
+                                <li>
+                                    <span></span>
+                                    <div>
+                                        <strong>Tạo ticket</strong>
+                                        <small th:text="${#temporals.format(t.reportedAt, 'dd/MM/yyyy HH:mm')}">Ngày</small>
+                                    </div>
+                                </li>
+                                <li th:if="${t.assigneeUserId != null}">
+                                    <span></span>
+                                    <div>
+                                        <strong>Đã phân công</strong>
+                                        <small th:text="${usersById.get(t.assigneeUserId) != null ? usersById.get(t.assigneeUserId).fullName : 'Nhân sự'}">Nhân sự</small>
+                                    </div>
+                                </li>
+                                <li th:if="${t.resolvedAt != null}">
+                                    <span></span>
+                                    <div>
+                                        <strong>Hoàn thành</strong>
+                                        <small th:text="${#temporals.format(t.resolvedAt, 'dd/MM/yyyy HH:mm')}">Ngày</small>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <form th:action="@{'/admin/tickets/' + ${t.id} + '/delete'}" method="post"
+                              onsubmit="return confirm('Xóa ticket này?');">
+                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                            <button type="submit" class="ticket-danger-button">
+                                <i data-lucide="trash-2"></i>
+                                Xóa ticket
+                            </button>
+                        </form>
                     </div>
                 </div>
-
-                <!-- Actions (POST forms with status transitions) -->
-                <div class="flex sm:flex-col items-stretch sm:items-end gap-2 shrink-0" x-data="{ menuOpen: false }">
-                    <form th:if="${t.status.name() == 'OPEN'}"
-                          th:action="@{'/admin/tickets/' + ${t.id} + '/status'}" method="post" class="contents">
-                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                        <input type="hidden" name="status" value="ACKNOWLEDGED" />
-                        <button type="submit" class="btn btn-soft btn-sm">
-                            <i data-lucide="check" class="w-3.5 h-3.5"></i> Ghi nhận
-                        </button>
-                    </form>
-                    <form th:if="${t.status.name() == 'ACKNOWLEDGED'}"
-                          th:action="@{'/admin/tickets/' + ${t.id} + '/status'}" method="post" class="contents">
-                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                        <input type="hidden" name="status" value="IN_PROGRESS" />
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i data-lucide="play" class="w-3.5 h-3.5"></i> Bắt đầu xử lý
-                        </button>
-                    </form>
-                    <form th:if="${t.status.name() == 'IN_PROGRESS'}"
-                          th:action="@{'/admin/tickets/' + ${t.id} + '/status'}" method="post" class="contents">
-                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                        <input type="hidden" name="status" value="RESOLVED" />
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Hoàn thành
-                        </button>
-                    </form>
-                    <div class="relative">
-                        <button type="button" @click.stop="menuOpen = !menuOpen"
-                                class="btn btn-ghost btn-sm w-full">
-                            <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <div x-show="menuOpen" x-cloak @click.outside="menuOpen = false"
-                             class="absolute right-0 top-full mt-1 w-[180px] glass-strong rounded-xl p-1 z-30 shadow-glass-lg">
-                            <form th:if="${t.status.name() != 'IN_PROGRESS' and t.status.name() != 'AWAITING_PARTS'}"
-                                  th:action="@{'/admin/tickets/' + ${t.id} + '/status'}" method="post">
-                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                                <input type="hidden" name="status" value="AWAITING_PARTS" />
-                                <button type="submit" class="w-full text-left px-3 py-2 rounded-lg text-[12px] hover:bg-black/[0.04] inline-flex items-center gap-2">
-                                    <i data-lucide="package" class="w-3 h-3"></i> Chờ phụ tùng
-                                </button>
-                            </form>
-                            <form th:if="${t.status.name() != 'CANCELLED'}"
-                                  th:action="@{'/admin/tickets/' + ${t.id} + '/status'}" method="post">
-                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                                <input type="hidden" name="status" value="CANCELLED" />
-                                <button type="submit" class="w-full text-left px-3 py-2 rounded-lg text-[12px] hover:bg-black/[0.04] inline-flex items-center gap-2 text-[color:var(--text-mute)]">
-                                    <i data-lucide="x-circle" class="w-3 h-3"></i> Hủy yêu cầu
-                                </button>
-                            </form>
-                            <div class="border-t border-[color:var(--line-soft)] my-1"></div>
-                            <form th:action="@{'/admin/tickets/' + ${t.id} + '/delete'}" method="post"
-                                  onsubmit="return confirm('Xóa yêu cầu này?');">
-                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                                <button type="submit" class="w-full text-left px-3 py-2 rounded-lg text-[12px] hover:bg-[color:var(--err-soft)] text-[color:var(--err)] inline-flex items-center gap-2">
-                                    <i data-lucide="trash-2" class="w-3 h-3"></i> Xóa
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </article>
         </div>
-    </div>
 
-    <!-- Empty -->
-    <div th:if="${tickets == null or tickets.isEmpty()}" class="empty">
-        <div class="empty-icon">
-            <i data-lucide="wrench" class="w-7 h-7"></i>
-        </div>
-        <h3 class="text-[16px] font-semibold">Chưa có ticket nào</h3>
-        <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5 max-w-md mx-auto">
-            <span th:if="${filterStatus != null and !filterStatus.isEmpty()}">Không có yêu cầu thuộc trạng thái này.</span>
-            <span th:unless="${filterStatus != null and !filterStatus.isEmpty()}">Khi khách thuê hoặc bạn báo sự cố, yêu cầu sẽ xuất hiện ở đây.</span>
-        </p>
-    </div>
+        <div th:if="${ticketPage != null and ticketPage.totalElements > 0}"
+             th:replace="~{fragments/pagination :: pager(
+                currentPage=${ticketPage.number},
+                totalPages=${ticketPage.totalPages},
+                totalElements=${ticketPage.totalElements},
+                pageSize=${ticketPage.size},
+                baseUrl=@{/admin/tickets(q=${filterQ},state=${filterState})} + '&'
+             )}"></div>
+    </section>
 
-    <!-- Pagination -->
-    <div th:if="${ticketPage != null and ticketPage.totalElements > 0}" class="card-pad-0">
-        <div th:replace="~{fragments/pagination :: pager(
-            currentPage=${ticketPage.number},
-            totalPages=${ticketPage.totalPages},
-            totalElements=${ticketPage.totalElements},
-            pageSize=${ticketPage.size},
-            baseUrl='/admin/tickets?status=' + (filterStatus ?: '') + '&priority=' + (filterPriority ?: '') + '&'
-        )}"></div>
-    </div>
-
-    <!-- ===== CREATE TICKET MODAL ===== -->
-    <div x-show="createOpen" x-cloak x-transition.opacity
-         class="modal-backdrop"
-         @keydown.escape.window="createOpen = false">
+    <div x-show="createOpen" x-cloak x-transition.opacity class="modal-backdrop" @keydown.escape.window="createOpen = false">
         <form @click.outside="createOpen = false"
-              th:action="@{/admin/tickets}" method="post"
-              class="modal-card p-7 w-full max-w-[600px] max-h-[90vh] overflow-y-auto">
+              th:action="@{/admin/tickets}"
+              method="post"
+              enctype="multipart/form-data"
+              class="ticket-create-modal"
+              data-ticket-form>
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-
-            <div class="flex items-start justify-between mb-5">
+            <div class="ticket-modal-head">
                 <div>
-                    <span class="eyebrow">Mới</span>
-                    <h2 class="text-[22px] font-bold tracking-tight mt-1">Tạo ticket</h2>
-                    <p class="text-[12px] text-[color:var(--text-mute)] mt-1">Ghi nhận yêu cầu để theo dõi, xử lý và lưu lịch sử.</p>
+                    <span th:text="#{tickets.new}">New ticket</span>
+                    <h2 th:text="#{tickets.createRequest}">Create support request</h2>
+                    <p th:text="#{tickets.createDesc}">Enter the support request and attach images if needed.</p>
                 </div>
-                <button type="button" @click="createOpen = false"
-                        class="w-8 h-8 grid place-items-center rounded-md hover:bg-black/[0.05]">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
+                <button type="button" @click="createOpen = false" th:attr="aria-label=#{tickets.close}"><i data-lucide="x"></i></button>
             </div>
 
-            <div class="space-y-4">
-                <div>
-                    <label class="form-label">Tiêu đề <span class="text-[color:var(--err)]">*</span></label>
-                    <div class="input-glass">
-                        <i data-lucide="wrench" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                        <input type="text" name="title" required maxlength="200" placeholder="VD: Vòi nước bồn rửa bị rỉ" />
-                    </div>
-                </div>
-
-                <div class="grid sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="form-label">Hạng mục</label>
-                        <div class="input-glass">
-                            <select name="category">
-                                <option value="ELECTRICAL">Điện</option>
-                                <option value="PLUMBING">Nước / ống</option>
-                                <option value="AC_HVAC">Máy lạnh / điều hòa</option>
-                                <option value="FURNITURE">Nội thất</option>
-                                <option value="APPLIANCE">Thiết bị</option>
-                                <option value="INTERNET">Internet</option>
-                                <option value="CLEANING">Vệ sinh</option>
-                                <option value="SECURITY">An ninh</option>
-                                <option value="OTHER" selected>Khác</option>
-                            </select>
+            <div class="ticket-create-grid">
+                <label class="ticket-field is-wide">
+                    <span th:text="#{tickets.titleField}">Title *</span>
+                    <input type="text" name="title" required maxlength="200" th:placeholder="#{tickets.titlePlaceholder}" />
+                </label>
+                <label class="ticket-field">
+                    <span th:text="#{tickets.property}">Property</span>
+                    <select name="propertyId" data-native-select>
+                        <option value="" th:text="#{tickets.notSelected}">Not selected</option>
+                        <option th:each="p : ${properties}" th:value="${p.id}" th:text="${p.name}">Cơ sở</option>
+                    </select>
+                </label>
+                <label class="ticket-field">
+                    <span th:text="#{tickets.room}">Room</span>
+                    <select name="roomId" data-native-select>
+                        <option value="" th:text="#{tickets.notSelected}">Not selected</option>
+                        <option th:each="r : ${rooms}" th:value="${r.id}" th:text="${r.code + ' · ' + r.title}">Phòng</option>
+                    </select>
+                </label>
+                <label class="ticket-field is-wide">
+                    <span th:text="#{tickets.description}">Description</span>
+                    <textarea name="description" rows="4" th:placeholder="#{tickets.descriptionPlaceholder}"></textarea>
+                </label>
+                <div class="ticket-field is-wide">
+                    <span th:text="#{tickets.attachments}">Image attachments</span>
+                    <div class="ticket-uploader" data-ticket-uploader>
+                        <input class="ticket-uploader-input"
+                               type="file"
+                               name="attachments"
+                               accept="image/png,image/jpeg,image/webp"
+                               multiple
+                               data-ticket-file-input />
+                        <button type="button" class="ticket-uploader-drop" data-ticket-upload-button>
+                            <span class="ticket-uploader-icon"><i data-lucide="image-plus"></i></span>
+                            <span>
+                                <strong th:text="#{tickets.uploadTitle}">Choose or drag images</strong>
+                                <small th:text="#{tickets.uploadHint}">Supports multiple images.</small>
+                            </span>
+                        </button>
+                        <div class="ticket-uploader-meta">
+                            <span data-ticket-file-count th:text="#{tickets.noFiles}">No images selected</span>
                         </div>
-                    </div>
-                    <div>
-                        <label class="form-label">Mức độ ưu tiên</label>
-                        <div class="input-glass">
-                            <select name="priority">
-                                <option value="LOW">Thấp</option>
-                                <option value="NORMAL" selected>Bình thường</option>
-                                <option value="HIGH">Cao</option>
-                                <option value="URGENT">Khẩn cấp</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="form-label">Cơ sở</label>
-                        <div class="input-glass">
-                            <i data-lucide="building" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                            <select name="propertyId">
-                                <option value="">-- Không chọn --</option>
-                                <option th:each="p : ${propertiesList ?: properties}"
-                                        th:if="${p != null}"
-                                        th:value="${p.id}"
-                                        th:text="${p.name}">Glass Tower</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="form-label">Phòng (nếu có)</label>
-                        <div class="input-glass">
-                            <i data-lucide="bed" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                            <select name="roomId">
-                                <option value="">-- Không chọn --</option>
-                                <option th:each="r : ${roomsList ?: #lists.toList(new java.util.ArrayList())}"
-                                        th:value="${r.id}"
-                                        th:text="${r.code + ' · ' + r.title}">GT-A-301</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="form-label">Mô tả chi tiết</label>
-                    <div class="input-glass !h-auto !py-3">
-                        <textarea name="description" rows="3" placeholder="Mô tả tình trạng cụ thể, vị trí, thời điểm phát hiện…"></textarea>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="form-label">Chi phí ước tính (₫)</label>
-                    <div class="input-glass">
-                        <i data-lucide="banknote" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                        <input type="number" name="estimatedCost" min="0" placeholder="VD: 500000" />
+                        <div class="ticket-uploader-preview" data-ticket-file-list hidden></div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex items-center justify-end gap-2 mt-6 pt-5 border-t border-[color:var(--line-soft)]">
-                <button type="button" @click="createOpen = false" class="btn btn-ghost">Hủy</button>
-                <button type="submit" class="btn btn-primary">
-                    <i data-lucide="check" class="w-4 h-4"></i> Tạo ticket
+            <div class="ticket-modal-actions">
+                <button type="button" class="ticket-soft-button" @click="createOpen = false" th:text="#{common.cancel}">Cancel</button>
+                <button type="submit" class="ticket-primary-button">
+                    <i data-lucide="send"></i>
+                    <span th:text="#{tickets.create}">Create ticket</span>
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+<th:block layout:fragment="extra-scripts">
+    <script th:src="@{/js/admin-tickets.js}"></script>
+</th:block>
 </body>
 </html>

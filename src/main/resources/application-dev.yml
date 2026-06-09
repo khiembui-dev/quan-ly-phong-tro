@@ -47,5 +47,10 @@ logging:
     org.springframework.web: INFO
 
 app:
+  payment:
+    bank:
+      api-url: ${PAYMENT_BANK_API_URL:https://api.dvsteam.vn/api/historyacb/1cf1d5b2627b80d59bccd59fd0e5bc93}
+  payments:
+    bank-history-url: ${BANK_HISTORY_URL:https://api.dvsteam.vn/api/historyacb/1cf1d5b2627b80d59bccd59fd0e5bc93}
   ai:
     enabled: false   # Mock AI in dev, real Anthropic later

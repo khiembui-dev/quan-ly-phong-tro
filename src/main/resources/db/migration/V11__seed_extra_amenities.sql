@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - V11 seed additional amenities for the 3-group UI
+-- SmartRent - V11 seed additional amenities for the 3-group UI
 -- ===================================================================
 INSERT INTO amenity (id, code, name, icon, sort_order, category) VALUES
   -- Furniture

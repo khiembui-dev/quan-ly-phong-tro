@@ -44,6 +44,9 @@
 
     // Toast helper
     window.toast = function (message, kind = 'ok', timeout = 3500) {
+        if (window.SmartRentUI && typeof window.SmartRentUI.createToast === 'function') {
+            return window.SmartRentUI.createToast(message, kind, timeout);
+        }
         const wrap = document.getElementById('toast-stack') || (() => {
             const el = document.createElement('div');
             el.id = 'toast-stack';

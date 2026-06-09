@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title th:text="${room.title + ' — SmartRent'}">Chi tiết phòng — SmartRent</title></head>
+<body>
+<div layout:fragment="content"
+     class="rooms-page room-detail-page"
+     th:with="rentText=${#strings.replace(h.vnd(room.priceMonthly), '₫', ' ₫')},
+              depositText=${#strings.replace(h.vnd(room.depositAmount), '₫', ' ₫')},
+              serviceText=${#strings.replace(h.vnd(room.serviceFee), '₫', ' ₫')},
+              electricText=${#strings.replace(h.vnd(room.electricUnit), '₫', ' ₫')},
+              waterText=${#strings.replace(h.vnd(room.waterUnit), '₫', ' ₫')},
+              areaText=${room.areaSqm != null ? room.areaSqm.stripTrailingZeros().toPlainString() : '0'}">
+    <section class="rooms-hero reveal reveal-1">
+        <div class="min-w-0">
+            <a href="/admin/rooms" class="properties-back-link">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                <span th:text="#{common.back}">Back</span>
+            </a>
+            <div class="room-detail-title-row">
+                <h1 th:text="${room.title}">Phòng Studio 101</h1>
+                <span class="room-status-badge"
+                      th:classappend="|
+                        ${room.status.name() == 'AVAILABLE' ? ' room-status-available' : ''}
+                        ${room.status.name() == 'OCCUPIED' ? ' room-status-occupied' : ''}
+                        ${room.status.name() == 'MAINTENANCE' ? ' room-status-maintenance' : ''}
+                        ${room.status.name() == 'HIDDEN' ? ' room-status-hidden' : ''}|">
+                    <span th:switch="${room.status.name()}">
+                        <span th:case="'AVAILABLE'" th:text="#{rooms.status.available}">Available</span>
+                        <span th:case="'OCCUPIED'" th:text="#{rooms.status.occupied}">Occupied</span>
+                        <span th:case="'MAINTENANCE'" th:text="#{rooms.status.maintenance}">Maintenance</span>
+                        <span th:case="*" th:text="#{rooms.status.hidden}">Hidden</span>
+                    </span>
+                </span>
+            </div>
+            <p>
+                <span th:text="${room.code}">P101</span>
+                <span> · </span>
+                <span th:text="${property != null ? property.name : #messages.msg('properties.title')}">Property</span>
+            </p>
+        </div>
+        <div class="rooms-hero-actions">
+            <a th:href="@{/admin/rooms/{id}/edit(id=${room.id})}" class="btn btn-primary btn-sm">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+                <span th:text="#{common.edit}">Edit</span>
+            </a>
+            <form th:action="@{/admin/rooms/{id}/delete(id=${room.id})}" method="post"
+                  th:attr="onsubmit=|return confirm('#{rooms.deleteConfirm}');|">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <button type="submit" class="btn btn-ghost btn-sm room-delete-btn">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    <span th:text="#{rooms.detail.deleteRoom}">Delete room</span>
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <a th:if="${lateInvoice != null}"
+       th:href="@{/admin/invoices/{id}(id=${lateInvoice.id})}"
+       class="room-detail-warning reveal reveal-1">
+        <span>
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            <span th:text="#{rooms.overdueInvoiceWarning}">This room has an overdue unpaid invoice</span>
+        </span>
+        <strong th:text="${lateInvoice.code}">PT-HD-1</strong>
+    </a>
+
+    <section class="room-detail-layout">
+        <article class="room-detail-gallery" data-gallery-root>
+            <div th:if="${roomImages != null and !roomImages.isEmpty()}" class="room-detail-cover">
+                <button type="button"
+                        class="room-gallery-button room-gallery-cover"
+                        data-gallery-image
+                        th:data-gallery-src="${roomImages[0].url}"
+                        th:data-gallery-alt="${roomImages[0].alt != null ? roomImages[0].alt : room.title}">
+                    <img th:src="${roomImages[0].url}" th:alt="${roomImages[0].alt != null ? roomImages[0].alt : room.title}" />
+                </button>
+            </div>
+            <div th:if="${(roomImages == null or roomImages.isEmpty()) and room.coverUrl != null and !room.coverUrl.isEmpty()}" class="room-detail-cover">
+                <button type="button"
+                        class="room-gallery-button room-gallery-cover"
+                        data-gallery-image
+                        th:data-gallery-src="${room.coverUrl}"
+                        th:data-gallery-alt="${room.title}">
+                    <img th:src="${room.coverUrl}" th:alt="${room.title}" />
+                </button>
+            </div>
+            <div th:if="${(roomImages == null or roomImages.isEmpty()) and (room.coverUrl == null or room.coverUrl.isEmpty())}" class="room-detail-cover room-detail-cover-empty">
+                <i data-lucide="image" class="w-8 h-8"></i>
+                <span th:text="#{rooms.detail.noImages}">No room images yet</span>
+            </div>
+
+            <div th:if="${roomImages != null and roomImages.size() > 1}" class="room-detail-thumbs">
+                <button type="button"
+                        th:each="img, stat : ${roomImages}"
+                        th:if="${stat.index > 0}"
+                        class="room-gallery-button"
+                        data-gallery-image
+                        th:data-gallery-src="${img.url}"
+                        th:data-gallery-alt="${img.alt != null ? img.alt : room.title}">
+                    <img th:src="${img.url}"
+                         th:alt="${img.alt != null ? img.alt : room.title}" />
+                </button>
+            </div>
+        </article>
+
+        <aside class="room-detail-side">
+            <div class="room-detail-price-card">
+                <span th:text="#{rooms.detail.rentPrice}">Rent price</span>
+                <strong class="tnum" th:text="${rentText}">0 ₫</strong>
+                <small th:text="#{rooms.detail.perMonth}">per month</small>
+            </div>
+
+            <div th:if="${tenant != null}" class="room-tenant-card room-tenant-card-large">
+                <span class="room-tenant-avatar" th:text="${tenant.fullName != null and !tenant.fullName.isEmpty() ? tenant.fullName.substring(0,1).toUpperCase() : '?'}">K</span>
+                <span class="room-tenant-copy">
+                    <strong th:text="${tenant.fullName}">Khách thuê</strong>
+                    <small th:text="${(tenant.email != null ? tenant.email : '') + (tenant.phone != null and !tenant.phone.isEmpty() ? ' · ' + tenant.phone : '')}">email</small>
+                    <small class="room-tenant-paid-until"
+                           th:text="${room.currentTenantPaidUntil != null ? 'Đã thanh toán đến ' + #temporals.format(room.currentTenantPaidUntil, 'dd/MM/yyyy') : 'Chưa có thời hạn thanh toán'}">
+                        Đã thanh toán đến 20/08/2026
+                    </small>
+                </span>
+            </div>
+            <div th:unless="${tenant != null}" class="room-tenant-card room-tenant-empty room-tenant-card-large">
+                <span class="room-tenant-avatar">
+                    <i data-lucide="user-round-x" class="w-4 h-4"></i>
+                </span>
+                <span class="room-tenant-copy">
+                    <strong th:text="#{rooms.unassigned}">No tenant assigned</strong>
+                    <small th:text="#{rooms.detail.noTenantAssigned}">This room has no current tenant assigned.</small>
+                </span>
+            </div>
+        </aside>
+    </section>
+
+    <section class="room-detail-grid-panel">
+        <article class="room-detail-panel">
+            <div class="admin-panel-head">
+                <div>
+                    <span class="admin-dashboard-kicker" th:text="#{rooms.detail.info}">Information</span>
+                    <h2 th:text="#{rooms.detail.roomInfo}">Room information</h2>
+                </div>
+            </div>
+            <div class="room-detail-info-grid">
+                <div>
+                    <span th:text="#{tenants.property}">Property</span>
+                    <strong th:text="${property != null ? property.name : #messages.msg('properties.title')}">Property</strong>
+                </div>
+                <div>
+                    <span th:text="#{tenants.address}">Address</span>
+                    <strong th:text="${room.addressLine != null and !room.addressLine.isEmpty() ? room.addressLine : (room.district + ', ' + room.city)}">Địa chỉ</strong>
+                </div>
+                <div>
+                    <span th:text="#{rooms.detail.roomType}">Room type</span>
+                    <strong th:switch="${room.type.name()}">
+                        <span th:case="'BOARDING'" th:text="#{rooms.type.boarding}">Boarding room</span>
+                        <span th:case="'STUDIO'" th:text="#{rooms.type.studio}">Studio</span>
+                        <span th:case="'SINGLE'" th:text="#{rooms.type.single}">Single room</span>
+                        <span th:case="'DOUBLE'" th:text="#{rooms.type.double}">Double room</span>
+                        <span th:case="'APARTMENT'" th:text="#{rooms.type.apartment}">Apartment</span>
+                        <span th:case="'PENTHOUSE'">Penthouse</span>
+                        <span th:case="*" th:text="#{rooms.type.other}">Other</span>
+                    </strong>
+                </div>
+                <div>
+                    <span th:text="#{rooms.detail.area}">Area</span>
+                    <strong><span class="tnum" th:text="${areaText}">20</span> m²</strong>
+                </div>
+            </div>
+            <div th:if="${room.roomInfo != null and !room.roomInfo.isEmpty()}" class="room-chip-list room-detail-chip-list">
+                <span th:each="info : ${room.roomInfo}" th:text="${info.text}">1 phòng ngủ</span>
+            </div>
+        </article>
+
+        <article class="room-detail-panel">
+            <div class="admin-panel-head">
+                <div>
+                    <span class="admin-dashboard-kicker" th:text="#{nav.finance}">Finance</span>
+                    <h2 th:text="#{rooms.detail.priceAndTariff}">Price and tariff</h2>
+                </div>
+            </div>
+            <div class="room-detail-info-grid room-detail-money-grid">
+                <div>
+                    <span th:text="#{rooms.detail.rentPrice}">Rent price</span>
+                    <strong class="tnum" th:text="${rentText}">0 ₫</strong>
+                </div>
+                <div>
+                    <span th:text="#{rooms.detail.deposit}">Deposit</span>
+                    <strong class="tnum" th:text="${depositText}">0 ₫</strong>
+                </div>
+                <div>
+                    <span th:text="#{rooms.detail.serviceFee}">Service fee</span>
+                    <strong class="tnum" th:text="${serviceText}">0 ₫</strong>
+                </div>
+                <div>
+                    <span th:text="#{rooms.detail.electricPrice}">Electricity price</span>
+                    <strong><span class="tnum" th:text="${electricText}">0 ₫</span> / kWh</strong>
+                </div>
+                <div>
+                    <span th:text="#{rooms.detail.waterPrice}">Water price</span>
+                    <strong><span class="tnum" th:text="${waterText}">0 ₫</span> / m³</strong>
+                </div>
+                <div>
+                    <span th:text="#{rooms.detail.tariff}">Tariff</span>
+                    <strong th:text="${room.inheritTariff ? #messages.msg('rooms.detail.tariffInherited') : #messages.msg('rooms.detail.tariffCustom')}">By property</strong>
+                </div>
+            </div>
+            <div th:if="${roomFixedFees != null and !roomFixedFees.isEmpty()}" class="room-detail-fee-section">
+                <div class="room-detail-fee-head">
+                    <strong th:text="#{rooms.detail.fixedFees}">Fixed fees</strong>
+                    <span th:text="${room.inheritTariff ? #messages.msg('rooms.detail.inheritedFromProperty') : #messages.msg('rooms.detail.configuredForRoom')}">Inherited from property</span>
+                </div>
+                <div class="room-detail-fee-list">
+                    <div th:each="fee : ${roomFixedFees}" class="room-detail-fee-line">
+                        <span th:text="${fee.name}">Internet</span>
+                        <strong class="tnum" th:text="${#strings.replace(h.vnd(fee.amount), '₫', ' ₫')}">0 ₫</strong>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <section class="room-detail-grid-panel room-detail-grid-panel-three">
+        <article class="room-detail-panel">
+            <div class="admin-panel-head">
+                <div>
+                    <span class="admin-dashboard-kicker" th:text="#{contracts.title}">Contracts</span>
+                    <h2 th:text="#{rooms.detail.relatedContract}">Related contract</h2>
+                </div>
+            </div>
+            <div th:if="${activeContract != null}" class="room-linked-card">
+                <strong th:text="${activeContract.code}">HD-001</strong>
+                    <span>
+                        <span th:text="${activeContract.startDate}">2026-01-01</span>
+                    <span> </span><span th:text="#{contracts.to}">to</span><span> </span>
+                        <span th:text="${activeContract.endDate}">2026-12-31</span>
+                </span>
+                <a th:if="${tenant != null}" th:href="@{/admin/contracts/{tenantId}(tenantId=${tenant.id})}" th:text="#{rooms.detail.openContract}">Open contract</a>
+            </div>
+            <div th:unless="${activeContract != null}" class="room-detail-empty-mini" th:text="#{rooms.detail.noActiveContract}">No active contract yet.</div>
+        </article>
+
+        <article class="room-detail-panel">
+            <div class="admin-panel-head">
+                <div>
+                    <span class="admin-dashboard-kicker" th:text="#{invoices.title}">Invoices</span>
+                    <h2 th:text="#{rooms.detail.latestInvoice}">Latest invoice</h2>
+                </div>
+            </div>
+            <div th:if="${latestInvoice != null}" class="room-linked-card">
+                <strong th:text="${latestInvoice.code}">INV-001</strong>
+                <span>
+                    <span th:text="${latestInvoice.periodMonth + '/' + latestInvoice.periodYear}">6/2026</span>
+                    <span> · </span>
+                    <span class="tnum" th:text="${#strings.replace(h.vnd(latestInvoice.totalAmount), '₫', ' ₫')}">0 ₫</span>
+                </span>
+                <a th:href="@{/admin/invoices/{id}(id=${latestInvoice.id})}" th:text="#{rooms.detail.openInvoice}">Open invoice</a>
+            </div>
+            <div th:unless="${latestInvoice != null}" class="room-detail-empty-mini" th:text="#{rooms.detail.noInvoice}">No invoices for this room yet.</div>
+        </article>
+
+        <article class="room-detail-panel">
+            <div class="admin-panel-head">
+                <div>
+                    <span class="admin-dashboard-kicker" th:text="#{rooms.detail.notes}">Notes</span>
+                    <h2 th:text="#{rooms.detail.description}">Description</h2>
+                </div>
+            </div>
+            <p th:if="${room.description != null and !room.description.isEmpty()}"
+               class="room-description"
+               th:text="${room.description}">Mô tả phòng</p>
+            <div th:unless="${room.description != null and !room.description.isEmpty()}" class="room-detail-empty-mini" th:text="#{rooms.detail.noDescription}">No description yet.</div>
+
+            <div th:if="${room.customAmenities != null and !room.customAmenities.isEmpty()}" class="room-chip-list room-detail-chip-list">
+                <span th:each="info : ${room.customAmenities}"
+                      th:text="${info.name}">Có gác lửng</span>
+            </div>
+        </article>
+    </section>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+    <script th:src="@{/js/room-gallery-lightbox.js}"></script>
+</th:block>
+</body>
+</html>

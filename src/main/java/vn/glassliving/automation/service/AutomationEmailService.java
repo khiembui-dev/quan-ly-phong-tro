@@ -37,6 +37,25 @@ public class AutomationEmailService {
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
 
+    public void sendPasswordResetCode(String toEmail, String fullName, String code, int ttlMinutes) {
+        AutomationSetting setting = settingRepository.findAll().stream()
+                .filter(this::mailUsable)
+                .findFirst()
+                .orElseThrow(() -> BusinessException.badRequest("SMTP chưa sẵn sàng. Vui lòng liên hệ quản trị viên."));
+        String body = """
+                <p>Xin chào <strong>%s</strong>,</p>
+                <p>Mã đặt lại mật khẩu SmartRent của bạn là:</p>
+                <div style="font-size:28px;font-weight:800;letter-spacing:8px;color:#2563eb;background:#eff6ff;border-radius:14px;padding:14px 18px;text-align:center">%s</div>
+                <p>Mã có hiệu lực trong <strong>%s phút</strong>. Không chia sẻ mã này cho bất kỳ ai.</p>
+                <p>Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.</p>
+                """.formatted(
+                esc(Objects.toString(clean(fullName), "khách hàng")),
+                esc(code),
+                ttlMinutes
+        );
+        send(setting, clean(toEmail), "SmartRent - mã đặt lại mật khẩu", body);
+    }
+
     public void sendTest(UUID ownerId, String toEmail) {
         AutomationSetting setting = loadReadySetting(ownerId);
         String recipient = clean(toEmail);
@@ -194,13 +213,15 @@ public class AutomationEmailService {
         sender.setDefaultEncoding(StandardCharsets.UTF_8.name());
 
         Properties props = sender.getJavaMailProperties();
+        boolean directSsl = !setting.isSmtpStartTls() && setting.isSmtpSslTrust();
         props.put("mail.smtp.auth", Boolean.toString(setting.isSmtpAuth()));
         props.put("mail.smtp.starttls.enable", Boolean.toString(setting.isSmtpStartTls()));
         props.put("mail.smtp.starttls.required", Boolean.toString(setting.isSmtpStartTls()));
+        props.put("mail.smtp.ssl.enable", Boolean.toString(directSsl));
         props.put("mail.smtp.connectiontimeout", "10000");
         props.put("mail.smtp.timeout", "10000");
         props.put("mail.smtp.writetimeout", "10000");
-        if (setting.isSmtpSslTrust()) {
+        if (directSsl || setting.isSmtpSslTrust()) {
             props.put("mail.smtp.ssl.trust", clean(setting.getSmtpHost()));
         }
         return sender;
@@ -210,7 +231,7 @@ public class AutomationEmailService {
         return """
                 <div style="font-family:Arial,'Helvetica Neue',sans-serif;color:#0f172a;line-height:1.6;font-size:14px">
                   <div style="max-width:560px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:16px;background:#ffffff">
-                    <div style="font-weight:800;font-size:18px;color:#4f46e5;margin-bottom:16px">SmartRent</div>
+                    <div style="font-weight:800;font-size:18px;color:#2563EB;margin-bottom:16px">SmartRent</div>
                     %s
                     <div style="margin-top:24px;padding-top:16px;border-top:1px solid #eef2f7;color:#64748b;font-size:12px">
                       Email tự động từ hệ thống SmartRent.

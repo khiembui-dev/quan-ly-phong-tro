@@ -101,15 +101,26 @@ public class SecurityConfig {
             .authorizeHttpRequests(reg -> reg
                 .requestMatchers(
                         "/", "/rooms/**", "/login", "/register", "/forgot-password",
+                        "/customer/booking", "/customer/rooms/**", "/customer/room-detail/**",
                         "/reset-password", "/verify-email",
                         "/css/**", "/js/**", "/img/**", "/fonts/**", "/favicon.ico",
+                        "/uploads/rooms/**",
                         "/h2-console/**",
                         "/actuator/health", "/actuator/info",
                         "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
                         "/error").permitAll()
                 .requestMatchers("/uploads/**").authenticated()
                 .requestMatchers("/admin/**").hasAnyRole("OWNER", "ADMIN", "STAFF")
-                .requestMatchers("/me/**", "/booking/**").authenticated()
+                .requestMatchers(
+                        "/me/**", "/booking/**",
+                        "/customer/dashboard",
+                        "/customer/invoices/**",
+                        "/customer/invoice-detail/**",
+                        "/customer/payment-checkout/**",
+                        "/customer/payments/**",
+                        "/customer/notifications",
+                        "/customer/profile/**",
+                        "/customer/support/**").authenticated()
                 .anyRequest().permitAll())
             .formLogin(form -> form
                 .loginPage("/login")
@@ -124,7 +135,7 @@ public class SecurityConfig {
                 .logoutSuccessUrl("/?logout=1")
                 .deleteCookies("JSESSIONID", "access_token")
                 .permitAll())
-            .rememberMe(rm -> rm.key("glass-living-remember-key").tokenValiditySeconds(60 * 60 * 24 * 30))
+            .rememberMe(rm -> rm.key("smartrent-remember-key").tokenValiditySeconds(60 * 60 * 24 * 30))
             .authenticationProvider(authenticationProvider())
             .headers(h -> h.frameOptions(f -> f.sameOrigin())); // for H2 console
         return http.build();

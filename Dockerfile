@@ -6,6 +6,7 @@ COPY package*.json ./
 RUN npm ci
 COPY tailwind.config.js postcss.config.js ./
 COPY src/main/resources/static/css/input.css ./src/main/resources/static/css/input.css
+COPY src/main/resources/static/js ./src/main/resources/static/js
 COPY src/main/resources/templates ./src/main/resources/templates
 RUN npm run build:css
 
@@ -20,8 +21,8 @@ RUN mvn -B -DskipTests clean package
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 RUN addgroup -S smartrent && adduser -S smartrent -G smartrent
-COPY --from=build /app/target/glass-living.jar /app/glass-living.jar
+COPY --from=build /app/target/smartrent.jar /app/smartrent.jar
 RUN mkdir -p /app/uploads && chown -R smartrent:smartrent /app
 USER smartrent
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/glass-living.jar"]
+ENTRYPOINT ["java", "-jar", "/app/smartrent.jar"]

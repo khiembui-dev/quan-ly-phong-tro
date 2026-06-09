@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - V7 add room.current_tenant_id
+-- SmartRent - V7 add room.current_tenant_id
 -- Source of truth for who's currently renting the room. Synced from
 -- the active contract; nullable when room is AVAILABLE.
 -- ===================================================================

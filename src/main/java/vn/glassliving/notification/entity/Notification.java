@@ -22,6 +22,14 @@ public class Notification {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @JdbcTypeCode(SqlTypes.UUID)
+    @Column(name = "batch_id")
+    private UUID batchId;
+
+    @JdbcTypeCode(SqlTypes.UUID)
+    @Column(name = "sender_user_id")
+    private UUID senderUserId;
+
     @Column(name = "type", nullable = false, length = 40)
     private String type;
 
@@ -33,6 +41,9 @@ public class Notification {
 
     @Column(name = "link_url", length = 400)
     private String linkUrl;
+
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
 
     @Column(name = "read_at")
     private OffsetDateTime readAt;

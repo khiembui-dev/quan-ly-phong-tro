@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="widget" class="sr-ai no-print" data-ai-chatbot>
+    <button type="button" class="sr-ai-fab" data-ai-open aria-label="Mở Trợ lý SmartRent">
+        <i data-lucide="sparkles"></i>
+    </button>
+
+    <section class="sr-ai-panel" data-ai-panel hidden aria-label="Trợ lý SmartRent">
+        <header class="sr-ai-header">
+            <span class="sr-ai-mark"><i data-lucide="bot-message-square"></i></span>
+            <div>
+                <b>Trợ lý SmartRent</b>
+                <small><span></span> Đang online</small>
+            </div>
+            <button type="button" data-ai-new title="Cuộc trò chuyện mới" aria-label="Cuộc trò chuyện mới">
+                <i data-lucide="plus"></i>
+            </button>
+            <button type="button" data-ai-close title="Đóng" aria-label="Đóng">
+                <i data-lucide="x"></i>
+            </button>
+        </header>
+
+        <div class="sr-ai-messages" data-ai-messages></div>
+
+        <div class="sr-ai-suggestions" data-ai-suggestions>
+            <button type="button" data-ai-suggestion="Chatbot làm được gì?">Chatbot làm được gì?</button>
+            <button type="button" data-ai-suggestion="Phòng của tôi">Phòng của tôi</button>
+            <button type="button" data-ai-suggestion="Hạn phòng của tôi">Hạn phòng của tôi</button>
+            <button type="button" data-ai-suggestion="Hóa đơn tháng này">Hóa đơn tháng này</button>
+            <button type="button" data-ai-suggestion="Thanh toán QR">Thanh toán QR</button>
+            <button type="button" data-ai-suggestion="Lịch sử điện nước">Lịch sử điện nước</button>
+            <button type="button" data-ai-suggestion="Gửi ticket">Gửi ticket</button>
+            <button type="button" data-ai-suggestion="Liên hệ chủ trọ">Liên hệ chủ trọ</button>
+        </div>
+
+        <div class="sr-ai-suggestions" data-ai-admin-suggestions hidden>
+            <button type="button" data-ai-suggestion="Tổng quan hôm nay">Tổng quan hôm nay</button>
+            <button type="button" data-ai-suggestion="Doanh thu tháng này">Doanh thu tháng này</button>
+            <button type="button" data-ai-suggestion="Phòng trống">Phòng trống</button>
+            <button type="button" data-ai-suggestion="Hóa đơn chưa thanh toán">Hóa đơn chưa thanh toán</button>
+            <button type="button" data-ai-suggestion="Ticket mới">Ticket mới</button>
+            <button type="button" data-ai-suggestion="Khách thuê cần xử lý">Khách thuê cần xử lý</button>
+        </div>
+
+        <form class="sr-ai-form" data-ai-form>
+            <textarea data-ai-input rows="1" maxlength="1000" placeholder="Nhập câu hỏi..."></textarea>
+            <button type="submit" data-ai-send aria-label="Gửi">
+                <i data-lucide="send"></i>
+            </button>
+        </form>
+        <p class="sr-ai-limit" data-ai-limit>0/1000</p>
+    </section>
+</div>
+</body>
+</html>

@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - Automation email settings
+-- SmartRent - Automation email settings
 -- Per-owner SMTP and email automation toggles.
 -- ===================================================================
 

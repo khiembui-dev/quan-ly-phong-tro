@@ -26,8 +26,16 @@ public class RoomForm {
     @Size(max = 4000)
     private String description;
 
+    @Size(max = 1000)
+    private String coverUrl;
+
+    @Size(max = 4000)
+    private String imageUrlsText;
+
+    private String coverImageId;
+
     @Size(max = 24)
-    private String type;          // optional, defaults to STUDIO
+    private String type;          // optional, defaults to BOARDING
 
     private Short floor;
 
@@ -78,13 +86,22 @@ public class RoomForm {
     private List<String> customAmenityNames      = new ArrayList<>();
     private List<String> customAmenityCategories = new ArrayList<>();
 
+    /** Free-form room facts shown as small info chips. */
+    private List<String> roomInfoTexts = new ArrayList<>();
+
+    /** Gallery image URLs, usually edited through imageUrlsText. */
+    private List<String> imageUrls = new ArrayList<>();
+
+    /** Existing room_image ids selected for deletion. */
+    private List<String> removeImageIds = new ArrayList<>();
+
     public RoomForm() {
         this.bedrooms = 1;
         this.bathrooms = 1;
         this.maxOccupants = 2;
         this.serviceFee = BigDecimal.ZERO;
         this.status = "AVAILABLE";
-        this.type = "STUDIO";
+        this.type = "BOARDING";
         this.priceMonthly = BigDecimal.ZERO;
         this.depositAmount = BigDecimal.ZERO;
     }
@@ -99,6 +116,12 @@ public class RoomForm {
     public void setTitle(String v) { this.title = v; }
     public String getDescription() { return description; }
     public void setDescription(String v) { this.description = v; }
+    public String getCoverUrl() { return coverUrl; }
+    public void setCoverUrl(String v) { this.coverUrl = v; }
+    public String getImageUrlsText() { return imageUrlsText; }
+    public void setImageUrlsText(String v) { this.imageUrlsText = v; }
+    public String getCoverImageId() { return coverImageId; }
+    public void setCoverImageId(String v) { this.coverImageId = v; }
     public String getType() { return type; }
     public void setType(String v) { this.type = v; }
     public Short getFloor() { return floor; }
@@ -141,4 +164,10 @@ public class RoomForm {
     public void setCustomAmenityNames(List<String> v) { this.customAmenityNames = v != null ? v : new ArrayList<>(); }
     public List<String> getCustomAmenityCategories() { return customAmenityCategories; }
     public void setCustomAmenityCategories(List<String> v) { this.customAmenityCategories = v != null ? v : new ArrayList<>(); }
+    public List<String> getRoomInfoTexts() { return roomInfoTexts; }
+    public void setRoomInfoTexts(List<String> v) { this.roomInfoTexts = v != null ? v : new ArrayList<>(); }
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> v) { this.imageUrls = v != null ? v : new ArrayList<>(); }
+    public List<String> getRemoveImageIds() { return removeImageIds; }
+    public void setRemoveImageIds(List<String> v) { this.removeImageIds = v != null ? v : new ArrayList<>(); }
 }

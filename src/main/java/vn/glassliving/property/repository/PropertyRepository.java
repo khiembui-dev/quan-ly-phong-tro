@@ -1,5 +1,7 @@
 package vn.glassliving.property.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import vn.glassliving.property.entity.Property;
 
@@ -8,4 +10,5 @@ import java.util.UUID;
 
 public interface PropertyRepository extends JpaRepository<Property, UUID> {
     List<Property> findByOwnerIdOrderByNameAsc(UUID ownerId);
+    Page<Property> findByOwnerId(UUID ownerId, Pageable pageable);
 }

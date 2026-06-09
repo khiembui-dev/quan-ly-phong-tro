@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - V14 current tenant payment window
+-- SmartRent - V14 current tenant payment window
 -- Tracks the current tenant's room usage/payment coverage directly on
 -- the room assignment. This keeps the admin tenant/room screens fast and
 -- works for both contract-backed and manually assigned tenants.

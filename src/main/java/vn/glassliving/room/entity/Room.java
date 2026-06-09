@@ -158,11 +158,22 @@ public class Room extends BaseEntity {
     @Builder.Default
     private java.util.List<CustomAmenity> customAmenities = new java.util.ArrayList<>();
 
+    /** Free-form room facts shown as small info chips. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "room_info", columnDefinition = "jsonb")
+    @Builder.Default
+    private java.util.List<RoomInfo> roomInfo = new java.util.ArrayList<>();
+
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor
     public static class CustomAmenity {
         private String name;
         /** FURNITURE / UTILITY / RULE — category bucket the chip belongs to. */
         private String category;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class RoomInfo {
+        private String text;
     }
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -175,6 +186,6 @@ public class Room extends BaseEntity {
     // Note: room_image is fetched via RoomImageRepository, not as a JPA relationship —
     // simpler than wiring a bidirectional @ManyToOne and avoids cascade/orphan complexity.
 
-    public enum RoomType { STUDIO, DOUBLE, SINGLE, PENTHOUSE, APARTMENT, OTHER }
+    public enum RoomType { BOARDING, STUDIO, DOUBLE, SINGLE, PENTHOUSE, APARTMENT, OTHER }
     public enum RoomStatus { AVAILABLE, OCCUPIED, MAINTENANCE, HIDDEN }
 }

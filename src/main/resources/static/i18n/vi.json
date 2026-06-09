@@ -1,0 +1,82 @@
+{
+  "common": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "detail": "Chi tiết",
+    "delete": "Xóa",
+    "search": "Tìm kiếm",
+    "creating": "Đang tạo...",
+    "imageFileInvalid": "Vui lòng chọn file ảnh JPG, PNG hoặc WEBP."
+  },
+  "action": {
+    "loading": "Đang tải..."
+  },
+  "validation": {
+    "invalidInfo": "Vui lòng kiểm tra các trường đã đánh dấu lỗi.",
+    "required": "Bắt buộc."
+  },
+  "properties": {
+    "form": {
+      "chooseCity": "Chọn tỉnh/thành phố",
+      "chooseDistrict": "Chọn quận/huyện",
+      "chooseWard": "Chọn phường/xã",
+      "addressPreviewEmpty": "Địa chỉ sẽ tự tạo sau khi chọn đủ thông tin.",
+      "loadingCities": "Đang tải danh sách tỉnh/thành phố...",
+      "addressLoadFailed": "Không tải được dữ liệu địa chỉ. Vui lòng thử lại sau.",
+      "loadingDistricts": "Đang tải quận/huyện...",
+      "districtLoadFailed": "Không tải được quận/huyện. Vui lòng thử lại.",
+      "loadingWards": "Đang tải phường/xã...",
+      "wardLoadFailed": "Không tải được phường/xã. Vui lòng thử lại.",
+      "feeName": "Tên chi phí",
+      "feeNamePlaceholder": "VD: Phí giữ xe",
+      "amount": "Số tiền",
+      "billingCycle": "Chu kỳ thu",
+      "monthly": "Hằng tháng",
+      "once": "Một lần",
+      "deleteRow": "Xóa dòng",
+      "validation": {
+        "amountRequired": "Vui lòng nhập số tiền.",
+        "nonNegativeInteger": "Số tiền phải là số nguyên không âm.",
+        "invoiceDay": "Ngày phát hành hóa đơn phải từ 1 đến 31.",
+        "propertyNameRequired": "Vui lòng nhập tên cơ sở.",
+        "streetRequired": "Vui lòng nhập số nhà, tên đường.",
+        "cityRequired": "Vui lòng chọn tỉnh/thành phố.",
+        "districtRequired": "Vui lòng chọn quận/huyện.",
+        "wardRequired": "Vui lòng chọn phường/xã.",
+        "cityInputRequired": "Vui lòng nhập tỉnh/thành phố.",
+        "districtInputRequired": "Vui lòng nhập quận/huyện."
+      }
+    }
+  },
+  "contracts": {
+    "detail": {
+      "noNewImages": "Chưa chọn ảnh mới",
+      "imageCount": "{count} ảnh · {size}",
+      "validation": {
+        "startDateRequired": "Vui lòng nhập ngày bắt đầu hợp đồng.",
+        "endDateRequired": "Vui lòng nhập ngày kết thúc hợp đồng.",
+        "endAfterStart": "Ngày kết thúc phải sau ngày bắt đầu.",
+        "startTooFar": "Ngày bắt đầu quá xa. Vui lòng kiểm tra lại.",
+        "startTooFarShort": "Ngày bắt đầu quá xa."
+      }
+    }
+  },
+  "tenants": {
+    "detail": {
+      "pendingSave": "Chờ lưu"
+    },
+    "validation": {
+      "fullNameRequired": "Vui lòng nhập họ và tên.",
+      "emailRequired": "Vui lòng nhập email.",
+      "emailInvalid": "Email chưa đúng định dạng.",
+      "passwordRequired": "Vui lòng nhập mật khẩu.",
+      "passwordLength": "Mật khẩu phải từ 8 đến 64 ký tự.",
+      "phoneRequired": "Vui lòng nhập số điện thoại.",
+      "phoneInvalid": "Số điện thoại chưa đúng định dạng."
+    }
+  },
+  "legacy": {
+    "text": {},
+    "attributes": {}
+  }
+}

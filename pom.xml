@@ -13,7 +13,7 @@
     </parent>
 
     <groupId>vn.glassliving</groupId>
-    <artifactId>glass-living</artifactId>
+    <artifactId>smartrent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>SmartRent</name>
@@ -226,7 +226,7 @@
     </dependencies>
 
     <build>
-        <finalName>glass-living</finalName>
+        <finalName>smartrent</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

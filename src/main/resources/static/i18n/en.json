@@ -1,0 +1,133 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "detail": "Details",
+    "delete": "Delete",
+    "search": "Search",
+    "creating": "Creating...",
+    "imageFileInvalid": "Please choose a JPG, PNG, or WEBP image file."
+  },
+  "action": {
+    "loading": "Loading..."
+  },
+  "validation": {
+    "invalidInfo": "Please check the fields marked with errors.",
+    "required": "Required."
+  },
+  "properties": {
+    "form": {
+      "chooseCity": "Choose province/city",
+      "chooseDistrict": "Choose district",
+      "chooseWard": "Choose ward",
+      "addressPreviewEmpty": "Address will be generated after all information is selected.",
+      "loadingCities": "Loading province/city list...",
+      "addressLoadFailed": "Could not load address data. Please try again later.",
+      "loadingDistricts": "Loading districts...",
+      "districtLoadFailed": "Could not load districts. Please try again.",
+      "loadingWards": "Loading wards...",
+      "wardLoadFailed": "Could not load wards. Please try again.",
+      "feeName": "Fee name",
+      "feeNamePlaceholder": "Example: Parking fee",
+      "amount": "Amount",
+      "billingCycle": "Billing cycle",
+      "monthly": "Monthly",
+      "once": "One-time",
+      "deleteRow": "Delete row",
+      "validation": {
+        "amountRequired": "Please enter an amount.",
+        "nonNegativeInteger": "Amount must be a non-negative integer.",
+        "invoiceDay": "Invoice issue day must be from 1 to 31.",
+        "propertyNameRequired": "Please enter property name.",
+        "streetRequired": "Please enter street address.",
+        "cityRequired": "Please choose province/city.",
+        "districtRequired": "Please choose district.",
+        "wardRequired": "Please choose ward.",
+        "cityInputRequired": "Please enter province/city.",
+        "districtInputRequired": "Please enter district."
+      }
+    }
+  },
+  "contracts": {
+    "detail": {
+      "noNewImages": "No new images selected",
+      "imageCount": "{count} images · {size}",
+      "validation": {
+        "startDateRequired": "Please enter contract start date.",
+        "endDateRequired": "Please enter contract end date.",
+        "endAfterStart": "End date must be after start date.",
+        "startTooFar": "Start date is too far. Please check again.",
+        "startTooFarShort": "Start date is too far."
+      }
+    }
+  },
+  "tenants": {
+    "detail": {
+      "pendingSave": "Pending save"
+    },
+    "validation": {
+      "fullNameRequired": "Please enter full name.",
+      "emailRequired": "Please enter email.",
+      "emailInvalid": "Email format is invalid.",
+      "passwordRequired": "Please enter password.",
+      "passwordLength": "Password must be 8 to 64 characters.",
+      "phoneRequired": "Please enter phone number.",
+      "phoneInvalid": "Phone number format is invalid."
+    }
+  },
+  "legacy": {
+    "text": {
+      "Tạo hóa đơn": "Create invoice",
+      "Tất cả": "All",
+      "Chi tiết": "Details",
+      "Chỉnh sửa": "Edit",
+      "Xóa": "Delete",
+      "Hủy": "Cancel",
+      "Lưu thay đổi": "Save changes",
+      "Đang lưu...": "Saving...",
+      "Đang tạo...": "Creating...",
+      "Chưa có phòng": "No room",
+      "Chưa có cơ sở": "No property",
+      "Chưa có SĐT": "No phone",
+      "Chưa đặt": "Not set",
+      "Đang hoạt động": "Active",
+      "Đã thanh toán": "Paid",
+      "Chưa thanh toán": "Unpaid",
+      "Thanh toán một phần": "Partially paid",
+      "Quá hạn": "Overdue",
+      "Đã hủy": "Cancelled",
+      "Đang ở": "Occupied",
+      "Còn trống": "Available",
+      "Bảo trì": "Maintenance",
+      "Khác": "Other",
+      "Không chọn": "Not selected",
+      "Quên mật khẩu?": "Forgot password?",
+      "Chưa có tài khoản?": "No account yet?",
+      "Đã có tài khoản?": "Already have an account?",
+      "Cần hỗ trợ? Liên hệ": "Need help? Contact",
+      "Cần đặt cọc bao nhiêu?": "How much deposit is required?",
+      "Có cho phép thú cưng không?": "Are pets allowed?",
+      "Có cho thuê ngắn hạn không?": "Are short-term rentals available?",
+      "Tiền điện nước tính thế nào?": "How are utilities calculated?",
+      "Phòng nào ở Q1 dưới 10 triệu?": "Which District 1 rooms are under 10 million?",
+      "Phòng có cho thú cưng?": "Which rooms allow pets?",
+      "Phòng nào sắp hết hạn tháng sau?": "Which rooms expire next month?",
+      "Phòng nào cần sửa chữa tháng này?": "Which rooms need repairs this month?",
+      "Xin chào! Tôi là SmartRent AI, tư vấn phòng trọ. Bạn cần tìm gì?": "Hello! I am SmartRent AI for rental advice. What do you need?"
+    },
+    "attributes": {
+      "Tìm mã ticket, tiêu đề hoặc mô tả...": "Search ticket code, title, or description...",
+      "Tìm mã hóa đơn, phòng, khách thuê, email, SĐT": "Search invoice code, room, tenant, email, phone",
+      "Tìm tên khách, email, SĐT, mã phòng, mã hợp đồng...": "Search tenant name, email, phone, room code, contract code...",
+      "Tìm mã phòng, tên phòng hoặc địa chỉ": "Search room code, room name, or address",
+      "Tìm theo tên cơ sở hoặc địa chỉ": "Search by property name or address",
+      "Tìm tên, số điện thoại, phòng, cơ sở, địa chỉ...": "Search name, phone, room, property, address...",
+      "Không thể lưu yêu thích. Đăng nhập?": "Cannot save favorite. Please log in.",
+      "Đổi mật khẩu đăng nhập cho khách này?": "Change this tenant's login password?",
+      "Xóa hóa đơn này?": "Delete this invoice?",
+      "Xóa hợp đồng này? Hành động không thể hoàn tác.": "Delete this contract? This action cannot be undone.",
+      "Xóa phòng này? Hành động không thể hoàn tác.": "Delete this room? This action cannot be undone.",
+      "Xóa ticket này?": "Delete this ticket?"
+    }
+  }
+}

@@ -47,6 +47,18 @@ public class Payment extends BaseEntity {
     @Column(name = "gateway_payload", columnDefinition = "TEXT")
     private String gatewayPayload;
 
+    @Column(name = "payment_code", length = 160)
+    private String paymentCode;
+
+    @Column(name = "bank_transaction_number", length = 120)
+    private String bankTransactionNumber;
+
+    @Column(name = "bank_name", length = 120)
+    private String bankName;
+
+    @Column(name = "bank_description", columnDefinition = "TEXT")
+    private String bankDescription;
+
     @Column(name = "status", nullable = false, length = 24)
     @Enumerated(EnumType.STRING)
     @Builder.Default
@@ -59,5 +71,5 @@ public class Payment extends BaseEntity {
     private OffsetDateTime paidAt;
 
     public enum PaymentMethod { VNPAY, MOMO, BANK_TRANSFER, CASH }
-    public enum PaymentStatus { PENDING, SUCCESS, FAILED, REFUNDED }
+    public enum PaymentStatus { PENDING, PAID, SUCCESS, FAILED, REFUNDED }
 }

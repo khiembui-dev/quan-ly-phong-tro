@@ -1,4 +1,4 @@
-# Glass Living - one-command local launcher
+# SmartRent - one-command local launcher
 # Run from PowerShell or CMD:
 #   .\open-local.cmd
 
@@ -30,9 +30,9 @@ function Open-Browser {
     Start-Process $BaseUrl
     Write-Host ""
     Write-Host "Login test:" -ForegroundColor Cyan
-    Write-Host "  owner@glass.living  / password123"
-    Write-Host "  tenant@glass.living / password123"
-    Write-Host "  admin@glass.living  / password123"
+    Write-Host "  owner@smartrent.local  / password123"
+    Write-Host "  tenant@smartrent.local / password123"
+    Write-Host "  First ADMIN is created from ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_FULL_NAME."
 }
 
 function Ensure-Postgres {
@@ -94,7 +94,7 @@ function Ensure-PortFreeOrOpen {
 
     $processInfo = Get-CimInstance Win32_Process -Filter "ProcessId=$($conn.OwningProcess)" -ErrorAction SilentlyContinue
     $commandLine = if ($processInfo) { $processInfo.CommandLine } else { "" }
-    if ($commandLine -match "glass-living|quanlyphongtronew") {
+    if ($commandLine -match "smartrent|quanlyphongtronew") {
         Write-Host "Port $Port is used by this project but it is not responding. Stopping stale process $($conn.OwningProcess)..." -ForegroundColor Yellow
         Stop-Process -Id $conn.OwningProcess -Force
         Start-Sleep -Seconds 2
@@ -130,12 +130,12 @@ function Build-Jar {
 }
 
 function Start-App {
-    Write-Step "Starting Glass Living"
+    Write-Step "Starting SmartRent"
     if (Test-Path $OutLog) { Clear-Content $OutLog }
     if (Test-Path $ErrLog) { Clear-Content $ErrLog }
 
     $process = Start-Process -FilePath "java" `
-        -ArgumentList @("-jar", "target\glass-living.jar", "--spring.profiles.active=dev") `
+        -ArgumentList @("-jar", "target\smartrent.jar", "--spring.profiles.active=dev") `
         -WorkingDirectory $PSScriptRoot `
         -RedirectStandardOutput $OutLog `
         -RedirectStandardError $ErrLog `
@@ -145,7 +145,7 @@ function Start-App {
     Write-Host "Started process $($process.Id). Waiting for $BaseUrl ..." -ForegroundColor Yellow
     for ($i = 1; $i -le 75; $i++) {
         if (Test-Url $HealthUrl -or Test-Url $BaseUrl) {
-            Write-Host "Glass Living is ready." -ForegroundColor Green
+            Write-Host "SmartRent is ready." -ForegroundColor Green
             Open-Browser
             return
         }
@@ -161,7 +161,7 @@ function Start-App {
     exit 1
 }
 
-Write-Host "Glass Living local launcher" -ForegroundColor Magenta
+Write-Host "SmartRent local launcher" -ForegroundColor Magenta
 Ensure-PortFreeOrOpen
 Ensure-Postgres
 Ensure-Database

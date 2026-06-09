@@ -2,29 +2,307 @@
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/customer-layout}"
-      lang="vi">
-<head><title>Thông báo — SmartRent</title></head>
+      th:lang="${currentLang}">
+<head><title>Hỗ trợ và ticket - SmartRent</title></head>
 <body>
-<div layout:fragment="content" class="max-w-[840px] mx-auto px-4 sm:px-6 pt-8 pb-16">
-
-    <!-- Header -->
-    <div class="flex items-end justify-between gap-4 mb-8">
+<div layout:fragment="content" class="customer-page support-page" data-customer-ticket-page>
+    <header class="support-hero-card">
         <div>
-            <span class="eyebrow">Tất cả cập nhật</span>
-            <h1 class="text-[28px] sm:text-[34px] font-bold tracking-tight mt-2">Thông báo</h1>
-            <p class="text-[14px] text-[color:var(--text-mute)] mt-1.5">Cập nhật mới nhất về tài khoản và phòng của bạn.</p>
+            <h1>Hỗ trợ và ticket</h1>
+            <p>Gửi yêu cầu sửa chữa, thanh toán, điện nước hoặc liên hệ chủ trọ.</p>
         </div>
-        <button hx-put="/api/v1/me/notifications/read-all"
-                hx-swap="none"
-                class="btn btn-glass btn-sm">
-            <i data-lucide="check-check" class="w-4 h-4"></i>
-            Đánh dấu đã đọc
-        </button>
+        <div class="support-hero-actions">
+            <button type="button" class="support-btn support-btn-primary" data-ticket-modal-open aria-controls="new-ticket-dialog">
+                <i data-lucide="ticket-plus"></i> Tạo ticket
+            </button>
+            <a th:if="${contactCards != null and !contactCards.isEmpty() and contactCards[0].phoneUrl != null}"
+               th:href="${contactCards[0].phoneUrl}"
+               class="support-btn support-btn-light"><i data-lucide="phone"></i> Gọi nhanh</a>
+        </div>
+    </header>
+
+    <section class="support-stat-grid">
+        <article>
+            <span><i data-lucide="ticket-check"></i></span>
+            <div><b th:text="${totalTicketCount ?: 0}">0</b><small>Tổng ticket</small></div>
+        </article>
+        <article>
+            <span class="is-processing"><i data-lucide="loader-circle"></i></span>
+            <div><b th:text="${openTicketCount ?: 0}">0</b><small>Đang xử lý</small></div>
+        </article>
+        <article>
+            <span class="is-done"><i data-lucide="circle-check-big"></i></span>
+            <div><b th:text="${closedTicketCount ?: 0}">0</b><small>Đã hoàn tất</small></div>
+        </article>
+    </section>
+
+    <div class="support-main-grid">
+        <section id="tickets" class="support-card support-ticket-panel">
+            <div class="support-card-head">
+                <div>
+                    <h2>Ticket của tôi</h2>
+                    <p th:text="${tickets != null and !tickets.isEmpty() ? tickets.size() + ' ticket gần đây' : 'Chưa có dữ liệu'}">Chưa có dữ liệu</p>
+                </div>
+                <label class="support-search">
+                    <i data-lucide="search"></i>
+                    <input type="search" data-customer-ticket-search placeholder="Tìm ticket" />
+                </label>
+            </div>
+
+            <div th:if="${tickets != null and !tickets.isEmpty()}" class="support-ticket-list">
+                <article th:each="ticket : ${tickets}"
+                         th:id="${'ticket-' + ticket.id}"
+                         th:with="
+                            statusName=${ticket.status != null ? ticket.status.name() : 'OPEN'},
+                            categoryName=${ticket.category != null ? ticket.category.name() : 'OTHER'},
+                            priorityName=${ticket.priority != null ? ticket.priority.name() : 'NORMAL'},
+                            roomLabel=${roomLabels != null ? roomLabels.get(ticket.roomId) : null},
+                            ticketMessages=${messageMap != null ? messageMap.get(ticket.id) : null},
+                            latestMessage=${ticketMessages != null and !ticketMessages.isEmpty() ? ticketMessages.get(ticketMessages.size() - 1) : null},
+                            fallbackPhotos=${ticketAttachmentMap != null ? ticketAttachmentMap.get(ticket.id) : null}"
+                         th:attr="data-ticket-search=${(ticket.code ?: '') + ' ' + (ticket.title ?: '') + ' ' + (roomLabel ?: '')}"
+                         class="support-ticket-row">
+                    <details>
+                        <summary>
+                            <div class="support-ticket-main">
+                                <span class="support-ticket-code" th:text="${ticket.code ?: 'Chưa có dữ liệu'}">MT-001</span>
+                                <div>
+                                    <h3 th:text="${ticket.title ?: 'Chưa có dữ liệu'}">Tiêu đề</h3>
+                                    <p th:text="${latestMessage != null and latestMessage.body != null ? latestMessage.body : (ticket.resolutionNote ?: (ticket.description ?: 'Chưa có phản hồi'))}">Chưa có phản hồi</p>
+                                </div>
+                            </div>
+                            <div class="support-ticket-info">
+                                <span th:text="${categoryLabels != null ? (categoryLabels.get(categoryName) ?: categoryName) : categoryName}">Loại yêu cầu</span>
+                                <span th:text="${roomLabel ?: 'Chưa có phòng'}">Phòng</span>
+                                <span th:text="${ticket.reportedAt != null ? #temporals.format(ticket.reportedAt, 'dd/MM/yyyy HH:mm') : 'Chưa có dữ liệu'}">--</span>
+                            </div>
+                            <div class="support-ticket-actions">
+                                <span class="support-status-badge"
+                                      th:classappend="${statusName == 'OPEN' or statusName == 'ACKNOWLEDGED' ? ' is-new' : (statusName == 'IN_PROGRESS' or statusName == 'AWAITING_PARTS' ? ' is-processing' : (statusName == 'RESOLVED' ? ' is-done' : ' is-closed'))}"
+                                      th:text="${statusLabels != null ? (statusLabels.get(statusName) ?: statusName) : statusName}">Mới</span>
+                                <b>Xem chi tiết</b>
+                            </div>
+                        </summary>
+
+                        <div class="support-ticket-detail">
+                            <div class="support-ticket-tags">
+                                <span><i data-lucide="tag"></i><b th:text="${categoryLabels != null ? (categoryLabels.get(categoryName) ?: categoryName) : categoryName}">Khác</b></span>
+                                <span><i data-lucide="gauge"></i><b th:text="${priorityLabels != null ? (priorityLabels.get(priorityName) ?: priorityName) : priorityName}">Bình thường</b></span>
+                                <span><i data-lucide="home"></i><b th:text="${roomLabel ?: 'Chưa có phòng'}">Phòng</b></span>
+                            </div>
+
+                            <div class="support-thread">
+                                <article th:if="${ticketMessages != null and !ticketMessages.isEmpty()}"
+                                         th:each="ticketMessage : ${ticketMessages}"
+                                         th:with="messagePhotos=${messageAttachmentMap != null ? messageAttachmentMap.get(ticketMessage.id) : null}"
+                                         class="support-thread-message"
+                                         th:classappend="${ticketMessage.senderRole != null and ticketMessage.senderRole.name() == 'TENANT' ? ' is-me' : ' is-owner'}">
+                                    <span>
+                                        <i th:if="${ticketMessage.senderRole != null and ticketMessage.senderRole.name() == 'TENANT'}" data-lucide="user-round"></i>
+                                        <i th:unless="${ticketMessage.senderRole != null and ticketMessage.senderRole.name() == 'TENANT'}" data-lucide="headphones"></i>
+                                    </span>
+                                    <div>
+                                        <header>
+                                            <b th:text="${ticketMessage.senderRole != null and ticketMessage.senderRole.name() == 'TENANT' ? 'Bạn' : 'Chủ trọ'}">Người gửi</b>
+                                            <small th:text="${ticketMessage.createdAt != null ? #temporals.format(ticketMessage.createdAt, 'dd/MM/yyyy HH:mm') : 'Chưa có dữ liệu'}">--</small>
+                                        </header>
+                                        <p th:if="${ticketMessage.body != null}" th:text="${ticketMessage.body}">Nội dung</p>
+                                        <div th:if="${messagePhotos != null and !messagePhotos.isEmpty()}" class="support-attachment-grid">
+                                            <a th:each="photo : ${messagePhotos}" th:href="${photo}" target="_blank" rel="noopener">
+                                                <img th:src="${photo}" alt="Ảnh ticket" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <article th:if="${ticketMessages == null or ticketMessages.isEmpty()}" class="support-thread-message is-me">
+                                    <span><i data-lucide="user-round"></i></span>
+                                    <div>
+                                        <header>
+                                            <b>Bạn</b>
+                                            <small th:text="${ticket.reportedAt != null ? #temporals.format(ticket.reportedAt, 'dd/MM/yyyy HH:mm') : 'Chưa có dữ liệu'}">--</small>
+                                        </header>
+                                        <p th:text="${ticket.description ?: ticket.title ?: 'Chưa có dữ liệu'}">Nội dung ticket</p>
+                                        <div th:if="${fallbackPhotos != null and !fallbackPhotos.isEmpty()}" class="support-attachment-grid">
+                                            <a th:each="photo : ${fallbackPhotos}" th:href="${photo}" target="_blank" rel="noopener">
+                                                <img th:src="${photo}" alt="Ảnh ticket" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                </article>
+                            </div>
+
+                            <form th:action="@{'/customer/support/tickets/' + ${ticket.id} + '/messages'}"
+                                  method="post"
+                                  enctype="multipart/form-data"
+                                  class="support-reply-form"
+                                  data-customer-ticket-reply>
+                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <label>
+                                    <span>Phản hồi</span>
+                                    <textarea name="body" rows="3" placeholder="Nhập phản hồi"></textarea>
+                                </label>
+                                <div class="support-uploader" data-ticket-uploader>
+                                    <input type="file" name="attachments" accept="image/png,image/jpeg,image/webp" multiple data-ticket-file-input />
+                                    <button type="button" data-ticket-upload-button>
+                                        <i data-lucide="image-plus"></i>
+                                        <span>Thêm ảnh</span>
+                                    </button>
+                                    <small data-ticket-file-count>Chưa chọn ảnh</small>
+                                    <div data-ticket-file-list hidden></div>
+                                </div>
+                                <button type="submit" class="support-btn support-btn-primary"><i data-lucide="send"></i> Gửi phản hồi</button>
+                            </form>
+                        </div>
+                    </details>
+                </article>
+            </div>
+
+            <div th:if="${tickets == null or tickets.isEmpty()}" class="support-empty-state">
+                <i data-lucide="ticket-check"></i>
+                <h3>Chưa có ticket</h3>
+                <p>Tạo ticket đầu tiên để chủ trọ nhận yêu cầu của bạn.</p>
+            </div>
+        </section>
+
+        <aside class="support-side-stack">
+            <section class="support-card support-contact-card">
+                <div class="support-card-head compact">
+                    <div>
+                        <h2>Liên hệ nhanh</h2>
+                        <p>Quản trị viên / Chủ trọ</p>
+                    </div>
+                </div>
+                <div th:if="${contactCards != null and !contactCards.isEmpty()}" class="support-contact-list">
+                    <article th:each="contact : ${contactCards}">
+                        <span><i data-lucide="headphones"></i></span>
+                        <div>
+                            <b th:text="${contact.ownerName ?: 'Quản trị viên / Chủ trọ'}">Quản trị viên / Chủ trọ</b>
+                            <p th:text="${contact.phone ?: contact.email ?: 'Chưa cập nhật'}">Chưa cập nhật</p>
+                            <div>
+                                <a th:if="${contact.phoneUrl != null}" th:href="${contact.phoneUrl}" class="support-btn support-btn-light"><i data-lucide="phone"></i> Gọi</a>
+                                <a th:if="${contact.zaloUrl != null}" th:href="${contact.zaloUrl}" target="_blank" rel="noopener" class="support-btn support-btn-primary"><i data-lucide="message-circle"></i> Zalo</a>
+                                <a th:if="${contact.email != null}" th:href="${'mailto:' + contact.email}" class="support-btn support-btn-light"><i data-lucide="mail"></i> Email</a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                <div th:if="${contactCards == null or contactCards.isEmpty()}" class="support-empty-state compact">
+                    <i data-lucide="phone-off"></i>
+                    <h3>Chưa cập nhật</h3>
+                    <p>Chưa có dữ liệu liên hệ.</p>
+                </div>
+            </section>
+        </aside>
     </div>
 
-    <div class="card-pad-0">
-        <div th:replace="~{fragments/notification-list :: list}"></div>
+    <div id="new-ticket" class="support-modal" data-ticket-modal hidden>
+        <div class="support-modal-backdrop" data-ticket-modal-close></div>
+        <section id="new-ticket-dialog"
+                 class="support-modal-dialog"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="new-ticket-title">
+            <button type="button" class="support-modal-close" data-ticket-modal-close aria-label="Đóng">
+                <i data-lucide="x"></i>
+            </button>
+            <div class="support-modal-head">
+                <span class="support-modal-kicker">Ticket mới</span>
+                <h2 id="new-ticket-title">Tạo yêu cầu hỗ trợ</h2>
+                <p>Nhập nội dung cần hỗ trợ và đính kèm ảnh nếu cần.</p>
+            </div>
+
+            <form th:if="${currentRooms != null and !currentRooms.isEmpty()}"
+                  th:action="@{/me/tickets}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  class="support-ticket-form support-modal-form"
+                  novalidate
+                  data-customer-ticket-form
+                  data-ticket-modal-form>
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                <label class="support-field is-full">
+                    <span>Tiêu đề *</span>
+                    <input name="title"
+                           required
+                           maxlength="200"
+                           placeholder="VD: Máy lạnh không lạnh"
+                           data-ticket-field="title"
+                           data-ticket-modal-initial />
+                    <small data-ticket-error="title"></small>
+                </label>
+
+                <div class="support-form-grid">
+                    <label class="support-field is-full">
+                        <span>Phòng</span>
+                        <select name="roomId" required data-native-select>
+                            <option th:each="room : ${currentRooms}" th:value="${room.id}" th:text="${room.code + ' · ' + room.title}">Phòng</option>
+                        </select>
+                    </label>
+                    <label class="support-field">
+                        <span>Loại yêu cầu</span>
+                        <select name="category" data-native-select>
+                            <option value="APPLIANCE">Thiết bị</option>
+                            <option value="ELECTRICAL">Điện</option>
+                            <option value="PLUMBING">Nước</option>
+                            <option value="AC_HVAC">Máy lạnh</option>
+                            <option value="INTERNET">Internet</option>
+                            <option value="FURNITURE">Nội thất</option>
+                            <option value="SECURITY">An ninh</option>
+                            <option value="OTHER">Khác</option>
+                        </select>
+                    </label>
+                    <label class="support-field">
+                        <span>Mức độ</span>
+                        <select name="priority" data-native-select>
+                            <option value="NORMAL">Bình thường</option>
+                            <option value="HIGH">Cần xử lý sớm</option>
+                            <option value="URGENT">Khẩn cấp</option>
+                            <option value="LOW">Thấp</option>
+                        </select>
+                    </label>
+                </div>
+
+                <label class="support-field is-full">
+                    <span>Mô tả *</span>
+                    <textarea name="description"
+                              required
+                              rows="5"
+                              placeholder="Mô tả tình trạng, vị trí, thời điểm phát hiện"
+                              data-ticket-field="description"></textarea>
+                    <small data-ticket-error="description"></small>
+                </label>
+
+                <div class="support-uploader is-large" data-ticket-uploader>
+                    <input type="file" name="attachments" accept="image/png,image/jpeg,image/webp" multiple data-ticket-file-input />
+                    <button type="button" data-ticket-upload-button>
+                        <i data-lucide="image-plus"></i>
+                        <span>Chọn hoặc kéo thả ảnh</span>
+                        <small>PNG, JPG, WEBP</small>
+                    </button>
+                    <small data-ticket-file-count>Chưa chọn ảnh</small>
+                    <div data-ticket-file-list hidden></div>
+                </div>
+
+                <div class="support-modal-footer">
+                    <button type="button" class="support-btn support-btn-light" data-ticket-modal-close>Hủy</button>
+                    <button type="submit" class="support-btn support-btn-primary">
+                        <i data-lucide="send"></i> Tạo ticket
+                    </button>
+                </div>
+            </form>
+
+            <div th:if="${currentRooms == null or currentRooms.isEmpty()}" class="support-empty-state compact">
+                <i data-lucide="door-open"></i>
+                <h3>Chưa có phòng</h3>
+                <p>Ticket cần gắn với phòng đang thuê.</p>
+            </div>
+        </section>
     </div>
 </div>
+<th:block layout:fragment="extra-scripts">
+    <script th:src="@{/js/modules/customer-ticket.js}"></script>
+</th:block>
 </body>
 </html>

@@ -39,16 +39,12 @@ public class AuthService {
         if (userRepository.existsByPhone(req.phone())) {
             throw BusinessException.conflict("Số điện thoại đã được sử dụng.");
         }
-        User.Role role = req.role();
-        if (role == User.Role.ADMIN) {
-            throw BusinessException.forbidden("Không thể đăng ký vai trò ADMIN qua form công khai.");
-        }
         User u = User.builder()
                 .email(req.email().trim().toLowerCase())
                 .phone(req.phone())
                 .fullName(req.fullName().trim())
                 .passwordHash(passwordEncoder.encode(req.password()))
-                .roles(Set.of(role))
+                .roles(Set.of(User.Role.TENANT))
                 .status(User.UserStatus.ACTIVE)   // TODO: set to PENDING_VERIFICATION when email OTP wired
                 .emailVerified(false)
                 .build();

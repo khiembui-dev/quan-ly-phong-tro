@@ -1,9 +1,9 @@
-# Glass Living - Tat server dev
+# SmartRent - Tat server dev
 # Chay: .\stop-dev.ps1
 
 $ErrorActionPreference = "SilentlyContinue"
 
-$conn = Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue | Select-Object -First 1
+$conn = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($conn) {
     Write-Host "Tat process $($conn.OwningProcess) tren port 8080..." -ForegroundColor Yellow
     Stop-Process -Id $conn.OwningProcess -Force
@@ -15,7 +15,7 @@ if ($conn) {
 # Don dep cac java.exe leftover (Spring DevTools spawn nhieu process)
 $javas = Get-Process -Name "java" -ErrorAction SilentlyContinue
 if ($javas) {
-    Write-Host "Tim thay $($javas.Count) java.exe — tat het? (y/N): " -ForegroundColor Yellow -NoNewline
+    Write-Host "Tim thay $($javas.Count) java.exe - tat het? (y/N): " -ForegroundColor Yellow -NoNewline
     $r = Read-Host
     if ($r -eq "y") {
         $javas | Stop-Process -Force

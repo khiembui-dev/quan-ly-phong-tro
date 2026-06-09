@@ -76,6 +76,9 @@ public class Contract extends BaseEntity {
     @Column(name = "pdf_url", columnDefinition = "TEXT")
     private String pdfUrl;
 
+    @Column(name = "contract_image_url", columnDefinition = "TEXT")
+    private String contractImageUrl;
+
     @Column(name = "owner_signed_at")
     private OffsetDateTime ownerSignedAt;
 

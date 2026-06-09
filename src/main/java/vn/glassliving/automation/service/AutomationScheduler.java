@@ -11,6 +11,7 @@ import vn.glassliving.contract.entity.Contract;
 import vn.glassliving.contract.repository.ContractRepository;
 import vn.glassliving.invoice.entity.Invoice;
 import vn.glassliving.invoice.repository.InvoiceRepository;
+import vn.glassliving.invoice.service.InvoiceService;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -36,12 +37,17 @@ public class AutomationScheduler {
     private final AutomationSettingRepository settingRepository;
     private final ContractRepository contractRepository;
     private final InvoiceRepository invoiceRepository;
+    private final InvoiceService invoiceService;
     private final AutomationEmailService emailService;
 
     @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Ho_Chi_Minh")
     @Transactional
     public void runDailyEmailAutomations() {
         LocalDate today = LocalDate.now(VIETNAM);
+        int statusUpdates = invoiceService.refreshAgingStatuses();
+        if (statusUpdates > 0) {
+            log.info("Updated {} invoice aging statuses", statusUpdates);
+        }
         for (AutomationSetting setting : settingRepository.findAll()) {
             if (!emailService.mailUsable(setting)) {
                 continue;

@@ -1,0 +1,2 @@
+ALTER TABLE invoice
+    ALTER COLUMN room_id DROP NOT NULL;

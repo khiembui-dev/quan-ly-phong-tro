@@ -5,246 +5,436 @@
       lang="vi">
 <head><title>Tính tiền phòng - SmartRent</title></head>
 <body>
-<div layout:fragment="content">
+<div layout:fragment="content"
+     class="billing-page billing-page-list"
+     data-billing-page
+    th:data-period-label="${'Tháng ' + periodMonth + '/' + periodYear}">
 
-    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
-        <div>
-            <span class="eyebrow">Vận hành</span>
-            <h1 class="text-[28px] sm:text-[32px] font-bold tracking-tight mt-2">Tính tiền phòng</h1>
-            <p class="text-[13px] text-[color:var(--text-mute)] mt-1">
-                Theo dõi từng phòng theo tháng, nhập chỉ số trong trang chi tiết và xuất hóa đơn cho đúng khách đang thuê.
-            </p>
-        </div>
-        <div class="flex flex-wrap items-center justify-start lg:justify-end gap-2 shrink-0">
-            <a th:href="@{/admin/utilities/export.csv(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status=${filterStatus})}"
-               class="btn btn-soft btn-sm h-10 px-4">
-                <i data-lucide="download" class="w-4 h-4"></i> Xuất CSV
-            </a>
-        </div>
-    </div>
+    <style>
+        .billing-page.billing-page-list {
+            padding: 1.25rem 1.35rem 1.5rem;
+        }
 
-    <div class="glass p-4 mb-5">
-        <form method="get" action="/admin/utilities" class="grid sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
-            <div>
-                <label class="form-label">Tháng</label>
-                <div class="input-glass h-11">
-                    <i data-lucide="calendar" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                    <select name="month">
-                        <option th:each="m : ${#numbers.sequence(1,12)}"
-                                th:value="${m}"
-                                th:selected="${m == periodMonth}"
-                                th:text="${m}">5</option>
-                    </select>
-                </div>
-            </div>
-            <div>
-                <label class="form-label">Năm</label>
-                <div class="input-glass h-11">
-                    <i data-lucide="calendar-days" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                    <input type="number" min="2020" max="2100" name="year" th:value="${periodYear}" />
-                </div>
-            </div>
-            <div class="lg:col-span-2">
-                <label class="form-label">Cơ sở</label>
-                <div class="input-glass h-11">
-                    <i data-lucide="building-2" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                    <select name="propertyId">
-                        <option value="">Tất cả cơ sở</option>
-                        <option th:each="p : ${properties}"
-                                th:value="${p.id}"
-                                th:selected="${currentPropertyId != null and currentPropertyId.equals(p.id)}"
-                                th:text="${p.name}">Glass Tower</option>
-                    </select>
-                </div>
-            </div>
-            <div class="lg:col-span-2">
-                <label class="form-label">Tìm phòng / khách</label>
-                <div class="flex gap-2">
-                    <div class="input-glass h-11 flex-1">
-                        <i data-lucide="search" class="w-4 h-4 text-[color:var(--text-mute)]"></i>
-                        <input type="text" name="q" th:value="${filterQ}" placeholder="Mã phòng, tên, email, SĐT..." />
-                    </div>
-                    <button class="btn btn-soft btn-sm h-11" type="submit">
-                        <i data-lucide="search" class="w-4 h-4"></i> Lọc
-                    </button>
-                </div>
-            </div>
-            <input type="hidden" name="status" th:value="${filterStatus}" />
+        .billing-page-list .billing-list-title-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            min-width: 0;
+            padding: 1.05rem 1.2rem;
+            border: 1px solid rgba(148, 163, 184, .24);
+            border-radius: 24px;
+            background: rgba(255, 255, 255, .72);
+            -webkit-backdrop-filter: blur(24px) saturate(150%);
+            backdrop-filter: blur(24px) saturate(150%);
+            box-shadow: 0 18px 46px rgba(15, 23, 42, .07);
+        }
+
+        .billing-page-list .billing-list-title-card h1,
+        .billing-page-list .billing-hero h1 {
+            margin: 0 !important;
+            font-size: clamp(1.38rem, 1.45vw, 1.75rem) !important;
+            line-height: 1.12 !important;
+            font-weight: 850 !important;
+            letter-spacing: 0 !important;
+        }
+
+        .billing-page-list .billing-list-title-card p {
+            margin-top: .35rem;
+            color: var(--text-mute);
+            font-size: .9rem;
+            line-height: 1.45;
+        }
+
+        .billing-page-list .billing-period-summary {
+            min-height: 2.55rem;
+            padding: .55rem .8rem;
+            font-size: .82rem;
+        }
+
+        .billing-page-list .billing-period-summary span {
+            font-size: .64rem;
+        }
+
+        .billing-page-list .billing-period-summary strong {
+            font-size: .84rem;
+        }
+
+        .billing-page-list .billing-filter-panel {
+            padding: .75rem;
+            border-radius: 20px;
+        }
+
+        .billing-page-list .billing-filter-simple {
+            display: grid;
+            grid-template-columns: 7.5rem 6.8rem minmax(12rem, .9fr) minmax(18rem, 1.5fr) 5.8rem;
+            gap: .62rem;
+            align-items: end;
+        }
+
+        .billing-page-list .billing-control {
+            gap: .3rem;
+        }
+
+        .billing-page-list .billing-control > span {
+            font-size: .68rem;
+            line-height: 1;
+        }
+
+        .billing-page-list .billing-control input,
+        .billing-page-list .billing-control select {
+            height: 2.5rem;
+            border-radius: 14px;
+            font-size: .88rem;
+            font-weight: 760;
+        }
+
+        .billing-page-list .billing-control-search input {
+            padding-left: 2.3rem;
+        }
+
+        .billing-page-list .billing-control-search svg,
+        .billing-page-list .billing-control-search i {
+            position: absolute !important;
+            left: .9rem !important;
+            bottom: .72rem !important;
+            width: 1.05rem !important;
+            height: 1.05rem !important;
+            color: var(--text-mute) !important;
+            pointer-events: none;
+        }
+
+        .billing-page-list .billing-filter-submit {
+            height: 2.5rem;
+            min-width: 0;
+            padding: 0 .9rem;
+            border-radius: 14px;
+            font-size: .86rem;
+            font-weight: 850;
+        }
+
+        .billing-page-list .billing-filter-submit svg,
+        .billing-page-list .billing-filter-submit i {
+            width: 1rem !important;
+            height: 1rem !important;
+            flex: 0 0 1rem;
+        }
+
+        .billing-page-list .billing-kpi-label,
+        .billing-page-list .billing-room-list-header {
+            font-size: .68rem;
+        }
+
+        .billing-page-list .billing-tab,
+        .billing-page-list .billing-table-head p,
+        .billing-page-list .billing-status-summary small,
+        .billing-page-list .billing-invoice-mini small,
+        .billing-page-list .billing-total-cell small {
+            font-size: .8rem;
+        }
+
+        .billing-page-list .billing-list-title-card .eyebrow,
+        .billing-page-list .billing-page-title .eyebrow {
+            display: none !important;
+        }
+
+        .billing-page-list .billing-room-list-header,
+        .billing-page-list .billing-room-list-row {
+            grid-template-columns:
+                minmax(13.5rem, 1.15fr)
+                minmax(11rem, .9fr)
+                minmax(12rem, 1fr)
+                minmax(10.5rem, .9fr)
+                max-content;
+        }
+
+        @media (max-width: 1480px) {
+            .billing-page-list .billing-room-list-row {
+                grid-template-columns: minmax(14rem, 1fr) minmax(12rem, .9fr) minmax(12rem, .95fr) auto;
+                grid-template-areas:
+                    "room tenant status action"
+                    "room invoice invoice action";
+            }
+        }
+
+        @media (max-width: 820px) {
+            .billing-page.billing-page-list {
+                padding: 1rem;
+            }
+
+            .billing-page-list .billing-list-title-card {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .billing-page-list .billing-filter-simple {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .billing-page-list .billing-control-property,
+            .billing-page-list .billing-control-search {
+                grid-column: span 2;
+            }
+
+            .billing-page-list .billing-filter-submit {
+                width: max-content;
+            }
+
+            .billing-page-list .billing-room-list-row {
+                grid-template-columns: 1fr 1fr;
+                grid-template-areas:
+                    "room room"
+                    "tenant status"
+                    "invoice invoice"
+                    "action action";
+            }
+        }
+
+        @media (max-width: 640px) {
+            .billing-page-list .billing-filter-simple,
+            .billing-page-list .billing-control-property,
+            .billing-page-list .billing-control-search {
+                grid-template-columns: 1fr;
+                grid-column: auto;
+            }
+
+            .billing-page-list .billing-filter-submit {
+                width: 100%;
+            }
+
+            .billing-page-list .billing-room-list-row {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "room"
+                    "tenant"
+                    "status"
+                    "invoice"
+                    "action";
+            }
+        }
+    </style>
+
+    <section class="billing-list-title-card">
+        <div class="billing-list-title-copy">
+            <h1>Tính tiền phòng</h1>
+            <p>Quản lý kỳ thu tiền theo phòng đang thuê: nhập chỉ số, tạo hóa đơn và theo dõi thanh toán.</p>
+        </div>
+        <div class="billing-period-summary">
+            <span>Kỳ đang xem</span>
+            <strong th:text="${'Tháng ' + periodMonth + '/' + periodYear}">Tháng 6/2026</strong>
+        </div>
+    </section>
+
+    <section class="billing-filter-panel">
+        <form method="get" action="/admin/utilities" class="billing-filter billing-filter-simple" data-billing-filter-form data-auto-search-form>
+            <label class="billing-control">
+                <span>Tháng</span>
+                <select name="month" data-native-select data-billing-auto-submit>
+                    <option th:each="m : ${#numbers.sequence(1,12)}"
+                            th:value="${m}"
+                            th:selected="${m == periodMonth}"
+                            th:text="${'Tháng ' + m}">Tháng 6</option>
+                </select>
+            </label>
+            <label class="billing-control">
+                <span>Năm</span>
+                <input type="number" min="2020" max="2100" name="year" th:value="${periodYear}" data-billing-auto-submit />
+            </label>
+            <label class="billing-control billing-control-property">
+                <span>Cơ sở</span>
+                <select name="propertyId" data-native-select data-billing-auto-submit>
+                    <option value="">Tất cả cơ sở</option>
+                    <option th:each="p : ${properties}"
+                            th:value="${p.id}"
+                            th:selected="${currentPropertyId != null and currentPropertyId.equals(p.id)}"
+                            th:text="${p.name}">SmartRent Tower</option>
+                </select>
+            </label>
+            <label class="billing-control billing-control-search">
+                <span>Tìm kiếm</span>
+                <i data-lucide="search"></i>
+                <input type="search"
+                       name="q"
+                       th:value="${filterQ}"
+                       data-billing-search
+                       data-search-input
+                       data-auto-search-input
+                       placeholder="Tên phòng, mã phòng, khách, email, SĐT" />
+            </label>
+            <input type="hidden" name="status" th:value="${filterStatus}" data-billing-status-input />
+            <input type="hidden" name="size" th:value="${pageSize}" />
+            <button class="billing-filter-submit hidden" type="submit">
+                <i data-lucide="search"></i>
+                Lọc
+            </button>
         </form>
-    </div>
+    </section>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-3 mb-5">
-        <div class="kpi">
-            <div class="kpi-icon" style="background: var(--accent-soft); color: var(--accent);">
-                <i data-lucide="wallet-cards" class="w-5 h-5"></i>
-            </div>
-            <div class="kpi-label">Tổng dự kiến</div>
-            <div class="kpi-value tnum" th:text="${h.vnd(summary.totalAmount)}">0đ</div>
-            <div class="kpi-trend flat">theo bộ lọc hiện tại</div>
-        </div>
-        <div class="kpi">
-            <div class="kpi-icon" style="background: #ecfdf5; color: #047857;">
-                <i data-lucide="home" class="w-5 h-5"></i>
-            </div>
-            <div class="kpi-label">Phòng đang thuê</div>
-            <div class="kpi-value tnum" th:text="${summary.occupiedRooms}">0</div>
-            <div class="kpi-trend flat"><span th:text="${summary.totalRooms}">0</span> phòng tổng</div>
-        </div>
-        <div class="kpi">
-            <div class="kpi-icon" style="background: #fffbeb; color: #b45309;">
-                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-            </div>
-            <div class="kpi-label">Chưa nhập chỉ số</div>
-            <div class="kpi-value tnum" th:text="${summary.missingReadings}">0</div>
-            <div class="kpi-trend down" th:if="${summary.missingReadings > 0}">cần cập nhật tháng mới</div>
-            <div class="kpi-trend up" th:unless="${summary.missingReadings > 0}">đã đủ dữ liệu</div>
-        </div>
-        <div class="kpi">
-            <div class="kpi-icon" style="background: #fef2f2; color: #dc2626;">
-                <i data-lucide="activity" class="w-5 h-5"></i>
-            </div>
-            <div class="kpi-label">Bất thường</div>
-            <div class="kpi-value tnum" th:text="${summary.anomalies}">0</div>
-            <div class="kpi-trend flat">so với TB 3 tháng</div>
-        </div>
-        <div class="kpi">
-            <div class="kpi-icon" style="background: #eef0ff; color: #4f46e5;">
-                <i data-lucide="receipt" class="w-5 h-5"></i>
-            </div>
-            <div class="kpi-label">Sẵn sàng xuất</div>
-            <div class="kpi-value tnum" th:text="${summary.readyToInvoice}">0</div>
-            <div class="kpi-trend flat"><span th:text="${summary.invoicedRooms}">0</span> đã có hóa đơn</div>
-        </div>
-    </div>
+    <section class="billing-kpi-grid billing-kpi-grid-compact">
+        <article class="billing-kpi billing-kpi-primary">
+            <span class="billing-kpi-icon"><i data-lucide="wallet-cards"></i></span>
+            <span class="billing-kpi-label">Tổng dự kiến thu</span>
+            <strong class="tnum" th:text="${h.vnd(summary.totalAmount)}">0đ</strong>
+            <small>Phòng đang thuê</small>
+        </article>
+        <article class="billing-kpi">
+            <span class="billing-kpi-icon"><i data-lucide="clipboard-pen-line"></i></span>
+            <span class="billing-kpi-label">Chưa nhập chỉ số</span>
+            <strong class="tnum" th:text="${summary.missingReadings}">0</strong>
+            <small th:text="${'Tháng ' + periodMonth}">Tháng 6</small>
+        </article>
+        <article class="billing-kpi">
+            <span class="billing-kpi-icon"><i data-lucide="file-clock"></i></span>
+            <span class="billing-kpi-label">Chưa xuất hóa đơn</span>
+            <strong class="tnum" th:text="${summary.readyToInvoice}">0</strong>
+            <small>Đã đủ chỉ số</small>
+        </article>
+        <article class="billing-kpi">
+            <span class="billing-kpi-icon"><i data-lucide="receipt-text"></i></span>
+            <span class="billing-kpi-label">Đã xuất hóa đơn</span>
+            <strong class="tnum" th:text="${summary.invoicedRooms}">0</strong>
+            <small>Chờ hoặc đã thu</small>
+        </article>
+        <article class="billing-kpi">
+            <span class="billing-kpi-icon"><i data-lucide="circle-check-big"></i></span>
+            <span class="billing-kpi-label">Đã thanh toán</span>
+            <strong class="tnum" th:text="${summary.paidRooms}">0</strong>
+            <small>Hoàn tất kỳ này</small>
+        </article>
+    </section>
 
-    <div class="flex items-center gap-1 mb-5 overflow-x-auto pb-1">
-        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='all')}"
-           class="pill" th:classappend="${filterStatus == null or filterStatus == 'all'} ? 'pill-active' : ''">
-            <i data-lucide="layers" class="w-3.5 h-3.5"></i> Tất cả
-        </a>
-        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='missing')}"
-           class="pill" th:classappend="${filterStatus == 'missing'} ? 'pill-active' : ''">Chưa nhập</a>
-        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='ready')}"
-           class="pill" th:classappend="${filterStatus == 'ready'} ? 'pill-active' : ''">Sẵn sàng xuất</a>
-        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='invoiced')}"
-           class="pill" th:classappend="${filterStatus == 'invoiced'} ? 'pill-active' : ''">Đã xuất</a>
-        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='paid')}"
-           class="pill" th:classappend="${filterStatus == 'paid'} ? 'pill-active' : ''">Đã thanh toán</a>
-        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='anomaly')}"
-           class="pill" th:classappend="${filterStatus == 'anomaly'} ? 'pill-active' : ''">Bất thường</a>
-        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='empty')}"
-           class="pill" th:classappend="${filterStatus == 'empty'} ? 'pill-active' : ''">Phòng trống</a>
-    </div>
+    <nav class="billing-tabs" aria-label="Bộ lọc nhanh">
+        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='all',size=${pageSize})}"
+           class="billing-tab"
+           th:classappend="${filterStatus == null or filterStatus == 'all'} ? 'is-active' : ''"
+           data-billing-tab="all">Tất cả</a>
+        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='missing',size=${pageSize})}"
+           class="billing-tab"
+           th:classappend="${filterStatus == 'missing'} ? 'is-active' : ''"
+           data-billing-tab="missing">Chưa nhập chỉ số</a>
+        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='ready',size=${pageSize})}"
+           class="billing-tab"
+           th:classappend="${filterStatus == 'ready'} ? 'is-active' : ''"
+           data-billing-tab="ready">Chưa xuất hóa đơn</a>
+        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='invoiced',size=${pageSize})}"
+           class="billing-tab"
+           th:classappend="${filterStatus == 'invoiced'} ? 'is-active' : ''"
+           data-billing-tab="invoiced">Đã xuất hóa đơn</a>
+        <a th:href="@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status='paid',size=${pageSize})}"
+           class="billing-tab"
+           th:classappend="${filterStatus == 'paid'} ? 'is-active' : ''"
+           data-billing-tab="paid">Đã thanh toán</a>
+    </nav>
 
-    <div class="card-pad-0">
-        <div class="px-5 sm:px-6 py-4 border-b border-[color:var(--line-soft)] flex items-center justify-between flex-wrap gap-3">
+    <section class="billing-table-card">
+        <div class="billing-table-head">
             <div>
-                <h3 class="font-semibold text-[15px]">
-                    Danh sách phòng kỳ <span class="tnum" th:text="${periodMonth + '/' + periodYear}">5/2026</span>
-                </h3>
-                <p class="text-[12px] text-[color:var(--text-mute)] mt-0.5">
-                    Bảng ngoài chỉ để rà soát nhanh. Nhập chỉ số, xem lịch sử và xuất hóa đơn trong chi tiết từng phòng.
+                <h2>Phòng đang thuê</h2>
+                <p>
+                    Kỳ <span class="tnum" th:text="${periodMonth + '/' + periodYear}">6/2026</span>
+                    · <span class="tnum" data-billing-visible-count th:text="${summary.visibleRooms}">0</span> phòng hiển thị
                 </p>
             </div>
-            <span class="badge badge-violet"><span th:text="${summary.visibleRooms}">0</span> phòng đang hiển thị</span>
+            <div class="flex items-center gap-2 flex-wrap justify-end">
+                <a th:href="@{/admin/utilities/export.csv(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status=${filterStatus})}"
+                   class="btn btn-soft btn-sm">
+                    <i data-lucide="download"></i>
+                    Xuất CSV
+                </a>
+            </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="data-table">
-                <thead>
-                <tr>
-                    <th>Phòng</th>
-                    <th>Khách đang thuê</th>
-                    <th>Chỉ số tháng này</th>
-                    <th class="text-right">Dự kiến thu</th>
-                    <th>Trạng thái</th>
-                    <th class="text-right">Thao tác</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="row : ${rows}">
-                    <td>
-                        <div class="font-semibold">
+        <div class="billing-room-list" th:if="${rows != null and !rows.isEmpty()}">
+            <div class="billing-room-list-header" aria-hidden="true">
+                <span>Phòng</span>
+                <span>Người ở</span>
+                <span>Trạng thái</span>
+                <span>Hóa đơn</span>
+                <span></span>
+            </div>
+
+            <article th:each="row : ${rows}"
+                     th:with="tenantText=${row.tenant != null ? ((row.tenant.fullName ?: '') + ' ' + (row.tenant.email ?: '') + ' ' + (row.tenant.phone ?: '')) : ''},
+                              searchText=${(row.room.code ?: '') + ' ' + (row.room.title ?: '') + ' ' + (row.property.name ?: '') + ' ' + tenantText}"
+                     class="billing-room-list-row"
+                     data-billing-row
+                     th:data-status="${row.status}"
+                     th:data-search="${searchText}">
+                <div class="billing-room-cell">
+                    <span class="billing-room-avatar" th:text="${row.room.code != null ? row.room.code : 'P'}">A101</span>
+                    <span class="min-w-0">
+                        <strong th:text="${row.room.title != null and !row.room.title.isBlank() ? row.room.title : 'Phòng ' + row.room.code}">Phòng A101</strong>
+                        <small>
                             <span th:text="${row.room.code}">A101</span>
-                            <span class="text-[color:var(--text-mute)]"> · </span>
-                            <span th:text="${row.room.title}">Studio</span>
-                        </div>
-                        <div class="text-[12px] text-[color:var(--text-mute)] mt-1" th:text="${row.property.name}">Glass Tower</div>
-                        <div class="text-[11px] text-[color:var(--text-mute)] mt-1">
-                            Giá <span class="tnum" th:text="${h.vnd(row.rentAmount)}">0đ</span>
-                            · Phí cố định <span class="tnum" th:text="${h.vnd(row.fixedFeeTotal)}">0đ</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div th:if="${row.tenant != null}" class="flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-full grid place-items-center font-bold text-white bg-[color:var(--accent)]"
-                                  th:text="${row.tenant.fullName != null and !row.tenant.fullName.isEmpty() ? row.tenant.fullName.substring(0,1).toUpperCase() : '?'}">A</span>
-                            <span class="min-w-0">
-                                <span class="block font-medium truncate" th:text="${row.tenant.fullName}">Nguyễn Văn A</span>
-                                <span class="block text-[12px] text-[color:var(--text-mute)] truncate" th:text="${row.tenant.phone ?: row.tenant.email}">090...</span>
-                            </span>
-                        </div>
-                        <span th:unless="${row.tenant != null}" class="badge badge-mute">Phòng trống</span>
-                    </td>
-                    <td>
-                        <div class="grid grid-cols-2 gap-2 text-[12px]">
-                            <div class="rounded-lg border border-[color:var(--line-soft)] px-3 py-2">
-                                <div class="text-[10px] uppercase tracking-[0.14em] text-[color:var(--text-mute)]">Điện cũ</div>
-                                <div class="font-semibold tnum mt-1" th:text="${#numbers.formatDecimal(row.electricPrev, 1, 'POINT', 1, 'POINT')}">0.0</div>
-                            </div>
-                            <div class="rounded-lg border border-[color:var(--line-soft)] px-3 py-2">
-                                <div class="text-[10px] uppercase tracking-[0.14em] text-[color:var(--text-mute)]">Nước cũ</div>
-                                <div class="font-semibold tnum mt-1" th:text="${#numbers.formatDecimal(row.waterPrev, 1, 'POINT', 1, 'POINT')}">0.0</div>
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <span th:if="${row.hasReading}" class="badge badge-emerald">
-                                <i data-lucide="check" class="w-3 h-3"></i>
-                                Đã cập nhật:
-                                <span class="tnum" th:text="${#numbers.formatDecimal(row.electricCurr, 1, 'POINT', 1, 'POINT')}">0.0</span> kWh,
-                                <span class="tnum" th:text="${#numbers.formatDecimal(row.waterCurr, 1, 'POINT', 1, 'POINT')}">0.0</span> m³
-                            </span>
-                            <span th:unless="${row.hasReading}" class="badge badge-amber">
-                                <i data-lucide="alert-triangle" class="w-3 h-3"></i>
-                                Chưa cập nhật điện nước tháng mới
-                            </span>
-                        </div>
-                    </td>
-                    <td class="text-right">
-                        <div class="font-extrabold text-[16px] tnum text-[color:var(--accent)]" th:text="${h.vnd(row.totalAmount)}">0đ</div>
-                        <div class="text-[11px] text-[color:var(--text-mute)] mt-1">
-                            Điện <span th:text="${h.vnd(row.electricAmount)}">0đ</span>
-                            · Nước <span th:text="${h.vnd(row.waterAmount)}">0đ</span>
-                        </div>
-                    </td>
-                    <td>
-                        <span class="badge" th:classappend="${row.statusBadge}" th:text="${row.statusLabel}">Sẵn sàng</span>
-                        <div class="text-[11px] text-[color:var(--warn)] mt-2"
-                             th:if="${row.warning != null and !row.warning.isEmpty()}"
-                             th:text="${row.warning}">Cần kiểm tra</div>
-                    </td>
-                    <td class="text-right">
-                        <a th:href="@{'/admin/utilities/rooms/' + ${row.room.id}(year=${periodYear},month=${periodMonth})}"
-                           class="btn btn-primary btn-sm">
-                            <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
-                            <span th:text="${row.hasInvoice ? 'Xem hóa đơn' : 'Tạo hóa đơn'}">Tạo hóa đơn</span>
-                        </a>
-                    </td>
-                </tr>
+                            <span>·</span>
+                            <span th:text="${row.property.name}">Cơ sở</span>
+                        </small>
+                    </span>
+                </div>
 
-                <tr th:if="${rows == null or rows.isEmpty()}">
-                    <td colspan="6" class="text-center py-12">
-                        <div class="empty-icon mx-auto mb-3">
-                            <i data-lucide="calculator" class="w-7 h-7"></i>
-                        </div>
-                        <h3 class="text-[15px] font-semibold">Không có phòng phù hợp</h3>
-                        <p class="text-[13px] text-[color:var(--text-mute)] mt-1">Thử đổi bộ lọc hoặc kỳ tính tiền.</p>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+                <div class="billing-tenant-cell">
+                    <span class="billing-tenant-avatar"
+                          th:text="${row.tenant.fullName != null and !row.tenant.fullName.isBlank() ? row.tenant.fullName.substring(0,1).toUpperCase() : '?'}">K</span>
+                    <span class="min-w-0">
+                        <strong th:text="${row.tenant.fullName}">Khách thuê</strong>
+                        <small th:text="${row.tenant.phone != null and !row.tenant.phone.isBlank() ? row.tenant.phone : row.tenant.email}">090...</small>
+                    </span>
+                </div>
+
+                <div class="billing-status-summary">
+                    <span class="badge" th:classappend="${row.statusBadge}" th:text="${row.statusLabel}">Sẵn sàng</span>
+                    <small th:if="${row.status == 'missing'}" th:text="${'Chưa nhập chỉ số tháng ' + periodMonth}">Chưa nhập chỉ số</small>
+                    <small th:if="${row.status == 'ready'}">Đã đủ chỉ số, chờ tạo hóa đơn.</small>
+                    <small th:if="${row.status == 'invoiced'}">Đã phát hành, chờ thanh toán.</small>
+                    <small th:if="${row.status == 'paid'}">Đã thanh toán kỳ này.</small>
+                </div>
+
+                <div class="billing-invoice-mini">
+                    <a th:if="${row.hasInvoice}"
+                       th:href="@{'/admin/invoices/' + ${row.invoice.id}}"
+                       class="billing-invoice-code"
+                       th:text="${row.invoice.code}">INV</a>
+                    <span th:unless="${row.hasInvoice}" class="billing-empty-tenant">Chưa có hóa đơn</span>
+                    <small th:if="${row.hasInvoice}" th:text="${#temporals.format(row.invoice.dueDate, 'dd/MM/yyyy')}">10/06/2026</small>
+                </div>
+
+                <div class="billing-actions">
+                    <a th:href="@{'/admin/utilities/rooms/' + ${row.room.id}(year=${periodYear},month=${periodMonth})}"
+                       class="btn btn-primary btn-sm">
+                        <i data-lucide="panel-right-open"></i>
+                        Chi tiết
+                    </a>
+                </div>
+            </article>
         </div>
-    </div>
+
+        <div th:if="${rows == null or rows.isEmpty()}" class="billing-empty-state">
+            <span><i data-lucide="calculator"></i></span>
+            <h3>Không có phòng đang thuê</h3>
+            <p>Trang tính tiền chỉ hiển thị các phòng đang có người thuê.</p>
+        </div>
+
+        <div class="billing-empty-state is-client-empty" data-billing-client-empty hidden>
+            <span><i data-lucide="search-x"></i></span>
+            <h3>Không tìm thấy phòng</h3>
+            <p>Thử tìm bằng tên phòng, mã phòng, khách thuê, email hoặc số điện thoại.</p>
+        </div>
+
+        <div class="admin-pagination-shell"
+             th:if="${billingPage != null and billingPage.totalElements > 0}">
+            <div th:replace="~{fragments/pagination :: pager(
+                currentPage=${billingPage.number},
+                totalPages=${billingPage.totalPages},
+                totalElements=${billingPage.totalElements},
+                pageSize=${billingPage.size},
+                baseUrl=@{/admin/utilities(year=${periodYear},month=${periodMonth},propertyId=${currentPropertyId},q=${filterQ},status=${filterStatus})} + '&'
+            )}"></div>
+        </div>
+    </section>
 </div>
+
+<th:block layout:fragment="extra-scripts">
+    <script th:src="@{/js/admin-utilities.js}"></script>
+</th:block>
 </body>
 </html>

@@ -15,6 +15,8 @@ import java.util.UUID;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
     Page<Notification> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
     List<Notification> findTop10ByUserIdOrderByCreatedAtDesc(UUID userId);
+    List<Notification> findTop50ByUserIdInOrderByCreatedAtDesc(List<UUID> userIds);
+    List<Notification> findTop200BySenderUserIdAndTypeOrderByCreatedAtDesc(UUID senderUserId, String type);
     long countByUserIdAndReadAtIsNull(UUID userId);
 
     @Modifying

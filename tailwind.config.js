@@ -29,8 +29,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-        sans:    ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Inter"', '"Roboto"', '"Poppins"', '"Public Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+        sans:    ['"Inter"', '"Roboto"', '"Poppins"', '"Public Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
         mono:    ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
@@ -51,9 +51,9 @@ module.exports = {
         'accent-glow': '0 12px 32px rgba(79,70,229,0.35)',
       },
       letterSpacing: {
-        tightest: '-0.04em',
-        tighter:  '-0.025em',
-        tight:    '-0.015em',
+        tightest: '0',
+        tighter:  '0',
+        tight:    '0',
         eyebrow:  '0.08em',
       },
       keyframes: {

@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living - V9 add room.extra_fees JSONB
+-- SmartRent - V9 add room.extra_fees JSONB
 -- List of {name, amount} for parking, elevator, internet, etc.
 -- Inherited from property at room-creation time, but editable per room.
 -- ===================================================================

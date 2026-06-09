@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}"
+      lang="vi">
+<head><title>Thông báo - SmartRent</title></head>
+<body>
+<div layout:fragment="content" class="admin-feature-page admin-notification-page">
+    <section class="admin-feature-header">
+        <div class="admin-feature-heading">
+            <span class="admin-feature-icon is-cyan"><i data-lucide="send"></i></span>
+            <div>
+                <span class="admin-feature-eyebrow">Trung tâm thông báo</span>
+                <h1>Gửi thông báo</h1>
+                <p>Soạn nội dung, đính kèm hình ảnh và gửi đúng khách theo phòng hoặc tài khoản.</p>
+            </div>
+        </div>
+        <div class="admin-header-summary">
+            <span>Khách đang thuê</span>
+            <strong class="tnum" th:text="${tenants != null ? tenants.size() : 0}">0</strong>
+        </div>
+    </section>
+
+    <form th:action="@{/admin/notifications}"
+          method="post"
+          enctype="multipart/form-data"
+          class="notification-composer"
+          data-notification-form
+          th:data-all-recipient-count="${tenants != null ? tenants.size() : 0}">
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+        <div class="notification-form-column">
+            <section class="notification-section">
+                <header class="notification-section-head">
+                    <span class="notification-step">1</span>
+                    <div>
+                        <h2>Nội dung thông báo</h2>
+                        <p>Thông tin này sẽ xuất hiện trong khu vực thông báo của khách.</p>
+                    </div>
+                </header>
+
+                <div class="notification-fields">
+                    <label class="notification-field">
+                        <span>Tiêu đề <b>*</b></span>
+                        <input type="text"
+                               name="title"
+                               required
+                               maxlength="200"
+                               placeholder="Ví dụ: Lịch bảo trì nước tối nay"
+                               data-notification-title />
+                        <small><span data-title-count>0</span>/200 ký tự</small>
+                    </label>
+                    <label class="notification-field">
+                        <span>Nội dung <b>*</b></span>
+                        <textarea name="body"
+                                  required
+                                  rows="6"
+                                  maxlength="3000"
+                                  placeholder="Nhập nội dung cụ thể, thời gian áp dụng và thông tin khách cần lưu ý..."
+                                  data-notification-body></textarea>
+                        <small><span data-body-count>0</span>/3000 ký tự</small>
+                    </label>
+                    <label class="notification-field">
+                        <span>Link chi tiết <em>Không bắt buộc</em></span>
+                        <div class="notification-link-field">
+                            <i data-lucide="link-2"></i>
+                            <input type="text"
+                                   name="linkUrl"
+                                   maxlength="400"
+                                   placeholder="/customer/invoices hoặc https://..."
+                                   data-notification-link />
+                        </div>
+                    </label>
+
+                    <div class="notification-field">
+                        <span>Ảnh đính kèm <em>Không bắt buộc</em></span>
+                        <div class="notification-uploader" data-notification-uploader>
+                            <input type="file"
+                                   name="image"
+                                   accept="image/png,image/jpeg,image/webp"
+                                   data-notification-image />
+                            <button type="button" data-notification-upload-trigger>
+                                <span><i data-lucide="image-plus"></i></span>
+                                <strong>Chọn hoặc kéo thả ảnh</strong>
+                                <small>JPG, PNG hoặc WEBP · tối đa 10MB</small>
+                            </button>
+                            <div class="notification-upload-selected" data-notification-upload-selected hidden>
+                                <img data-notification-image-thumb alt="Ảnh đã chọn" />
+                                <span>
+                                    <b data-notification-image-name>Ảnh</b>
+                                    <small data-notification-image-size>0 KB</small>
+                                </span>
+                                <button type="button" data-notification-image-remove title="Xóa ảnh">
+                                    <i data-lucide="x"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="notification-section">
+                <header class="notification-section-head">
+                    <span class="notification-step">2</span>
+                    <div>
+                        <h2>Chọn người nhận</h2>
+                        <p>Chỉ các khách đang thuê phòng thuộc tài khoản quản lý này mới có thể nhận.</p>
+                    </div>
+                </header>
+
+                <div class="notification-audience-tabs" role="radiogroup" aria-label="Phạm vi gửi">
+                    <label>
+                        <input type="radio" name="audienceMode" value="ALL" checked />
+                        <span><i data-lucide="users-round"></i> Tất cả khách</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="audienceMode" value="ROOMS" />
+                        <span><i data-lucide="door-open"></i> Theo phòng</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="audienceMode" value="TENANTS" />
+                        <span><i data-lucide="user-round-check"></i> Theo khách</span>
+                    </label>
+                </div>
+
+                <div class="notification-audience-panel" data-audience-panel="ALL">
+                    <div class="notification-all-audience">
+                        <span><i data-lucide="megaphone"></i></span>
+                        <div>
+                            <h3>Gửi tới toàn bộ khách đang thuê</h3>
+                            <p>
+                                <b class="tnum" th:text="${tenants != null ? tenants.size() : 0}">0</b>
+                                khách tại
+                                <b class="tnum" th:text="${rooms != null ? rooms.size() : 0}">0</b>
+                                phòng đang có người ở.
+                            </p>
+                            <small th:if="${vacantRoomCount > 0}"
+                                   th:text="${vacantRoomCount + ' phòng trống không có người nhận và sẽ được bỏ qua.'}">
+                                Phòng trống sẽ được bỏ qua.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="notification-audience-panel" data-audience-panel="ROOMS" hidden>
+                    <div class="notification-recipient-toolbar">
+                        <label>
+                            <i data-lucide="search"></i>
+                            <input type="search"
+                                   placeholder="Tìm mã hoặc tên phòng"
+                                   data-recipient-search="ROOMS" />
+                        </label>
+                        <button type="button" data-select-visible="ROOMS">Chọn tất cả đang hiển thị</button>
+                    </div>
+                    <div class="notification-recipient-list">
+                        <label th:each="room : ${rooms}"
+                               class="notification-recipient-option"
+                               th:data-search-text="${room.code + ' ' + room.title + ' ' + room.district + ' ' + room.city}"
+                               data-recipient-option="ROOMS">
+                            <input type="checkbox"
+                                   name="roomIds"
+                                   th:value="${room.id}"
+                                   th:data-tenant-id="${room.currentTenantId}"
+                                   data-recipient-checkbox />
+                            <span class="notification-option-icon"><i data-lucide="bed-double"></i></span>
+                            <span>
+                                <b th:text="${room.code + ' · ' + room.title}">Phòng</b>
+                                <small th:text="${room.district + ', ' + room.city}">Địa chỉ</small>
+                            </span>
+                            <i data-lucide="check"></i>
+                        </label>
+                    </div>
+                    <div th:if="${rooms == null or rooms.isEmpty()}" class="notification-recipient-empty">
+                        <i data-lucide="door-closed"></i>
+                        <p>Chưa có phòng nào đang có khách thuê.</p>
+                    </div>
+                </div>
+
+                <div class="notification-audience-panel" data-audience-panel="TENANTS" hidden>
+                    <div class="notification-recipient-toolbar">
+                        <label>
+                            <i data-lucide="search"></i>
+                            <input type="search"
+                                   placeholder="Tìm tên, số điện thoại hoặc email"
+                                   data-recipient-search="TENANTS" />
+                        </label>
+                        <button type="button" data-select-visible="TENANTS">Chọn tất cả đang hiển thị</button>
+                    </div>
+                    <div class="notification-recipient-list">
+                        <label th:each="tenant : ${tenants}"
+                               th:with="currentRoom=${roomsByTenantId.get(tenant.id)}"
+                               class="notification-recipient-option"
+                               th:data-search-text="${tenant.fullName + ' ' + (tenant.phone ?: '') + ' ' + (tenant.email ?: '') + ' ' + (currentRoom != null ? currentRoom.code + ' ' + currentRoom.title : '')}"
+                               data-recipient-option="TENANTS">
+                            <input type="checkbox"
+                                   name="tenantIds"
+                                   th:value="${tenant.id}"
+                                   th:data-tenant-id="${tenant.id}"
+                                   data-recipient-checkbox />
+                            <span class="notification-tenant-avatar"
+                                  th:text="${#strings.substring(tenant.fullName, 0, 1).toUpperCase()}">K</span>
+                            <span>
+                                <b th:text="${tenant.fullName}">Khách thuê</b>
+                                <small>
+                                    <span th:text="${currentRoom != null ? currentRoom.code : 'Chưa có phòng'}">Phòng</span>
+                                    <span> · </span>
+                                    <span th:text="${tenant.phone ?: tenant.email}">Liên hệ</span>
+                                </small>
+                            </span>
+                            <i data-lucide="check"></i>
+                        </label>
+                    </div>
+                    <div th:if="${tenants == null or tenants.isEmpty()}" class="notification-recipient-empty">
+                        <i data-lucide="user-round-x"></i>
+                        <p>Chưa có khách đang thuê để gửi thông báo.</p>
+                    </div>
+                </div>
+
+                <p class="notification-recipient-error" data-recipient-error hidden>
+                    Hãy chọn ít nhất một người nhận.
+                </p>
+            </section>
+        </div>
+
+        <aside class="notification-preview-column">
+            <section class="notification-preview-panel">
+                <header>
+                    <span>Xem trước</span>
+                    <b>Giao diện khách nhận được</b>
+                </header>
+                <article class="notification-preview-card">
+                    <div class="notification-preview-app">
+                        <span class="brand-mark">
+                            <i data-lucide="building-2"></i>
+                        </span>
+                        <span>
+                            <b>SmartRent</b>
+                            <small>Thông báo mới</small>
+                        </span>
+                        <em>Bây giờ</em>
+                    </div>
+                    <img data-preview-image alt="Ảnh thông báo" hidden />
+                    <h3 data-preview-title>Tiêu đề thông báo</h3>
+                    <p data-preview-body>Nội dung bạn nhập sẽ được hiển thị tại đây để kiểm tra trước khi gửi.</p>
+                    <span class="notification-preview-link" data-preview-link hidden>
+                        <i data-lucide="external-link"></i>
+                        Xem chi tiết
+                    </span>
+                </article>
+            </section>
+
+            <section class="notification-send-summary">
+                <div>
+                    <span class="notification-summary-icon"><i data-lucide="users"></i></span>
+                    <span>
+                        <small>Người nhận</small>
+                        <strong><b class="tnum" data-recipient-count>0</b> khách</strong>
+                    </span>
+                </div>
+                <p>Thông báo được tạo riêng cho từng khách và sẽ xuất hiện ngay trong tài khoản của họ.</p>
+                <div class="notification-submit-actions">
+                    <button type="reset" class="btn btn-ghost">Đặt lại</button>
+                    <button type="submit" class="btn btn-primary" data-notification-submit>
+                        <i data-lucide="send"></i>
+                        Gửi thông báo
+                    </button>
+                </div>
+            </section>
+        </aside>
+    </form>
+
+    <section class="notification-history">
+        <header class="notification-history-head">
+            <div>
+                <span class="admin-feature-eyebrow">Theo dõi sau khi gửi</span>
+                <h2>Lịch sử thông báo</h2>
+                <p>Mỗi đợt gửi được gộp thành một mục cùng số người đã đọc.</p>
+            </div>
+            <span class="notification-history-count"
+                  th:text="${broadcastHistory != null ? broadcastHistory.size() + ' đợt gần nhất' : '0 đợt'}">
+                0 đợt
+            </span>
+        </header>
+
+        <div th:if="${broadcastHistory != null and !broadcastHistory.isEmpty()}"
+             class="notification-history-list">
+            <article th:each="item : ${broadcastHistory}" class="notification-history-item">
+                <img th:if="${item.imageUrl != null}" th:src="${item.imageUrl}" alt="Ảnh thông báo" />
+                <span th:unless="${item.imageUrl != null}" class="notification-history-icon">
+                    <i data-lucide="bell-ring"></i>
+                </span>
+                <div class="notification-history-copy">
+                    <div>
+                        <h3 th:text="${item.title}">Tiêu đề</h3>
+                        <time class="tnum" th:text="${#temporals.format(item.createdAt, 'dd/MM/yyyy · HH:mm')}">--</time>
+                    </div>
+                    <p th:text="${item.body}">Nội dung</p>
+                    <small th:text="${item.recipientsLabel != null and !item.recipientsLabel.isBlank() ? item.recipientsLabel : 'Danh sách người nhận không còn khả dụng'}">
+                        Người nhận
+                    </small>
+                </div>
+                <div class="notification-read-stat">
+                    <span>
+                        <b class="tnum" th:text="${item.readCount}">0</b>
+                        /
+                        <b class="tnum" th:text="${item.recipientCount}">0</b>
+                    </span>
+                    <small>đã đọc</small>
+                    <div>
+                        <i th:style="${'width:' + (item.recipientCount > 0 ? (item.readCount * 100 / item.recipientCount) : 0) + '%'}"></i>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <div th:if="${broadcastHistory == null or broadcastHistory.isEmpty()}"
+             class="admin-feature-empty is-compact">
+            <span><i data-lucide="bell-off"></i></span>
+            <h3>Chưa có thông báo nào được gửi</h3>
+            <p>Thông báo đầu tiên sẽ xuất hiện tại đây sau khi gửi thành công.</p>
+        </div>
+    </section>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+    <script th:src="@{/js/admin-notifications.js}"></script>
+</th:block>
+</body>
+</html>

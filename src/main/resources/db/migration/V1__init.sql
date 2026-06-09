@@ -1,5 +1,5 @@
 -- ===================================================================
--- Glass Living — V1 init schema (Postgres + H2/PostgreSQL-compat mode)
+-- SmartRent — V1 init schema (Postgres + H2/PostgreSQL-compat mode)
 -- ===================================================================
 -- Note: H2 with MODE=PostgreSQL supports gen_random_uuid() since 1.4.x.
 -- pgcrypto / pg_trgm extensions only loaded on real Postgres (skip on H2).
